@@ -1,6 +1,6 @@
 # BRouter auto-hébergé (#1340) : serveur de routage HTTP, profil VTT « mtb ».
 # Pas d'image officielle sur Docker Hub : on récupère la release GitHub (jar + profils).
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:24-jre
 ARG BROUTER_VERSION=1.7.10
 RUN apt-get update && apt-get install -y --no-install-recommends curl unzip ca-certificates && rm -rf /var/lib/apt/lists/* \
  && curl -fsSL -o /tmp/b.zip "https://github.com/abrensch/brouter/releases/download/v${BROUTER_VERSION}/brouter-${BROUTER_VERSION}.zip" \
