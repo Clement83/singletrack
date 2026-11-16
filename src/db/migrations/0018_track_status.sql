@@ -1,0 +1,1 @@
+ALTER TABLE `track` ADD `status` text DEFAULT 'published' NOT NULL;

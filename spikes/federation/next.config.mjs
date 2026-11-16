@@ -1,0 +1,1 @@
+export default { distDir: process.env.DIST ?? '.next', allowedDevOrigins: ['*'], serverExternalPackages: ['@fedify/fedify', '@fedify/vocab', '@fedify/vocab-runtime', '@fedify/webfinger', '@fedify/sqlite'] };

@@ -1,0 +1,6 @@
+import { ClientMessages } from '@/i18n/client-messages';
+
+// Messages envoyés au navigateur pour ce segment (#1405) : connexion.
+export default function Layout({ children }: { children: React.ReactNode }) {
+  return <ClientMessages zone="auth">{children}</ClientMessages>;
+}

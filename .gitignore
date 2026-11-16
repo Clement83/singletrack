@@ -1,0 +1,23 @@
+node_modules/
+dist/
+data/
+.env
+*.log
+.next/
+next-env.d.ts
+*.tsbuildinfo
+.claude/worktrees/
+
+# Notes locales (homelab), jamais publiées
+AGENTS.local.md
+.env*
+!.env.example
+coverage
+.next-fed*
+.next-build
+install-test-tmp.*
+
+# Tests e2e (#1523) : session de test et dépendances
+e2e/.auth/
+e2e/node_modules/
+e2e/test-results/

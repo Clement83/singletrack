@@ -1,0 +1,135 @@
+name: singletrack
+services:
+  app:
+    build:
+      context: .
+      # Mode dev (#1464) : `next dev` + rechargement à chaud sur le code monté.
+      # Pour une installation de production (docs/install.md) : activer `runner`, NODE_ENV production, et
+      # retirer les volumes de code (`.:/app`, node_modules, next_cache) ainsi que `links` ci-dessous si besoin.
+      target: dev
+      # target: runner
+    restart: unless-stopped
+    # Réseau bridge par défaut (sur un hôte au pool d'adresses compose saturé, un réseau dédié est impossible).
+    # Sur une installation normale, retirer `network_mode` (et `links`) : compose crée son réseau et le DNS interne.
+    network_mode: bridge
+    env_file: .env
+    environment:
+      PORT: "3000"
+      HOSTNAME: 0.0.0.0
+      NODE_ENV: development # production avec la cible `runner`
+      DATABASE_URL: /app/data/singletrack.db
+      BROUTER_URL: http://brouter:17777
+    ports:
+      - "${APP_PORT:-3700}:3000"
+    volumes:
+      - .:/app
+      # Avec la cible `runner` (sans le montage `.:/app`), garder seulement les données : - ./data:/app/data
+      # node_modules et cache .next propres au conteneur (binaire better-sqlite3 de l'image, pas de conflit avec l'hôte).
+      - node_modules:/app/node_modules
+      - next_cache:/app/.next
+    # Réseau bridge par défaut (pas de DNS) : `links` rend `brouter` résolvable depuis `app`.
+    links:
+      - brouter
+    depends_on:
+      brouter:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      # Première compilation de `next dev` plus lente qu'un démarrage de prod.
+      start_period: 90s
+
+  # Moteur de routage VTT (#1340) : appelé uniquement par `app`, aucun port publié.
+  brouter:
+    build: ./brouter
+    restart: unless-stopped
+    network_mode: bridge
+    volumes:
+      - ./data/brouter/segments:/segments:ro
+    healthcheck:
+      # Itinéraire test autour du point maison (HOME_LON/HOME_LAT du .env) : il faut donc que sa tuile soit téléchargée.
+      test: ["CMD-SHELL", "E=$$(awk 'BEGIN{print ${HOME_LON:-2.4}+0.01}'); for p in singletrack singletrack-vae; do curl -sf \"http://localhost:17777/brouter?lonlats=${HOME_LON:-2.4},${HOME_LAT:-46.6}|$$E,${HOME_LAT:-46.6}&profile=$$p&alternativeidx=0&format=geojson\" >/dev/null || exit 1; done"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  # Serveur de l'app pour les tests e2e : build de production (`next dev` recharge la page en boucle sous Playwright, HMR + base SQLite surveillée).
+  # Dossier de build `.next-build` (ignoré par git), même base et même BRouter que `app`.
+  app-e2e:
+    profiles: [e2e]
+    image: singletrack-app
+    network_mode: bridge
+    env_file: .env
+    environment:
+      PORT: "3000"
+      HOSTNAME: 0.0.0.0
+      NODE_ENV: production
+      NEXT_DIST_DIR: .next-build
+      DATABASE_URL: /app/data/singletrack.db
+      BROUTER_URL: http://brouter:17777
+    links:
+      - brouter
+    depends_on:
+      brouter:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    command: ["sh", "-c", "npx next build && npx next start -p 3000 -H 0.0.0.0"]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 240s
+
+  # Tests de bout en bout (#1523) : jamais lancés par défaut (profil `e2e`).
+  #   docker compose -f docker-compose.yml --profile e2e run --rm e2e
+  # Session de test : compte `e2e@singletrack.test` + cookie de session posés en base (aucun vrai mail), écrits dans e2e/.auth/.
+  e2e-session:
+    profiles: [e2e]
+    # Même image que `app` (pas de second build) : construite avec `docker compose up -d --build`.
+    image: singletrack-app
+    network_mode: bridge
+    env_file: .env
+    environment:
+      DATABASE_URL: /app/data/singletrack.db
+      E2E_BASE_URL: http://app-e2e:3000
+      NODE_ENV: development
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+      - next_cache:/app/.next
+    command: ["npx", "tsx", "scripts/e2e-session.ts"]
+
+  # Playwright (Chromium) dans l'image officielle, version identique à e2e/package.json. Vise l'app du conteneur `app`.
+  e2e:
+    profiles: [e2e]
+    image: mcr.microsoft.com/playwright:v1.56.1-noble
+    network_mode: bridge
+    ipc: host
+    working_dir: /work
+    environment:
+      E2E_BASE_URL: http://app-e2e:3000
+      CI: "1"
+    links:
+      - app-e2e
+    depends_on:
+      app-e2e:
+        condition: service_healthy
+      e2e-session:
+        condition: service_completed_successfully
+    volumes:
+      - ./e2e:/work
+      - e2e_node_modules:/work/node_modules
+      - e2e_results:/results
+    command: ["sh", "-c", "npm install --no-audit --no-fund --no-package-lock --loglevel=error && npx playwright test \"$$@\"", "--"]
+
+volumes:
+  e2e_node_modules:
+  e2e_results:
+  node_modules:
+  next_cache:

@@ -1,0 +1,16 @@
+node_modules
+.next
+data
+.env
+.git
+.verif
+.claude/worktrees
+spikes
+AGENTS.local.md
+.env.*
+!.env.example
+.claude
+docs
+*.md
+coverage
+install-test-tmp.*

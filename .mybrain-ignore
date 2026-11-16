@@ -1,0 +1,6 @@
+# Exclusions de l'index architect (syntaxe gitignore)
+node_modules/
+dist/
+data/
+*.gpx
+.next/

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Ma carte</name>
+<Folder><name>Traces</name>
+<Placemark><name>Boucle du Fenouillet</name><description><![CDATA[Single sympa<br>départ parking]]></description>
+<LineString><tessellate>1</tessellate><coordinates>
+6.1500,43.2000,0 6.1520,43.2010,0 6.1550,43.2030,0 6.1580,43.2060,0 6.1600,43.2100,0 6.1550,43.2150,0
+</coordinates></LineString></Placemark>
+<Placemark><name>Parking</name><Point><coordinates>6.15,43.2,0</coordinates></Point></Placemark>
+<Placemark><name>Deux tronçons</name><MultiGeometry>
+<LineString><coordinates>6.10,43.20,120 6.11,43.21,150</coordinates></LineString>
+<LineString><coordinates>6.12,43.22,180 6.13,43.23,160</coordinates></LineString>
+</MultiGeometry></Placemark>
+</Folder></Document></kml>

@@ -1,0 +1,50 @@
+# AGENTS.md — singletrack
+
+Organiser des sorties VTT : une carte des traces (France métropolitaine, centrée sur le point `HOME_LAT`/`HOME_LON`, centre de la France par défaut), un éditeur de traces, des **sorties** datées et des invitations par lien que les invités suivent **sans compte**.
+
+Les notes d'exploitation propres à une installation (réseau, domaine, planification, suivi des tickets) vont dans `AGENTS.local.md`, ignoré par git.
+
+## Stack
+
+Next.js 16 (App Router, TypeScript strict), Tailwind 4 + conventions shadcn/ui, MapLibre GL JS, SQLite + Drizzle (migrations dans `src/db/migrations`, appliquées au démarrage), Better Auth (connexion sans mot de passe : code + lien + QR code par mail), `next-intl` (FR + EN, sans préfixe d'URL), Vitest, ESLint, Node 22. Routage VTT : BRouter auto-hébergé (`brouter/`).
+
+## Commandes (dans le conteneur)
+
+```bash
+cp .env.example .env                              # puis renseigner les secrets (BETTER_AUTH_SECRET, INVITE_LINK_KEY…)
+docker compose up -d --build                      # mode dev, rechargement à chaud
+docker compose exec app npm test                  # Vitest
+docker compose exec app npm run test:coverage     # couverture + seuils (vitest.config.ts)
+docker compose -f docker-compose.yml --profile e2e run --rm e2e   # e2e Playwright (#1523, Chromium en conteneur, desktop souris ; -f car compose.yml est celui de distribution)
+./scripts/smoke-docker.sh                         # test de fumée de l'image de prod (hôte, Docker requis)
+docker compose exec app npm run lint              # ESLint
+docker compose exec app npx tsc --noEmit          # typecheck
+docker compose exec app npx drizzle-kit generate  # migration après modification de src/db/schema.ts
+docker compose exec app npm run tokens:check      # tokens.css à jour + contrastes
+docker compose exec app npm run elevation:recompute  # #1519 : recote IGN + recalcule D+ (traces, snapshots, trajets) ; --dry-run, --force ; sauvegarde auto dans data/backups, reprise via data/elevation-recompute.state
+./scripts/get-brouter-segments.sh                 # segments BRouter (≈ 770 Mo pour la France)
+```
+
+Toute exécution de code se fait dans les conteneurs. Santé : `GET /api/health`.
+
+**Dev : page qui se recharge en boucle (#1570)** — « [Fast Refresh] rebuilding » sans modification de code, chunk 404, rechargement permanent. Cause constatée : état Turbopack périmé dans le volume `next_cache` (`/app/.next`), pas les bases de `data/` (écritures SQLite mesurées : aucune recompilation ; une modification de `src/` recharge bien à chaud). Remède : `docker compose stop app && docker run --rm -v singletrack_next_cache:/n alpine sh -c 'rm -rf /n/* /n/.[!.]*' && docker compose start app`. `<body>` porte `suppressHydrationWarning` (extensions navigateur qui y ajoutent classes/attributs).
+
+## Principes
+
+- **Mobile first** (375 px puis desktop), zones tactiles ≥ 44 px, jamais d'action au seul survol, contraste AA, thèmes clair et sombre selon le système. Charte et composants : [`design/README.md`](design/README.md), référence visuelle sur `/styleguide`, skill `ui-ux` (`.claude/skills/ui-ux/`).
+- **Tokens de design** : `design/tokens.json` est la source unique (`npm run tokens` génère `src/app/styles/tokens.css`). Pas de couleur en dur.
+- **Multilingue** : aucun texte en dur, tout passe par `messages/fr.json` et `messages/en.json` (mêmes clés, format ICU). Dates et nombres via `Intl`, fuseau `Europe/Paris`. Les erreurs serveur renvoient des codes traduits côté client (`errors.*`).
+- **Routes** : privées sous `src/app/(private)/`, publiques par slug (`/t`, `/s`, `/i`) listées dans `src/lib/public-routes.ts` (liste blanche, sûr par défaut). Toute route d'écriture appelle `assertUser()`.
+- **Carte des traces : sélection multiple (#1532)** : un tap sur un départ l'ajoute (et ouvre sa fiche), un second le retire ; plafond `MAX_SELECTION` = 8 ; état dans l'URL `?sel=slug1,slug2` ; logique pure `src/lib/tracks/selection.ts` ; une couleur par trace choisie (tokens `sel-1`…`sel-8`, mêmes valeurs en clair et sombre car le plan reste clair) ; géométries à la demande via `/api/tracks/geometry`. **Liste (#1533)** : section « Traces choisies » en tête du panneau liste (couleur, km, D+, difficulté, retrait, Recentrer) ; bouton +/× par ligne de « Dans la zone » ; survol liste ⇄ carte (`hl`). Scénario e2e : `e2e/tests/explorer-selection.spec.ts` (après modification du code, `docker compose -f docker-compose.yml --profile e2e restart app-e2e` pour reconstruire).
+- **Qui vient** : bloc `OutingParticipants` sous les conditions sur `/i` et `/s` ; données par `listParticipants` (prénoms seulement, révoqués exclus), démo sur `/styleguide`.
+- **Liens secrets** : slugs UUID v4, jetons d'invitation de 256 bits (hash en base, copie chiffrée avec `INVITE_LINK_KEY`, à ne jamais changer), pages `noindex`.
+- **Migrations** : ne jamais modifier une migration déjà appliquée ou publiée, en créer une nouvelle (incident `0017`). `scripts/upgrade-test.sh` (CI) migre une base du dernier tag `vX.Y.Z` avec les migrations courantes et refuse toute migration publiée modifiée.
+- **Versions (#1485)** : semver dans `package.json` (`config.version`, injectée au build par `next.config.mjs`, affichée dans le menu et `/api/health`) ; `release-please` (`.github/workflows/release.yml`) tient `CHANGELOG.md` et crée tag + GitHub Release à partir des commits conventionnels ; le tag publie les images (#1483). Dependabot, CodeQL, `SECURITY.md`. Détail : `CONTRIBUTING.md`.
+- **Config par instance** (#1473) : rien de propre à un serveur dans le code. Point maison `HOME_LAT`/`HOME_LON`, zones `SYNC_ZONES`, sources `DATA_SOURCES` (`sourceEnabled()` dans `src/lib/config.ts` ; incendie et chasse = Var seulement, `fireApplies`/`huntingApplies`). Installation : [`docs/install.md`](docs/install.md). `.env.example` fait foi pour les variables.
+- **Sources de données** : OpenStreetMap (ODbL), Geotrek, import GPX/KML, IGN (altitude), Open-Meteo. Respecter licences et attributions ; jamais de scraping.
+- **Secrets** : uniquement dans `.env` (hors git), jamais dans le code ni les logs.
+- **Fédération (ActivityPub, #1474)** : étude et décisions dans [`docs/federation.md`](docs/federation.md). Code dans `src/lib/federation/` (Fedify 2.4.5 : `index.ts` = singleton sur `globalThis`, acteur, NodeInfo, boîte d'entrée ; `handle.ts` = règle du handle ; `keys.ts` + `crypto.ts` = clés RSA par compte, privée chiffrée avec `FEDERATION_KEY_ENC` (à ne jamais changer) ; `remote-actors.ts` = cache des comptes distants ; `config.ts` = `FEDERATION=on|off`, origine publique tirée de `PUBLIC_URL`/`BETTER_AUTH_URL`, jamais d'un en-tête). **Fédération active par défaut dès que `FEDERATION_KEY_ENC` existe** (#1477 ; `FEDERATION=off` la coupe) : `off` ⇒ `/.well-known/webfinger|nodeinfo`, `/nodeinfo`, `/ap/*` répondent 404 ; `on` : `src/proxy.ts` appelle Fedify **avant** la redirection vers `/login`. File d'envoi et KV Fedify dans `data/federation.db` (réessais exponentiels ~48 h). Fedify doit rester dans `serverExternalPackages` (une seule copie). Handle : `user.handle`, généré à la saisie du prénom (hook Better Auth + rattrapage au démarrage), modifiable une fois (`/api/profile/handle`, menu utilisateur, adresse `handle@domaine` visible si la fédération est active). **Copains entre serveurs (#1475)** : `src/lib/federation/friends.ts` (adresse `paul@serveur`, Follow/Accept/Reject/Undo, `friendship.remote_actor_id`), détail dans `docs/federation.md` §9 ; `listFriends` & co. gèrent locaux et distants sans doublon. **Sorties entre serveurs (#1476)** : `src/lib/federation/outings.ts` (Event + pièce jointe `singletrack:outing`, adressage par visibilité, `Join`/`TentativeAccept`/`Leave` → `Accept`/`Reject`, caches `remote_outing` / `remote_response`), branchements `src/lib/outings/federation-hook.ts`, détail dans `docs/federation.md` §10. **Sécurité et modération (#1477)** : `moderation.ts` (serveurs et comptes bloqués, `LIMITS`, journal des refus, signalements, anti-spam), `inbox-guard.ts` (filtre taille / blocage / débit avant Fedify, dans `src/proxy.ts`), admin = `ADMIN_EMAILS` + `/admin/federation` (`src/lib/admin.ts`), détail `docs/federation.md` §11 ; tout nouvel envoi passe par `safeDeliver` / `send` qui respectent les blocs. Test d'intégration à deux instances : `docker compose exec app npx tsx scripts/federation-two-instances.ts`.
+
+## Tests
+
+Un test par comportement, dans `tests/`. Couverture mesurée sur `src/lib`, `src/app/api`, `src/proxy.ts`, `src/db` ; les seuils de `vitest.config.ts` (juste sous l'état atteint) sont appliqués en CI : les relever quand la couverture monte, jamais les baisser pour faire passer un changement. Éditeur (#1522) : gestes en fonctions pures dans `src/lib/editor/gestures.ts` (`track-editor.tsx` ne fait que les appeler) ; scénarios dans `tests/editor-scenarios.test.ts` via le simulateur `tests/helpers/editor-sim.ts` (reducer + routage simulé par les fixtures BRouter réelles `tests/fixtures/brouter/segments.json`, projection écran fictive) ; fixtures (ré)enregistrées et vérifiées contre le vrai BRouter par `docker compose exec app npx tsx scripts/editor-routing-check.ts [--record]`. Tout nouveau geste ou bug de l'éditeur = un scénario. Garde-fous : `api-auth-guard` (toute route privée de `/api` répond 401 sans session), `proxy`, `migrations` (schéma Drizzle = base migrée), `api-routes` (statuts, brouillons, imports malformés). Avant de proposer un changement : tests, lint et `tsc --noEmit` doivent passer.

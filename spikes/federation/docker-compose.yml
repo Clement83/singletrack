@@ -1,0 +1,21 @@
+# Spike #1471 : deux instances Next + Fedify dans un conteneur jetable (ports 3000 et 3001, deux bases, deux .next).
+# Un `links` croisé app1 <-> app2 est une dépendance cyclique en réseau bridge sans DNS : un seul conteneur, deux processus.
+# Lancer : docker compose -f spikes/federation/docker-compose.yml up
+services:
+  spike:
+    image: node:22-slim
+    network_mode: bridge
+    working_dir: /w
+    volumes: [".:/w", "nm:/w/node_modules"]
+    environment: { FEDERATION_DEV_HTTP: "1" }
+    command: >
+      sh -c "npm install --no-audit --no-fund &&
+      (SPIKE_DB=/tmp/d1.db DIST=.next1 ORIGIN=http://localhost:3000 npx next dev -H 0.0.0.0 -p 3000 &
+       SPIKE_DB=/tmp/d2.db DIST=.next2 ORIGIN=http://localhost:3001 npx next dev -H 0.0.0.0 -p 3001 & wait)"
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
+volumes: { nm: }

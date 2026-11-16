@@ -1,0 +1,44 @@
+import type { FireLevel } from '@/lib/design/scales';
+import { compactDate } from './dates';
+
+export const OFFICIAL_MAP_URL = 'https://www.risque-prevention-incendie.fr/var/';
+export const SOURCE_BASE = 'https://www.risque-prevention-incendie.fr/static/83';
+export const MASSIFS_URL = `${SOURCE_BASE}/massifs_83.fgb`;
+export const dayUrl = (date: string) => `${SOURCE_BASE}/import_data/${compactDate(date)}.json`;
+
+export type MassifDayLevel = { level: FireLevel; extra: number };
+
+/**
+ * Lit le fichier du jour : `{"massifs": {"835": [niveau, procédure], …}}`.
+ * Niveaux : 1 vert, 2 jaune, 3 orange, 4 rouge, 5 noir (0 = pas de donnée, ignoré).
+ * Renvoie `null` si le format n'est pas reconnu — l'appelant affiche alors « donnée indisponible ».
+ */
+export function parseDayFile(json: unknown): Map<string, MassifDayLevel> | null {
+  const massifs = (json as { massifs?: unknown } | null)?.massifs;
+  if (!massifs || typeof massifs !== 'object' || Array.isArray(massifs)) return null;
+  const out = new Map<string, MassifDayLevel>();
+  for (const [code, v] of Object.entries(massifs)) {
+    if (!Array.isArray(v)) return null;
+    const level = v[0];
+    if (!Number.isInteger(level) || level < 0 || level > 5) return null;
+    const extra = Number.isInteger(v[1]) ? (v[1] as number) : 0;
+    if (level >= 1) out.set(code, { level: level as FireLevel, extra });
+  }
+  return out.size ? out : null;
+}
+
+/** Accès : `ok` (vert/jaune), `warn` (orange : déconseillé), `forbidden` (rouge/noir). */
+export function accessOf(level: FireLevel): 'ok' | 'warn' | 'forbidden' {
+  return level >= 4 ? 'forbidden' : level === 3 ? 'warn' : 'ok';
+}
+
+export const worstLevel = (levels: FireLevel[]): FireLevel | undefined =>
+  levels.length ? (Math.max(...levels) as FireLevel) : undefined;
+
+/** Libellé de massif lisible : « MONTS TOULONNAIS » → « Monts Toulonnais ». */
+export function massifLabel(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/(^|[\s'-])(\p{L})/gu, (_m, sep: string, c: string) => sep + c.toUpperCase())
+    .replace(/\b(Des|De|Du|La|Le)\b/g, (w) => w.toLowerCase());
+}

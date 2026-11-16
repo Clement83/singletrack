@@ -1,0 +1,38 @@
+# Mises à jour automatiques (#1485). Hebdomadaires, groupées pour limiter le bruit.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore
+      include: scope
+    ignore:
+      # Épinglé : les montées de version de next-intl se font à la main (messages, plugin Next).
+      - dependency-name: next-intl
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore
+    groups:
+      actions:
+        patterns: ["*"]
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore
+  - package-ecosystem: docker
+    directory: /brouter
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore

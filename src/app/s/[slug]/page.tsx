@@ -1,0 +1,146 @@
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
+import { eq } from 'drizzle-orm';
+import { getDb } from '@/db';
+import { user as userTable } from '@/db/schema';
+import { getLocale, getTranslations } from 'next-intl/server';
+import { ConditionsBlock } from '@/components/conditions-block';
+import { PhotoSection } from '@/components/outings/photo-section';
+import { RideSection } from '@/components/outings/ride-section';
+import { OutingComments } from '@/components/outings/outing-comments';
+import { OutingParticipants } from '@/components/outings/outing-participants';
+import { OutingBadges } from '@/components/outings/outing-badges';
+import { OutingManager } from '@/components/outings/outing-manager';
+import { InviteFriends } from '@/components/outings/invite-friends';
+import { HeaderShareButton, OutingShare } from '@/components/outings/outing-share';
+import { requireUser } from '@/lib/current-user';
+import { TrackDetail } from '@/components/tracks/track-detail';
+import { formatElevation, formatKm, formatOutingDate } from '@/lib/format';
+import { fireInfo, massifsForGeometry, parisDate } from '@/lib/fire';
+import { transferCandidates, isFrozen, outingPermissions, canUploadRide, getManagedOuting, isClosed, listInvitableFriends, isDone, listContacts, listPhotos, listRides, listInvitations, listParticipants, profileFor, reinviteCandidates } from '@/lib/outings';
+import { formatShareDate } from '@/lib/outings/export';
+import { estimateDurationMin } from '@/lib/tracks/duration';
+import { outingWeather } from '@/lib/weather';
+import { huntingInfo } from '@/lib/hunting';
+import { fireApplies, huntingApplies } from '@/lib/osm/zones';
+
+export const dynamic = 'force-dynamic';
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getTranslations('outingPage'))('metaTitle'), robots: { index: false, follow: false } };
+}
+
+// Page « organisateur » (#1341) : réservée au connecté qui a créé la sortie ; 404 pour tout autre.
+// Les invités passent par /i/<token>, jamais par ici.
+export default async function Page({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ reinviter?: string }> }) {
+  const user = await requireUser();
+  const { db } = getDb();
+  const o = getManagedOuting(db, user.id, (await params).slug);
+  if (!o) notFound();
+  const from = (await searchParams).reinviter;
+  const reinvite = from ? reinviteCandidates(db, user.id, from) : { contactIds: [], names: [] };
+  const locale = await getLocale();
+  const t = await getTranslations('share');
+  const tp = await getTranslations('outingPage');
+  const perms = outingPermissions(db, { userId: user.id }, o);
+  const invitations = listInvitations(db, o.id).map((i) => ({
+    id: i.id, contactId: i.contactId, name: i.name, status: i.status, comment: i.comment, origin: i.origin, linked: !!i.userId,
+    revoked: !!i.revokedAt, shareable: perms.canRevoke(i), respondedAt: i.respondedAt?.toISOString() ?? null,
+  }));
+  const snap = o.trackSnapshot;
+  const proposer = o.createdBy ? db.select({ name: userTable.name }).from(userTable).where(eq(userTable.id, o.createdBy)).get()?.name : undefined;
+  const tg = await getTranslations('guest');
+  const end = (snap.geometry.type === 'LineString' ? snap.geometry.coordinates : snap.geometry.coordinates.flat()).at(-1)!;
+  return (
+    <main className="mx-auto flex w-full max-w-2xl flex-col gap-5 px-4 pt-4 pb-12">
+      <Link href="/sorties" className="flex min-h-touch items-center gap-2 text-body font-semibold text-primary underline-offset-4 hover:underline active:opacity-70">
+        <ArrowLeft aria-hidden className="size-5" /> {tp('back')}
+      </Link>
+      <header className="flex flex-col gap-2">
+        <div className="flex items-start justify-between gap-2">
+          <h1 className="text-title">{o.title}</h1>
+          {o.openLinkEnabled && o.openLinkToken && (
+            <HeaderShareButton sharePath={`/s/${o.openLinkToken}/join`} shareText={t('message', { title: o.title, date: formatShareDate(o.startsAt, locale) })} title={o.title} />
+          )}
+        </div>
+        <p className="text-body">{formatOutingDate(o.startsAt, locale)}</p>
+        <OutingBadges visibility={o.visibility} level={o.level} ebike={o.ebike} cancelled={o.status === 'cancelled'} done={isDone(o)} />
+        {isFrozen(o) && (
+          <>
+            {proposer && <p className="text-small text-muted-foreground">{tp('proposedBy', { name: proposer })}</p>}
+            <p className="rounded-2xl bg-muted px-4 py-3 text-small">{tp('publicNotice')}</p>
+          </>
+        )}
+        <p className="text-small text-muted-foreground">
+          {tp.rich('track', {
+            name: snap.name,
+            km: formatKm(snap.distanceM / 1000, locale),
+            date: new Date(snap.takenAt).toLocaleDateString(locale === 'en' ? 'en-GB' : 'fr-FR', { timeZone: 'Europe/Paris' }),
+            link: (chunks) => <Link href={`/t/${snap.slug}`} className="font-semibold text-primary underline-offset-4 hover:underline active:opacity-70">{chunks}</Link>,
+          })}
+        </p>
+      </header>
+      <section aria-label={tg('trackRegion')} className="flex flex-col gap-3">
+        <h2 className="text-heading">{snap.name}</h2>
+        <p className="text-small text-muted-foreground">
+          {formatKm(snap.distanceM / 1000, locale)}
+          {snap.elevationGainM != null ? ` · ${formatElevation(snap.elevationGainM, locale)}` : ''}
+        </p>
+        <TrackDetail geometry={snap.geometry} bbox={snap.bbox} start={snap.start} end={[end[0], end[1]]} profile={profileFor(snap.geometry)} />
+        {(snap.attribution || snap.license) && (
+          <p className="text-caption text-muted-foreground">{[snap.attribution, snap.license && tg('license', { license: snap.license })].filter(Boolean).join(' · ')}</p>
+        )}
+      </section>
+
+      <ConditionsBlock
+        weather={await outingWeather(o, estimateDurationMin(snap.distanceM, snap.elevationGainM))}
+        // Incendie et chasse : sources du Var seulement (#1428), « non disponible » ailleurs.
+        outsideVar={!fireApplies(o.meetingLon, o.meetingLat) && !huntingApplies(o.meetingLon, o.meetingLat)}
+        fireInfo={fireApplies(o.meetingLon, o.meetingLat) ? fireInfo(db, massifsForGeometry(db, snap.geometry), parisDate(o.startsAt)) : undefined}
+        hunting={huntingApplies(o.meetingLon, o.meetingLat) ? huntingInfo(parisDate(o.startsAt)) : undefined}
+      />
+      <OutingParticipants participants={listParticipants(db, o.id, { userId: user.id })} max={o.maxParticipants} organizer />
+      <OutingShare
+        sharePath={o.openLinkEnabled && o.openLinkToken ? `/s/${o.openLinkToken}/join` : null}
+        shareText={t('message', { title: o.title, date: formatShareDate(o.startsAt, locale) })}
+        title={o.title}
+        icsHref={`/api/outings/${o.slug}/ics`}
+        gpxHref={`/api/outings/${o.slug}/gpx`}
+        lat={o.meetingLat}
+        lon={o.meetingLon}
+        hint={o.openLinkEnabled ? t('shareHint') : t('noGroupLink')}
+      />
+      {!isClosed(o) && outingPermissions(db, { userId: user.id }, o).canInviteFriends && (
+        <InviteFriends endpoint={`/api/outings/${o.slug}/friends`} friends={listInvitableFriends(db, user.id, o)} />
+      )}
+      <OutingManager
+        outingId={o.id}
+        isOwner={o.ownerId === user.id}
+        candidates={o.ownerId === user.id ? transferCandidates(db, o.id, user.id) : []}
+        frozen={isFrozen(o)}
+        slug={o.slug}
+        cancelled={o.status === 'cancelled'}
+        done={o.status === 'done'}
+        openLink={{ enabled: o.openLinkEnabled, token: o.openLinkToken }}
+        invitations={invitations}
+        contacts={listContacts(db, user.id).map((c) => ({ id: c.id, name: c.name, note: c.note }))}
+        title={o.title}
+        reinvite={reinvite}
+      />
+      <RideSection
+        base={`/api/outings/${o.slug}/ride`}
+        rides={listRides(db, o.id, { kind: 'organizer', userId: user.id })}
+        planned={{ geometry: snap.geometry, bbox: snap.bbox, distanceM: snap.distanceM, gainM: snap.elevationGainM ?? null }}
+        canUpload={canUploadRide(o)}
+      />
+      <PhotoSection
+        base={`/api/outings/${o.slug}/photos`}
+        photos={listPhotos(db, o.id, { kind: 'organizer', userId: user.id })}
+        planned={{ geometry: snap.geometry, bbox: snap.bbox }}
+        canUpload={canUploadRide(o)}
+      />
+      <OutingComments base={`/api/outings/${o.slug}/comments`} closed={isClosed(o)} />
+    </main>
+  );
+}

@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>Icône VTT - descente avec pédales</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1d2433"/>
+      <stop offset="100%" stop-color="#0b0e15"/>
+    </linearGradient>
+    <linearGradient id="sun" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffb36b"/>
+      <stop offset="100%" stop-color="#ff5e5b"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" fill="url(#bg)"/>
+
+  <!-- Soleil couchant -->
+  <circle cx="330" cy="196" r="124" fill="url(#sun)"/>
+
+  <!-- Montagnes -->
+  <path fill="#2a3342" d="M0 320 L118 214 L196 274 L300 160 L420 286 L512 236 V512 H0 Z"/>
+  <path fill="#1a212c" d="M0 362 L512 451 V512 H0 Z"/>
+  <path d="M0 362 L512 451" stroke="#ff7a4a" stroke-width="8" stroke-linecap="round"/>
+
+  <!-- VTT de descente, incliné dans la pente -->
+  <g transform="rotate(10 256 300)">
+    <g fill="none" stroke="#f4ede3" stroke-linecap="round" stroke-linejoin="round">
+      <!-- Roues -->
+      <circle cx="140" cy="320" r="70" stroke-width="12"/>
+      <circle cx="380" cy="320" r="70" stroke-width="12"/>
+      <!-- Triangle avant bas et allongé -->
+      <path d="M325 202 L212 252 L236 340 L338 229 Z" stroke-width="12"/>
+      <!-- Bras oscillant et haubans -->
+      <path d="M236 340 L140 320 L216 266" stroke-width="10"/>
+      <!-- Fourche double té -->
+      <path d="M338 229 L380 320" stroke-width="15"/>
+      <!-- Selle basse, potence courte, cintre large -->
+      <path d="M212 252 L206 230" stroke-width="8"/>
+      <path d="M325 202 L319 188 M290 193 L350 183" stroke-width="8"/>
+    </g>
+    <!-- Selle et pédalier -->
+    <path d="M186 228 Q206 220 228 226 Q228 233 220 233 L194 233 Q185 233 186 228 Z" fill="#f4ede3"/>
+    <!-- Manivelles et pédales plates -->
+    <g stroke="#f4ede3" stroke-linecap="round" fill="none">
+      <path d="M236 340 L214 318" stroke-width="7" opacity="0.6"/>
+      <path d="M202 318 L226 318" stroke-width="8" opacity="0.6"/>
+      <path d="M236 340 L258 362" stroke-width="7"/>
+      <path d="M246 362 L272 362" stroke-width="9"/>
+    </g>
+    <circle cx="236" cy="338" r="11" fill="#f4ede3"/>
+  </g>
+</svg>

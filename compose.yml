@@ -1,0 +1,76 @@
+# Singletrack — compose de DISTRIBUTION (#1484). Images publiées sur GHCR, aucun `build:`.
+# (Le `docker-compose.yml` du dépôt est le compose de développement : code monté, `next dev`.)
+#
+# Démarrage rapide : README.md · guide complet : docs/install.md
+#   ./scripts/init-env.sh https://vtt.example.org   # crée .env + secrets + ./data
+#   docker compose up -d
+#
+# Variables lues dans .env (interpolation compose) : APP_PORT, APP_UID/APP_GID, BROUTER_TILES, SINGLETRACK_TAG.
+name: singletrack
+
+services:
+  app:
+    image: ${SINGLETRACK_REGISTRY:-ghcr.io/clement83}/singletrack:${SINGLETRACK_TAG:-latest}
+    restart: unless-stopped
+    # Même utilisateur que le propriétaire de ./data : la base et les photos restent lisibles et sauvegardables.
+    user: "${APP_UID:-1000}:${APP_GID:-1000}"
+    env_file: .env
+    environment:
+      DATABASE_URL: /app/data/singletrack.db
+      BROUTER_URL: http://brouter:17777
+    ports:
+      - "${APP_PORT:-3700}:3000"
+    volumes:
+      - ./data:/app/data
+    # Pas de dépendance à BROUTER : sans tuiles, le recalage échoue proprement et l'éditeur passe en ligne droite.
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Télécharge les tuiles BRouter de BROUTER_TILES au premier lancement seulement (les tuiles déjà présentes sont
+  # conservées), puis s'arrête. Un échec réseau n'empêche pas le démarrage : relancer `docker compose up -d`.
+  brouter-init:
+    image: ${SINGLETRACK_REGISTRY:-ghcr.io/clement83}/singletrack-brouter:${SINGLETRACK_TAG:-latest}
+    user: "${APP_UID:-1000}:${APP_GID:-1000}"
+    restart: "no"
+    entrypoint: ["/brouter/fetch-segments.sh"]
+    environment:
+      BROUTER_TILES: ${BROUTER_TILES:-france}
+      HOME_LAT: ${HOME_LAT:-46.6}
+      HOME_LON: ${HOME_LON:-2.4}
+    volumes:
+      - ./data/brouter/segments:/segments
+
+  # Moteur de routage VTT : appelé uniquement par `app`, aucun port publié.
+  brouter:
+    image: ${SINGLETRACK_REGISTRY:-ghcr.io/clement83}/singletrack-brouter:${SINGLETRACK_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      brouter-init:
+        condition: service_completed_successfully
+    volumes:
+      - ./data/brouter/segments:/segments:ro
+    healthcheck:
+      # Le serveur répond (même sans tuile) : il répond 400 à une requête vide, d'où l'absence de `-f`.
+      test: ["CMD-SHELL", "curl -s -o /dev/null http://localhost:17777/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  # Outils ponctuels (synchros de traces, création de compte), hors démarrage normal :
+  #   docker compose run --rm tools npm run sync:osm -- 83
+  tools:
+    profiles: ["tools"]
+    image: ${SINGLETRACK_REGISTRY:-ghcr.io/clement83}/singletrack-tools:${SINGLETRACK_TAG:-latest}
+    user: "${APP_UID:-1000}:${APP_GID:-1000}"
+    env_file: .env
+    environment:
+      DATABASE_URL: /app/data/singletrack.db
+      BROUTER_URL: http://brouter:17777
+      HOME: /tmp
+    volumes:
+      - ./data:/app/data
