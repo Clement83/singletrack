@@ -105,6 +105,8 @@
     "summaryKm": "{km} km"
   },
   "map": {
+    "tipKm": "km {km}",
+    "tipEle": "{ele} m",
     "slopes": "Slopes",
     "slopesHint": "Gentle → steep, in the direction of the arrow."
   },

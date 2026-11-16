@@ -105,6 +105,8 @@
     "summaryKm": "{km} km"
   },
   "map": {
+    "tipKm": "km {km}",
+    "tipEle": "{ele} m",
     "slopes": "Pentes",
     "slopesHint": "Doux → raide, dans le sens de la flèche."
   },

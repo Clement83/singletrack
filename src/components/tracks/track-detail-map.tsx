@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import BaseMap from '@/components/BaseMap';
 import { SlopeRouteLayer } from '@/components/map/slope-route-layer';
 import { KmMarkers } from '@/components/map/km-markers';
+import { TrackTip, useTrackTip } from '@/components/map/track-tip';
 import { ProfileCursorMarker } from '@/components/map/profile-cursor-marker';
 import { nearestProfileIndex, type LocatedProfilePoint } from '@/lib/elevation';
 import type { SlopeCollection } from '@/lib/geo/slope-features';
@@ -32,6 +33,10 @@ type Props = {
  */
 export default function TrackDetailMap({ geometry, bbox, start, end, profile, data, colors, mapRef, marked, setHover }: Props) {
   const t = useTranslations('track');
+  // Infobulle « km depuis le départ » (#1535) : survol à la souris, tap au doigt ; altitude du profil.
+  const { tip, onMove, onTap, clear } = useTrackTip((e) =>
+    e.features?.length ? { geometry, ele: (lon, lat) => profile[nearestProfileIndex(profile, lon, lat)]?.ele ?? null } : null,
+  );
   return (
     <BaseMap
       lat={start[1]}
@@ -41,8 +46,9 @@ export default function TrackDetailMap({ geometry, bbox, start, end, profile, da
       bounds={bbox}
       boundsPadding={40}
       interactiveLayerIds={['route-casing']}
-      onMouseMove={(e) => setHover(e.features?.length ? nearestProfileIndex(profile, e.lngLat.lng, e.lngLat.lat) : null)}
-      onMouseLeave={() => setHover(null)}
+      onMouseMove={(e) => { setHover(e.features?.length ? nearestProfileIndex(profile, e.lngLat.lng, e.lngLat.lat) : null); onMove(e); }}
+      onClick={onTap}
+      onMouseLeave={() => { setHover(null); clear(); }}
     >
       <SlopeRouteLayer id="route" data={data} colors={colors} />
       <KmMarkers geometry={geometry} />
@@ -52,6 +58,7 @@ export default function TrackDetailMap({ geometry, bbox, start, end, profile, da
       <Marker longitude={end[0]} latitude={end[1]} anchor="bottom">
         <span className="flex size-9 items-center justify-center rounded-full bg-foreground text-background shadow-md" role="img" aria-label={t('end')}><Flag className="size-5" /></span>
       </Marker>
+      <TrackTip tip={tip} />
       {marked && <ProfileCursorMarker mapRef={mapRef} lon={marked.lon} lat={marked.lat} />}
     </BaseMap>
   );

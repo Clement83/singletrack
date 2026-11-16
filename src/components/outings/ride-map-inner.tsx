@@ -2,6 +2,7 @@
 
 import { Layer, Marker, Source } from 'react-map-gl/maplibre';
 import { Camera } from 'lucide-react';
+import { TrackTip, useTrackTip } from '@/components/map/track-tip';
 import BaseMap from '@/components/BaseMap';
 import { useMapColors } from '@/components/tracks/use-map-colors';
 import type { TrackGeometry } from '@/lib/geo/types';
@@ -19,8 +20,14 @@ export type RideMapProps = {
 /** Prévu (pointillés, discret) sous le réel (trait plein) : l'écart se voit tout de suite. */
 export default function RideMapInner({ planned, ride, bbox, photos, photoLabel, onPhoto }: RideMapProps) {
   const colors = useMapColors();
+  // Infobulle « km depuis le départ » (#1535), sur le prévu comme sur le réel.
+  const { tip, onMove, onTap, clear } = useTrackTip((e) => {
+    const id = e.features?.[0]?.layer.id;
+    return id === 'ride-real-casing' && ride ? { geometry: ride } : id === 'ride-planned-casing' ? { geometry: planned } : null;
+  });
   return (
-    <BaseMap lat={(bbox[1] + bbox[3]) / 2} lon={(bbox[0] + bbox[2]) / 2} embedded bounds={bbox} boundsPadding={32}>
+    <BaseMap lat={(bbox[1] + bbox[3]) / 2} lon={(bbox[0] + bbox[2]) / 2} embedded bounds={bbox} boundsPadding={32} interactiveLayerIds={['ride-real-casing', 'ride-planned-casing']} onMouseMove={onMove} onClick={onTap} onMouseLeave={clear}>
+      <TrackTip tip={tip} />
       {colors && (
         <Source id="ride-planned" type="geojson" data={{ type: 'Feature', properties: {}, geometry: planned } as never}>
           <Layer id="ride-planned-casing" type="line" layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': colors.card, 'line-width': 6, 'line-opacity': 0.85 }} />

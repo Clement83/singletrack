@@ -25,6 +25,7 @@ import { DESKTOP, useMediaQuery } from '@/lib/use-media-query';
 import { cn } from '@/lib/utils';
 import { FiltersForm } from './filters-form';
 import { useMapColors } from './use-map-colors';
+import { TrackTip, useTrackTip } from '@/components/map/track-tip';
 import { OutingsLayer, useMapOutings } from './outings-layer';
 import { useOutingsPref } from './outings-pref';
 import { SinglesLayer, SinglesStatus, useSingles, useSinglesPref } from './singles-layer';
@@ -265,7 +266,17 @@ export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) 
     else setSelection(r.selection);
   };
 
+  // Infobulle « km depuis le départ » sur les traces choisies (#1535). La géométrie est simplifiée selon le zoom :
+  // la distance réelle de la trace recale l'échelle.
+  const lineTip = useTrackTip((e) => {
+    const f = e.features?.[0];
+    if (f?.layer.id !== 'selected-casing') return null;
+    const slug = f.properties?.slug as string | undefined;
+    const geometry = slug ? geoms[slug] : undefined;
+    return geometry ? { geometry, totalKm: tracks?.find((x) => x.slug === slug)?.distanceKm } : null;
+  });
   const onClick = (e: MapLayerMouseEvent) => {
+    lineTip.onTap(e);
     const f = e.features?.[0];
     if (!f) return;
     const src = mapRef.current?.getSource('starts') as GeoJSONSource | undefined;
@@ -289,6 +300,7 @@ export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) 
     else if (f.properties?.slug) toggleTrack(f.properties.slug as string);
   };
   const onMouseMove = (e: MapLayerMouseEvent) => {
+    lineTip.onMove(e);
     setHover(e.features?.some((x) => x.layer.id === 'start-hit' || x.layer.id === 'clusters') ? 'pointer' : null);
     const over = e.features?.find((x) => x.layer.id === 'start-hit')?.properties?.slug as string | undefined;
     setOverSlug((o) => (o === (over ?? null) ? o : (over ?? null)));
@@ -336,10 +348,11 @@ export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) 
         onMoveEnd={syncView}
         onClick={onClick}
         onMouseMove={onMouseMove}
-        onMouseLeave={() => { setHover(null); setOverSlug(null); }}
-        interactiveLayerIds={['clusters', 'start-hit']}
+        onMouseLeave={() => { setHover(null); setOverSlug(null); lineTip.clear(); }}
+        interactiveLayerIds={['clusters', 'start-hit', 'selected-casing']}
         cursor={hover === 'pointer' ? 'pointer' : undefined}
       >
+        <TrackTip tip={lineTip.tip} />
         <SinglesLayer state={singles} colors={colors} beforeId="clusters" />
         {outingsOn && (
           <OutingsLayer
