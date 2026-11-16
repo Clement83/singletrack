@@ -1,3 +1,4 @@
+import { BackToMap } from '@/components/tracks/back-to-map';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -68,9 +69,9 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 pt-4 pb-32">
       {user && (
-        <Link href="/" className="flex min-h-touch items-center gap-2 text-body font-semibold text-primary underline-offset-4 hover:underline active:opacity-70">
+        <BackToMap className="flex min-h-touch items-center gap-2 text-body font-semibold text-primary underline-offset-4 hover:underline active:opacity-70">
           <ArrowLeft aria-hidden className="size-5" /> {tr('back')}
-        </Link>
+        </BackToMap>
       )}
       <header className="flex flex-col gap-2">
         <h1 className="text-title">{t.name || tr('untitled')}</h1>

@@ -20,6 +20,8 @@ import { activeFilterCount, parseFilters, serializeFilters, type TrackFilters } 
 import type { TrackStart, TrackSummary } from '@/lib/tracks/query';
 import { tracksAtStart } from '@/lib/tracks/same-start';
 import { MAX_SELECTION, assignColors, parseSelection, serializeSelection, toggleSelection } from '@/lib/tracks/selection';
+import { VIEW_PARAMS, parseMapView, parseOpenTrack, viewChanged, viewQuery, writeMapView, type MapView } from '@/lib/tracks/map-view';
+import { LAST_EXPLORER_KEY } from '@/components/tracks/back-to-map';
 import { haversine } from '@/lib/geo/distance';
 import { DESKTOP, useMediaQuery } from '@/lib/use-media-query';
 import { cn } from '@/lib/utils';
@@ -78,8 +80,11 @@ export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) 
   const apply = useCallback(
     (next: TrackFilters, mode: 'push' | 'replace' = 'push') => {
       const params = serializeFilters({ ...next, bbox: undefined });
-      const keep = new URLSearchParams(window.location.search).get('sel');
-      if (keep) params.set('sel', keep);
+      const cur = new URLSearchParams(window.location.search);
+      for (const k of ['sel', ...VIEW_PARAMS]) {
+        const keep = cur.get(k);
+        if (keep) params.set(k, keep);
+      }
       const qs = params.toString();
       router[mode](qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     },
@@ -135,12 +140,33 @@ export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) 
     const w = window as unknown as { __E2E__?: boolean; __explorerMap?: unknown };
     if (w.__E2E__) w.__explorerMap = mapRef.current?.getMap();
   }, []);
+  // Vue de la carte dans l'URL (#1577) : lue une fois à l'arrivée, écrite par replaceState (seuil anti-boucle).
+  const [initialView] = useState<MapView | null>(() => parseMapView(new URLSearchParams(sp.toString())));
+  const pendingOpen = useRef<string | null>(parseOpenTrack(new URLSearchParams(sp.toString())));
+  const [mapView, setMapView] = useState<MapView | null>(initialView);
+  const writeUrl = useCallback((mutate: (p: URLSearchParams) => void) => {
+    const params = new URLSearchParams(window.location.search);
+    mutate(params);
+    const qs = params.toString();
+    if (qs === window.location.search.replace(/^\?/, '')) return;
+    window.history.replaceState(window.history.state, '', qs ? `${pathname}?${qs}` : pathname);
+    try { sessionStorage.setItem(LAST_EXPLORER_KEY, qs); } catch { /* stockage indisponible */ }
+  }, [pathname]);
   const syncView = useCallback(() => {
+    const map = mapRef.current;
+    if (map) {
+      const c = map.getCenter();
+      const v = { z: map.getZoom(), lat: c.lat, lng: c.lng };
+      setMapView((o) => (viewChanged(o, v) ? v : o));
+      writeUrl((p) => {
+        if (viewChanged(parseMapView(p), v)) writeMapView(p, v);
+      });
+    }
     const b = mapRef.current?.getBounds();
     if (b) setView([b.getWest(), b.getSouth(), b.getEast(), b.getNorth()]);
     const z = mapRef.current?.getZoom();
     if (z !== undefined) setZoom(z);
-  }, []);
+  }, [writeUrl]);
 
   const starts = useMemo(
     () => ({
@@ -166,6 +192,21 @@ export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) 
     };
     return list.sort(cmp[sort]);
   }, [tracks, view, sort, home, locale]);
+
+  const newHref = mapView ? `/new?${viewQuery(mapView)}` : '/new';
+  // Trace ouverte (`t`) : rouverte à l'arrivée si elle est encore visible, ignorée sinon ; ensuite l'URL suit le panneau.
+  useEffect(() => {
+    const slug = pendingOpen.current;
+    if (!slug || !tracks) return;
+    pendingOpen.current = null;
+    if (tracks.some((x) => x.slug === slug)) setPanel({ kind: 'track', slug });
+    else writeUrl((p) => p.delete('t'));
+  }, [tracks, writeUrl]);
+  useEffect(() => {
+    if (pendingOpen.current) return;
+    const slug = panel?.kind === 'track' ? panel.slug : null;
+    writeUrl((p) => (slug ? p.set('t', slug) : p.delete('t')));
+  }, [panel, writeUrl]);
 
   const selected = panel?.kind === 'track' ? (tracks?.find((t) => t.slug === panel.slug) ?? (pinned?.slug === panel.slug ? pinned : undefined)) : undefined;
   const hl = selected?.slug ?? (hover && hover !== 'pointer' ? hover : overSlug) ?? '';
@@ -340,9 +381,9 @@ export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) 
   return (
     <>
       <BaseMap
-        lat={home.lat}
-        lon={home.lon}
-        zoom={10}
+        lat={initialView?.lat ?? home.lat}
+        lon={initialView?.lng ?? home.lon}
+        zoom={initialView?.z ?? 10}
         mapRef={mapRef}
         onLoad={() => { syncView(); onMapLoad(); }}
         onMoveEnd={syncView}
@@ -392,7 +433,7 @@ export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) 
           <Link href="/importer" aria-label={t('import')}><Upload /></Link>
         </Button>
         <Button asChild variant="outline" size="icon" className="shadow-md">
-          <Link href="/new" aria-label={t('create')}><PencilRuler /></Link>
+          <Link href={newHref} aria-label={t('create')}><PencilRuler /></Link>
         </Button>
       </div>
 
@@ -516,7 +557,7 @@ export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) 
             {tracks === null && !error && [0, 1, 2].map((i) => <TrackCardSkeleton key={i} />)}
             {error && <EmptyState icon={SearchX} title={t('errorTitle')}>{t('errorBody')}</EmptyState>}
             {tracks && mine && total === 0 && !error && (
-              <EmptyState icon={Route} title={t('mineEmptyTitle')} action={<Button asChild size="lg"><Link href="/new">{t('create')}</Link></Button>}>
+              <EmptyState icon={Route} title={t('mineEmptyTitle')} action={<Button asChild size="lg"><Link href={newHref}>{t('create')}</Link></Button>}>
                 {t('mineEmptyBody')}
               </EmptyState>
             )}

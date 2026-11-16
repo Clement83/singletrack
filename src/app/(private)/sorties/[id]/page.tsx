@@ -1,3 +1,4 @@
+import { BackToMap } from '@/components/tracks/back-to-map';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import type { Metadata } from 'next';
@@ -31,9 +32,9 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     <>
       <main className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] lg:pt-16 pb-[calc(var(--spacing-nav)+2rem+env(safe-area-inset-bottom))] lg:pl-[calc(var(--spacing-rail)+1rem)]">
         <PageHeader title={o.title} />
-        <Link href="/" className="flex min-h-touch items-center gap-2 text-body font-semibold text-primary underline-offset-4 hover:underline active:opacity-70">
+        <BackToMap className="flex min-h-touch items-center gap-2 text-body font-semibold text-primary underline-offset-4 hover:underline active:opacity-70">
           <ArrowLeft aria-hidden className="size-5" /> {t('back')}
-        </Link>
+        </BackToMap>
         <p className="text-heading tabular-nums">{formatOutingDate(o.startsAt, locale)}</p>
         <p className="text-small text-muted-foreground">{tm('openBy', { name: o.organizerName })}{o.meetingLabel ? ` · ${t('meeting', { place: o.meetingLabel })}` : ''}</p>
         <p className="text-body tabular-nums">{formatKm(o.distanceM / 1000, locale)}{o.gainM != null ? ` · ${formatElevation(o.gainM, locale)}` : ''}</p>

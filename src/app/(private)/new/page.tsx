@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { TrackEditor } from '@/components/editor/track-editor';
 import { emptyDoc } from '@/lib/editor/doc';
+import { parseMapView } from '@/lib/tracks/map-view';
 import { config } from '@/lib/config';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -9,6 +10,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /** Éditeur sur une carte vierge centrée sur la maison (#1340). */
-export default function NewTrackPage() {
-  return <TrackEditor mode="create" initialDoc={emptyDoc()} home={[config.homeLon, config.homeLat]} />;
+export default async function NewTrackPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  // Vue de la carte transmise par l'explorateur (#1577) : l'éditeur s'ouvre au même endroit.
+  const raw = await searchParams;
+  const sp = new URLSearchParams(Object.entries(raw).flatMap(([k, v]) => (typeof v === 'string' ? [[k, v]] : [])));
+  const v = parseMapView(sp);
+  return <TrackEditor mode="create" initialDoc={emptyDoc()} home={v ? [v.lng, v.lat] : [config.homeLon, config.homeLat]} initialZoom={v?.z} />;
 }

@@ -51,6 +51,8 @@ type Props = {
   /** Statut de la trace éditée en place (#1450). */
   initialStatus?: 'draft' | 'published';
   home: LonLat;
+  /** Zoom initial (vue transmise par la carte, #1577) ; 13 par défaut. */
+  initialZoom?: number;
   bounds?: [number, number, number, number];
 };
 
@@ -114,7 +116,7 @@ const key = (a: LonLat, b: LonLat) => `${a[0]},${a[1]}|${b[0]},${b[1]}`;
  * Mise en page différenciée (#1394) : mobile = profil en haut + grosse barre d'outils en bas (#1392) ;
  * desktop = carte plein écran avec interface flottante, popover du point et raccourcis clavier (#1393).
  */
-export function TrackEditor({ mode, initialDoc, initialName = '', initialDescription = '', slug, initialStatus, home, bounds }: Props) {
+export function TrackEditor({ mode, initialDoc, initialName = '', initialDescription = '', slug, initialStatus, home, bounds, initialZoom }: Props) {
   const t = useTranslations('editor');
   const router = useRouter();
   const colors = useMapColors();
@@ -555,7 +557,7 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
       {!desktop && <EditorMobileProfile ctl={ctl} />}
       <div className="relative min-h-0 flex-1">
         {colors && (
-          <BaseMap lat={home[1]} lon={home[0]} zoom={13} mapRef={mapRef} bounds={bounds} onLoad={onMapLoad} onMoveEnd={syncSinglesView} onClick={onMapClick}
+          <BaseMap lat={home[1]} lon={home[0]} zoom={initialZoom ?? 13} mapRef={mapRef} bounds={bounds} onLoad={onMapLoad} onMoveEnd={syncSinglesView} onClick={onMapClick}
             interactiveLayerIds={['alt-hit', 'dev-hit', 'edit-hit']}
             onMouseDown={(e) => {
               // Glisser la ligne = insérer un point et le placer, en un geste (desktop, #1384).
