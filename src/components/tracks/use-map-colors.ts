@@ -6,11 +6,12 @@ const SLOPE_KEYS = ['up-1', 'up-2', 'up-3', 'up-4', 'up-5', 'down-1', 'down-2', 
 const SEL_KEYS = ['sel-1', 'sel-2', 'sel-3', 'sel-4', 'sel-5', 'sel-6', 'sel-7', 'sel-8'] as const;
 type SelKey = (typeof SEL_KEYS)[number];
 type SlopeKey = `slope-${(typeof SLOPE_KEYS)[number]}`;
-export type MapColors = Record<'green' | 'blue' | 'red' | 'black' | 'primary' | 'card' | 'foreground' | 'muted' | 'fire1' | 'fire2' | 'fire3' | 'fire4' | 'fire5' | SlopeKey | SelKey, string>;
+export type MapColors = Record<'green' | 'blue' | 'red' | 'black' | 'primary' | 'card' | 'foreground' | 'muted' | 'fire1' | 'fire2' | 'fire3' | 'fire4' | 'fire5' | 'preview' | SlopeKey | SelKey, string>;
 const VARS: Record<keyof MapColors, string> = {
   ...(Object.fromEntries(SEL_KEYS.map((k) => [k, `--${k}`])) as Record<SelKey, string>),
   ...(Object.fromEntries(SLOPE_KEYS.map((k) => [`slope-${k}`, `--slope-${k}`])) as Record<SlopeKey, string>),
   muted: '--muted-foreground',
+  preview: '--map-preview',
   green: '--diff-green',
   blue: '--diff-blue',
   red: '--diff-red',

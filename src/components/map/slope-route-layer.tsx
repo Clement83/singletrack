@@ -15,13 +15,13 @@ export function slopeColorsOf(colors: MapColors): Record<string, string> {
  * (montée et descente = deux dégradés), flèches de direction. Réservée au détail d'une trace.
  * À placer dans une carte ; `data` vient de `slopeFeatures` / `slopeFeaturesForRuns` (mémoïsé par l'appelant).
  */
-export function SlopeRouteLayer({ id = 'slope', data, colors, arrows = true }: { id?: string; data: SlopeCollection; colors: MapColors; arrows?: boolean }) {
+export function SlopeRouteLayer({ id = 'slope', data, colors, arrows = true, beforeId }: { id?: string; data: SlopeCollection; colors: MapColors; arrows?: boolean; beforeId?: string }) {
   const color = slopeMatchExpression(slopeColorsOf(colors), colors.muted, colors.primary) as never;
   return (
     <Source id={id} type="geojson" data={data}>
-      <Layer id={`${id}-casing`} type="line" layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': colors.card, 'line-width': 9 }} />
-      <Layer id={`${id}-line`} type="line" layout={{ 'line-cap': 'butt', 'line-join': 'round' }} paint={{ 'line-color': color, 'line-width': 5.5 }} />
-      {arrows && <RouteArrows id={`${id}-arrows`} source={id} fill={colors.card} stroke={colors.foreground} />}
+      <Layer id={`${id}-casing`} beforeId={beforeId} type="line" layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': colors.card, 'line-width': 9 }} />
+      <Layer id={`${id}-line`} beforeId={beforeId} type="line" layout={{ 'line-cap': 'butt', 'line-join': 'round' }} paint={{ 'line-color': color, 'line-width': 5.5 }} />
+      {arrows && <RouteArrows id={`${id}-arrows`} source={id} fill={colors.card} stroke={colors.foreground} beforeId={beforeId} />}
     </Source>
   );
 }

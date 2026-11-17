@@ -71,6 +71,31 @@ test('panneau : un départ commun liste ses traces, une ligne ouvre la fiche san
   await expect(page.getByTestId('track-panel').getByText(/1,4\s*km/)).toBeVisible();
 });
 
+// #1583 : survol d'une ligne du groupe → aperçu terne de sa trace sur la carte, retiré en quittant la ligne.
+test('survol : une ligne de liste montre sa trace en aperçu sur la carte', async ({ page }) => {
+  await load(page, '/');
+  const c = await page.evaluate(() => (window as unknown as Win).__explorerMap!.getCenter());
+  const starts = [mk('e2e-a', c.lng, c.lat), mk('e2e-b', c.lng, c.lat)];
+  await page.route(/\/api\/tracks\?.*starts=1/, (r) => r.fulfill({ json: { tracks: starts, total: 2 } }));
+  await page.route(/\/api\/tracks\/geometry/, (r) => {
+    const slugs = new URL(r.request().url()).searchParams.get('slugs')!.split(',');
+    return r.fulfill({ json: { tracks: slugs.map((slug) => ({ slug, geometry: { type: 'LineString', coordinates: [[c.lng, c.lat], [c.lng + 0.01, c.lat + 0.01]] } })) } });
+  });
+  await load(page, '/?q=e2e');
+  const box = (await page.locator('.maplibregl-canvas').boundingBox())!;
+  const p = await page.evaluate((ll) => (window as unknown as Win).__explorerMap!.project(ll), starts[0].start);
+  await page.mouse.click(box.x + p.x, box.y + p.y);
+  await expect(page.getByRole('heading', { name: '2 traces partent d’ici' })).toBeVisible();
+  const preview = () => page.evaluate(() => (window as unknown as Win).__explorerMap!.querySourceFeatures('preview').length);
+  expect(await preview()).toBe(0);
+  await page.getByRole('button', { name: /e2e-b/ }).hover();
+  await expect.poll(preview).toBeGreaterThan(0);
+  await page.mouse.move(box.x + box.width - 10, box.y + box.height - 10);
+  await expect.poll(preview).toBe(0);
+  // Pas d'ouverture ni de changement d'URL au survol.
+  await expect(page).not.toHaveURL(/t=e2e-b/);
+});
+
 // #1533 : liste « Traces choisies » synchronisée avec la carte.
 test('liste : traces choisies, ajout depuis la liste, retrait, recentrage, survol', async ({ page }) => {
   await load(page, '/');

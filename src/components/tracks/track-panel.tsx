@@ -229,13 +229,13 @@ export function TrackPanelFooter({ sheet, cursor, onScrub, compact }: { sheet: P
 }
 
 /** Tracé de la trace ouverte sur la carte de l'explorateur : couleurs de pente, bornes km, arrivée, curseur du profil. */
-export function OpenTrackLayers({ sheet, colors, mapRef, marked }: { sheet: PanelSheet; colors: MapColors; mapRef: RefObject<MapRef | null>; marked: number | null }) {
+export function OpenTrackLayers({ sheet, colors, mapRef, marked, beforeId }: { sheet: PanelSheet; colors: MapColors; mapRef: RefObject<MapRef | null>; marked: number | null; beforeId?: string }) {
   const t = useTranslations('track');
   const data = useMemo(() => slopeFeatures(sheet.geometry), [sheet.geometry]);
   const point = marked !== null ? sheet.profile[marked] : undefined;
   return (
     <>
-      <SlopeRouteLayer id="open" data={data} colors={colors} />
+      <SlopeRouteLayer id="open" data={data} colors={colors} beforeId={beforeId} />
       <KmMarkers geometry={sheet.geometry} />
       <Marker longitude={sheet.end[0]} latitude={sheet.end[1]} anchor="bottom">
         <span className={cn('flex size-9 items-center justify-center rounded-full bg-foreground text-background shadow-md')} role="img" aria-label={t('end')}><Flag className="size-5" /></span>

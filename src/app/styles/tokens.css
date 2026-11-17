@@ -40,6 +40,7 @@
   --sel-6: #2a86bf;
   --sel-7: #7f7f0c;
   --sel-8: #b43fd6;
+  --map-preview: #4a5450;
   --fire-1: #3d9a4b;
   --fire-2: #e7b416;
   --fire-3: #d76d06;
@@ -105,6 +106,7 @@
   --sel-6: #2a86bf;
   --sel-7: #7f7f0c;
   --sel-8: #b43fd6;
+  --map-preview: #4a5450;
   --fire-1: #5cbf6b;
   --fire-2: #f2cc4a;
   --fire-3: #f39a3d;
@@ -171,6 +173,7 @@
     --sel-6: #2a86bf;
     --sel-7: #7f7f0c;
     --sel-8: #b43fd6;
+    --map-preview: #4a5450;
     --fire-1: #5cbf6b;
     --fire-2: #f2cc4a;
     --fire-3: #f39a3d;
@@ -247,6 +250,7 @@
   --color-sel-6: var(--sel-6);
   --color-sel-7: var(--sel-7);
   --color-sel-8: var(--sel-8);
+  --color-map-preview: var(--map-preview);
   --color-fire-1: var(--fire-1);
   --color-fire-2: var(--fire-2);
   --color-fire-3: var(--fire-3);

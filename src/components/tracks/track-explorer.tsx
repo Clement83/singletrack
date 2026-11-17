@@ -43,6 +43,7 @@ type View = [number, number, number, number];
 const inView = (p: [number, number], v: View) => p[0] >= v[0] && p[0] <= v[2] && p[1] >= v[1] && p[1] <= v[3];
 /** Au-delà, les départs ne se regroupent plus (#1531) : chaque départ est un repère, ceux d'un même parking se superposent. */
 const CLUSTER_MAX_ZOOM = 16;
+const openSlugOf = (p: Panel) => (p?.kind === 'track' ? p.slug : null);
 
 export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) {
   const router = useRouter();
@@ -215,6 +216,14 @@ export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) 
   const selected = panel?.kind === 'track' ? (tracks?.find((t) => t.slug === panel.slug) ?? (pinned?.slug === panel.slug ? pinned : undefined)) : undefined;
   const hl = selected?.slug ?? (hover && hover !== 'pointer' ? hover : overSlug) ?? '';
   const groupTracks = panel?.kind === 'group' ? (tracks ?? []).filter((t) => panel.slugs.includes(t.slug)) : [];
+  // Aperçu terne au survol d'une ligne de liste (#1583), desktop seulement (le tap ouvre directement la trace).
+  const [preview, setPreview] = useState<string | null>(null);
+  const listHover = (slug: string) => ({
+    onMouseEnter: () => { setHover(slug); if (desktop) setPreview(slug); },
+    onMouseLeave: () => { setHover(null); setPreview(null); },
+    onFocus: () => { if (desktop) setPreview(slug); },
+    onBlur: () => setPreview(null),
+  });
 
   // Trace ouverte (#1582) : fiche complète chargée à la demande, tracé coloré par pente sur la carte, profil synchronisé.
   const openSlug = panel?.kind === 'track' ? panel.slug : null;
@@ -265,9 +274,10 @@ export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) 
     geomsRef.current = geoms;
     zoomRef.current = zoom;
   });
-  const selectionKey = selection.join(',');
+  // Géométries voulues : traces choisies, traces du groupe ouvert (préchargées pour un aperçu instantané, ≤ 50) et aperçu.
+  const wantedKey = [...new Set([...selection, ...(panel?.kind === 'group' ? panel.slugs.slice(0, 50) : []), ...(preview ? [preview] : [])])].join(',');
   useEffect(() => {
-    const missing = selectionKey ? selectionKey.split(',').filter((s) => !geomsRef.current[s]) : [];
+    const missing = wantedKey ? wantedKey.split(',').filter((s) => !geomsRef.current[s]) : [];
     if (!missing.length) return;
     const ctl = new AbortController();
     fetch(`/api/tracks/geometry?slugs=${encodeURIComponent(missing.join(','))}&z=${Math.round(zoomRef.current)}`, { signal: ctl.signal })
@@ -279,7 +289,7 @@ export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) 
       })
       .catch(() => {});
     return () => ctl.abort();
-  }, [selectionKey]);
+  }, [wantedKey]);
   const lastSlug = selection[selection.length - 1];
   const selectedLines = useMemo(
     () => ({
@@ -306,6 +316,12 @@ export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) 
           }),
     }),
     [selection, tracks, colors, selColors],
+  );
+
+  const previewGeom = preview && preview !== openSlugOf(panel) ? geoms[preview] : undefined;
+  const previewLine = useMemo(
+    () => ({ type: 'FeatureCollection' as const, features: previewGeom ? [{ type: 'Feature' as const, properties: {}, geometry: previewGeom }] : [] }),
+    [previewGeom],
   );
 
   // Un tap sur un départ : l'ajoute (et ouvre sa fiche), ou le retire s'il était déjà choisi.
@@ -435,7 +451,11 @@ export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) 
             onCluster={(lat, lon) => mapRef.current?.easeTo({ center: [lon, lat], zoom: Math.min(zoom + 2, 14) })}
           />
         )}
-        {sheet && <OpenTrackLayers sheet={sheet} colors={colors} mapRef={mapRef} marked={profileCursor ?? lineCursor} />}
+        {/* Aperçu terne (#1583), sous la trace ouverte et les départs. */}
+        <Source id="preview" type="geojson" data={previewLine}>
+          <Layer id="preview-line" beforeId="clusters" type="line" layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': colors.preview, 'line-width': 3.5, 'line-opacity': 0.5 }} />
+        </Source>
+        {sheet && <OpenTrackLayers sheet={sheet} colors={colors} mapRef={mapRef} marked={profileCursor ?? lineCursor} beforeId="clusters" />}
         <Source id="selected" type="geojson" data={selectedLines}>
           <Layer id="selected-casing" type="line" layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': colors.card, 'line-width': ['case', ['get', 'last'], 10, 8], 'line-opacity': 0.9 }} />
           <Layer id="selected-line" type="line" layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': ['get', 'color'], 'line-width': ['case', ['get', 'last'], 6, 4], 'line-opacity': ['case', ['get', 'last'], 1, 0.85] }} />
@@ -519,7 +539,9 @@ export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) 
         {panel?.kind === 'group' && (
           <div className="flex flex-col gap-3">
             {groupTracks.map((g) => (
-              <TrackCard key={g.slug} onSelect={() => openTrack(g.slug, panel)} title={g.name} draft={g.status === 'draft'} distanceKm={g.distanceKm} elevationM={g.gainM} difficulty={g.difficulty ?? undefined} loop={g.loop} source={tTrack(`sources.${g.source}`)} />
+              <div key={g.slug} data-slug={g.slug} {...listHover(g.slug)}>
+                <TrackCard onSelect={() => openTrack(g.slug, panel)} title={g.name} draft={g.status === 'draft'} distanceKm={g.distanceKm} elevationM={g.gainM} difficulty={g.difficulty ?? undefined} loop={g.loop} source={tTrack(`sources.${g.source}`)} />
+              </div>
             ))}
           </div>
         )}
@@ -595,7 +617,7 @@ export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) 
             {visible.map((tr) => {
               const chosen = selection.includes(tr.slug);
               return (
-                <div key={tr.slug} data-slug={tr.slug} onMouseEnter={() => setHover(tr.slug)} onMouseLeave={() => setHover(null)} className={cn('flex items-stretch gap-2 rounded-2xl', hl === tr.slug && 'ring-2 ring-ring')}>
+                <div key={tr.slug} data-slug={tr.slug} {...listHover(tr.slug)} className={cn('flex items-stretch gap-2 rounded-2xl', hl === tr.slug && 'ring-2 ring-ring')}>
                   <TrackCard className="min-w-0 flex-1" onSelect={() => openTrack(tr.slug, { kind: 'list' })} title={tr.name} draft={tr.status === 'draft'} distanceKm={tr.distanceKm} elevationM={tr.gainM} difficulty={tr.difficulty ?? undefined} loop={tr.loop} source={tTrack(`sources.${tr.source}`)} />
                   <Button variant={chosen ? 'primary' : 'outline'} size="icon" className="h-auto min-h-touch self-stretch" aria-pressed={chosen} aria-label={chosen ? t('selectionRemoveNamed', { name: tr.name || tTrack('untitled') }) : t('selectionAddNamed', { name: tr.name || tTrack('untitled') })} onClick={() => toggleFromList(tr.slug)}>
                     {chosen ? <X aria-hidden /> : <Plus aria-hidden />}

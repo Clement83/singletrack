@@ -25,7 +25,7 @@ export function arrowImage(fill: string, stroke: string) {
 }
 
 /** Flèches de direction le long d'une source de lignes (à placer dans le `<Source>` concerné). */
-export function RouteArrows({ id = 'route-arrows', source, fill, stroke, spacing = 90 }: { id?: string; source: string; fill: string; stroke: string; spacing?: number }) {
+export function RouteArrows({ id = 'route-arrows', source, fill, stroke, spacing = 90, beforeId }: { id?: string; source: string; fill: string; stroke: string; spacing?: number; beforeId?: string }) {
   const { current: ref } = useMap();
   const [ready, setReady] = useState(false);
   useEffect(() => {
@@ -43,6 +43,7 @@ export function RouteArrows({ id = 'route-arrows', source, fill, stroke, spacing
   return (
     <Layer
       id={id}
+      beforeId={beforeId}
       type="symbol"
       source={source}
       layout={{ 'symbol-placement': 'line', 'symbol-spacing': spacing, 'icon-image': 'arrow', 'icon-size': 0.6, 'icon-rotation-alignment': 'map', 'icon-allow-overlap': true }}
