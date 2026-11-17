@@ -31,6 +31,8 @@ export type NormalizedTrack = {
   parentTrackId?: string | null;
   /** `draft` (#1450) : brouillon de son auteur ; absent = publiée. */
   status?: 'draft' | 'published';
+  /** #1588 : absent = `public` (ou inchangé en mise à jour). Forcé à `public` pour les sources synchronisées. */
+  visibility?: 'public' | 'friends' | 'private';
   raw?: unknown;
 };
 

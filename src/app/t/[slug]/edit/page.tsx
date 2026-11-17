@@ -22,7 +22,7 @@ export default async function EditTrackPage({ params, searchParams }: { params: 
   const user = await requireUser();
   const { slug } = await params;
   const found = getTrackBySlug(getDb().db, slug);
-  if (!found || !canViewTrack(found, user.id)) notFound(); // brouillon d'un autre : 404 (#1450)
+  if (!found || !canViewTrack(getDb().db, found, user.id)) notFound(); // brouillon d'un autre : 404 (#1450)
   const t = await ensureTrackElevation(getDb().db, found); // altitude IGN à la première ouverture (#1428)
   const draft = t.status === 'draft';
   const wantCopy = (await searchParams).copie === '1' && !draft;

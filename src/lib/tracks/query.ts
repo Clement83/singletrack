@@ -1,6 +1,7 @@
 import { and, eq, gte, inArray, isNull, lte, like, or, sql, type SQL } from 'drizzle-orm';
 import type { Db } from '@/db';
-import { track } from '@/db/schema';
+import { friendship, track } from '@/db/schema';
+import { areFriends } from '@/lib/friends';
 import { getLevels } from '@/lib/fire';
 import { haversine, simplifyGeometry, type TrackGeometry } from '@/lib/geo';
 import type { TrackFilters } from './filters';
@@ -79,7 +80,7 @@ export function queryTracks(
   // « Mes traces » (#1430) : sans utilisateur connu, rien (jamais les traces des autres).
   if (f.mine) w.push(opts.userId ? eq(track.createdBy, opts.userId) : sql`0`);
   // Brouillons (#1450) : seulement dans « Mes traces », jamais dans l'explorateur ni chez les autres.
-  else w.push(eq(track.status, 'published'));
+  else w.push(eq(track.status, 'published'), trackVisibleSql(opts.userId));
   if (f.bbox) {
     const [minLon, minLat, maxLon, maxLat] = f.bbox;
     w.push(lte(track.bboxMinLon, maxLon), gte(track.bboxMaxLon, minLon), lte(track.bboxMinLat, maxLat), gte(track.bboxMaxLat, minLat));
@@ -143,7 +144,7 @@ export function queryTracks(
 export function getTrackGeometries(db: Db, slugs: string[], userId?: string | null, zoom?: number) {
   const tol = toleranceForZoom(zoom);
   const rows = slugs.length ? db.select().from(track).where(inArray(track.slug, slugs)).all() : [];
-  const visible = rows.filter((t) => canViewTrack(t, userId));
+  const visible = rows.filter((t) => canViewTrack(db, t, userId));
   return {
     tracks: visible.map((t) => ({ slug: t.slug, geometry: simplified(t.id, t.updatedAt, t.geometry, tol) })),
     version: visible.map((t) => `${t.slug}:${t.updatedAt.getTime()}`).sort().join(','),
@@ -154,13 +155,41 @@ export function getTrackBySlug(db: Db, slug: string) {
   return db.select().from(track).where(eq(track.slug, slug)).get();
 }
 
-/** Une trace est visible de tous (par lien) sauf un brouillon (#1450) : son auteur seul la voit. */
-export function canViewTrack(t: { status: string; createdBy: string | null }, userId?: string | null): boolean {
-  return t.status !== 'draft' || (!!userId && t.createdBy === userId);
+/**
+ * **Règle d'accès unique** aux traces (#1588). `draft` : son auteur seul, quelle que soit la visibilité ; sinon
+ * `public` : tout le monde (même sans session), `friends` : l'auteur et ses copains (acceptés, via `areFriends`),
+ * `private` : l'auteur seul. Un copain d'un autre serveur n'a pas de session ici : il n'est pas concerné.
+ * La version SQL `trackVisibleSql` doit rester strictement équivalente (tests : table de cas commune).
+ */
+export function canViewTrack(
+  db: Db,
+  t: { status: string; visibility?: string | null; createdBy: string | null },
+  userId?: string | null,
+): boolean {
+  const isAuthor = !!userId && !!t.createdBy && t.createdBy === userId;
+  if (t.status === 'draft') return isAuthor;
+  const v = t.visibility ?? 'public';
+  if (v === 'public') return true;
+  if (isAuthor) return true;
+  if (v === 'friends') return !!userId && !!t.createdBy && areFriends(db, userId, t.createdBy);
+  return false;
+}
+
+/** Version SQL de `canViewTrack` pour filtrer les listes (brouillons : exclus ici, voir `queryTracks`). */
+export function trackVisibleSql(userId?: string | null): SQL {
+  if (!userId) return eq(track.visibility, 'public');
+  return or(
+    eq(track.visibility, 'public'),
+    eq(track.createdBy, userId),
+    and(
+      eq(track.visibility, 'friends'),
+      sql`exists (select 1 from ${friendship} f where f.status = 'accepted' and f.remote_actor_id is null and ((f.requester_id = ${userId} and f.addressee_id = ${track.createdBy}) or (f.addressee_id = ${userId} and f.requester_id = ${track.createdBy})))`,
+    ),
+  )!;
 }
 
 /** Trace par slug **si** le visiteur peut la voir (brouillon d'un autre ⇒ `undefined`, donc 404). */
 export function getVisibleTrack(db: Db, slug: string, userId?: string | null) {
   const t = getTrackBySlug(db, slug);
-  return t && canViewTrack(t, userId) ? t : undefined;
+  return t && canViewTrack(db, t, userId) ? t : undefined;
 }

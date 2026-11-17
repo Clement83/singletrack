@@ -23,6 +23,9 @@ export const user = sqliteTable('user', {
   /** Visibilité par défaut de mes nouvelles sorties (#1442) : `public` | `friends` | `invite`. */
   // Défaut « copains » depuis #1455 (côté application : la base garde son DEFAULT 'invite' (SQLite ne le change qu'en reconstruisant la table user, évité) : toute insertion Drizzle fournit 'friends').
   defaultOutingVisibility: text('default_outing_visibility').notNull().$defaultFn(() => 'friends'),
+  /** #1588 : visibilité préremplie des traces dessinées / importées. */
+  defaultDrawnTrackVisibility: text('default_drawn_track_visibility').notNull().default('public'),
+  defaultImportedTrackVisibility: text('default_imported_track_visibility').notNull().default('private'),
   /** Identifiant fédéré (#1474) : `[a-z0-9_]{3,30}`, minuscules, unique. NULL tant que le prénom n'est pas saisi. */
   handle: text('handle'),
   /** Date de l'unique modification du handle ; NULL = jamais modifié. */
@@ -96,6 +99,8 @@ export const verification = sqliteTable('verification', {
 });
 
 // Traces VTT (#1345). Une trace peut venir d'une source externe ou être faite maison.
+/** Visibilité d'une trace (#1588) : `public` (tous, même sans session), `friends` (auteur + copains), `private` (auteur seul). */
+export const TRACK_VISIBILITIES = ['public', 'friends', 'private'] as const;
 export const TRACK_SOURCES = ['utagawa', 'osm', 'geotrek', 'gpx', 'manual', 'edited'] as const;
 export const DIFFICULTIES = ['green', 'blue', 'red', 'black'] as const;
 
@@ -143,6 +148,8 @@ export const track = sqliteTable(
     massifs: text('massifs', { mode: 'json' }).$type<string[]>(),
     /** `draft` (#1450) : visible de son seul auteur, jamais publique ni utilisable pour une sortie. */
     status: text('status', { enum: ['draft', 'published'] }).notNull().default('published'),
+    /** #1588 : qui voit la trace. Les sources synchronisées (OSM, Geotrek) sont toujours `public`. */
+    visibility: text('visibility', { enum: TRACK_VISIBILITIES }).notNull().default('public'),
   },
   (t) => [
     // Upsert idempotent : un (source, external_id) n'existe qu'une fois (NULL autorisés en multiples : traces maison).

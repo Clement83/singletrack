@@ -183,6 +183,13 @@
       "when": 1794708047831,
       "tag": "0025_slippery_inhumans",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "6",
+      "when": 1794914186222,
+      "tag": "0026_black_senator_kelly",
+      "breakpoints": true
     }
   ]
 }

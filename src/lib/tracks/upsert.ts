@@ -5,6 +5,9 @@ import { massifsForGeometry } from '@/lib/fire';
 import { enrichElevation, geometryStats, type EnrichOptions } from '@/lib/geo';
 import type { NormalizedTrack, RegionConfig, TrackSource } from './types';
 
+/** Sources alimentées par synchro : toujours `public` (#1588). */
+export const SYNCED_SOURCES: readonly string[] = ['osm', 'geotrek', 'utagawa'];
+
 export type UpsertResult = { id: string; slug: string; created: boolean };
 
 export type UpsertOptions = {
@@ -61,6 +64,8 @@ export async function upsertTrack(db: Db, t: NormalizedTrack, opts: UpsertOption
     ...(t.createdBy !== undefined ? { createdBy: t.createdBy } : {}),
     ...(t.parentTrackId !== undefined ? { parentTrackId: t.parentTrackId } : {}),
     ...(t.status ? { status: t.status } : {}),
+    // #1588 : OSM / Geotrek / Utagawa (synchro) sont toujours publiques, quoi qu'on demande.
+    ...(SYNCED_SOURCES.includes(t.source) ? { visibility: 'public' as const } : t.visibility ? { visibility: t.visibility } : {}),
     raw: t.raw ?? null,
     importedAt: now,
     updatedAt: now,

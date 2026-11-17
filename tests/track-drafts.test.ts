@@ -77,9 +77,9 @@ describe('brouillons', () => {
     const db = setup();
     const slug = await draft(db);
     const t = getTrackBySlug(db, slug)!;
-    expect(canViewTrack(t, 'u')).toBe(true);
-    expect(canViewTrack(t, 'v')).toBe(false);
-    expect(canViewTrack(t, null)).toBe(false);
+    expect(canViewTrack(db, t, 'u')).toBe(true);
+    expect(canViewTrack(db, t, 'v')).toBe(false);
+    expect(canViewTrack(db, t, null)).toBe(false);
     expect(getVisibleTrack(db, slug, 'u')?.slug).toBe(slug);
     expect(getVisibleTrack(db, slug, 'v')).toBeUndefined();
     expect(getVisibleTrack(db, slug, undefined)).toBeUndefined();

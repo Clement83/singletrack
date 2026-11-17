@@ -5,7 +5,8 @@ import { geometryStats, type Position, type TrackGeometry } from '@/lib/geo';
 import { massifsForGeometry } from '@/lib/fire';
 import { parseStored, type StoredDoc } from '@/lib/editor/doc';
 import type { NormalizedTrack } from './types';
-import { deriveColumns, upsertTrack, type UpsertOptions } from './upsert';
+import { getDefaultTrackVisibility, isTrackVisibility } from '@/lib/user-profile';
+import { SYNCED_SOURCES, deriveColumns, upsertTrack, type UpsertOptions } from './upsert';
 import { getTrackBySlug } from './query';
 
 /** Ce que l'éditeur envoie à l'enregistrement. */
@@ -19,6 +20,8 @@ export type EditorInput = {
   parentSlug?: string | null;
   /** `draft` (#1450) : enregistrement automatique, nom et longueur minimale non exigés. Absent = publiée. */
   status?: 'draft' | 'published';
+  /** #1588 : absent = préférence du compte (création) ou inchangé (mise à jour). */
+  visibility?: string;
 };
 
 export type EditorErrors = Partial<Record<'name' | 'geometry' | 'waypoints' | 'parent', string>>;
@@ -88,6 +91,7 @@ export async function createEditedTrack(db: Db, userId: string, input: EditorInp
     createdBy: userId,
     parentTrackId: parent?.id ?? null,
     status: draft ? 'draft' : 'published',
+    visibility: isTrackVisibility(input?.visibility) ? input.visibility : getDefaultTrackVisibility(db, userId, 'drawn'),
     ...(parent
       ? {
           sourceUrl: parent.sourceUrl,
@@ -125,6 +129,7 @@ export async function updateEditedTrack(db: Db, userId: string, slug: string, in
       ...derived,
       massifs: massifsForGeometry(db, derived.geometry),
       status,
+      ...(isTrackVisibility(input?.visibility) && !SYNCED_SOURCES.includes(existing.source) ? { visibility: input.visibility } : {}),
       raw: { ...prevRaw, editor: v.stored },
       updatedAt: opts.now ?? new Date(),
     })

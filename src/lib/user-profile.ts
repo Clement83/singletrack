@@ -1,6 +1,6 @@
 import { and, eq, isNull } from 'drizzle-orm';
 import type { Db } from '@/db';
-import { contact, invitation, outing, user, OUTING_VISIBILITIES } from '@/db/schema';
+import { contact, invitation, outing, user, OUTING_VISIBILITIES, TRACK_VISIBILITIES } from '@/db/schema';
 import { areFriends } from '@/lib/friends';
 import { isDone, listClaimedHistory, listHistory } from '@/lib/outings/history';
 import { outingPermissions, type OutingFacts } from '@/lib/outings/permissions';
@@ -41,6 +41,27 @@ export function setDefaultOutingVisibility(db: Db, userId: string, value: unknow
   // « Publique » fige la sortie (sans propriétaire) : jamais un réglage par défaut du compte (#1455).
   if (!isOutingVisibility(value) || value === 'public') return { ok: false, error: 'invalid' };
   db.update(user).set({ defaultOutingVisibility: value, updatedAt: new Date() }).where(eq(user.id, userId)).run();
+  return { ok: true };
+}
+
+/**
+ * Visibilité par défaut des traces (#1588) : `public` | `friends` | `private`, une préférence pour les traces
+ * dessinées (défaut `public`) et une pour les traces importées (défaut `private`).
+ */
+export { TRACK_VISIBILITIES };
+export type TrackVisibility = (typeof TRACK_VISIBILITIES)[number];
+export const isTrackVisibility = (v: unknown): v is TrackVisibility => TRACK_VISIBILITIES.includes(v as TrackVisibility);
+export type TrackOrigin = 'drawn' | 'imported';
+
+export function getDefaultTrackVisibility(db: Db, userId: string, origin: TrackOrigin): TrackVisibility {
+  const row = db.select({ d: user.defaultDrawnTrackVisibility, i: user.defaultImportedTrackVisibility }).from(user).where(eq(user.id, userId)).get();
+  const v = origin === 'drawn' ? row?.d : row?.i;
+  return isTrackVisibility(v) ? v : origin === 'drawn' ? 'public' : 'private';
+}
+
+export function setDefaultTrackVisibility(db: Db, userId: string, origin: TrackOrigin, value: unknown): { ok: true } | { ok: false; error: string } {
+  if (!isTrackVisibility(value)) return { ok: false, error: 'invalid' };
+  db.update(user).set({ ...(origin === 'drawn' ? { defaultDrawnTrackVisibility: value } : { defaultImportedTrackVisibility: value }), updatedAt: new Date() }).where(eq(user.id, userId)).run();
   return { ok: true };
 }
 

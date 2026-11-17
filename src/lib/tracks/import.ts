@@ -18,6 +18,8 @@ export type ImportInput = {
   author?: string | null;
   license?: string | null;
   geometry: TrackGeometry;
+  /** #1588 : absent = préférence « traces importées » du compte. */
+  visibility?: string;
 };
 
 export type ImportErrors = Partial<Record<'name' | 'origin' | 'sourceUrl' | 'author' | 'license' | 'geometry', string>>;

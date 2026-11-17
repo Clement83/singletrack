@@ -1,5 +1,6 @@
 import { getDb } from '@/db';
 import { assertUser, unauthorized } from '@/lib/current-user';
+import { getDefaultTrackVisibility, isTrackVisibility } from '@/lib/user-profile';
 import { parseTrackFile, geometryStats, enrichElevation, type TrackGeometry } from '@/lib/geo';
 import {
   MAX_FILES, MAX_GPX_BYTES, buildImportedTrack, findDuplicates, prefillFromGpx, upsertTrack, type ImportInput,
@@ -72,6 +73,6 @@ export async function PUT(req: Request) {
   const { db } = getDb();
   // Toutes les altitudes viennent de l'IGN (#1515) ; l'altitude GPS du fichier ne sert que de repli.
   const geometry = await enrichElevation(built.track.geometry, { replace: true });
-  const res = await upsertTrack(db, { ...built.track, geometry, createdBy: user.id }, { enrich: false });
+  const res = await upsertTrack(db, { ...built.track, geometry, createdBy: user.id, visibility: isTrackVisibility(input.visibility) ? input.visibility : getDefaultTrackVisibility(db, user.id, 'imported') }, { enrich: false });
   return Response.json({ slug: res.slug }, { status: 201 });
 }
