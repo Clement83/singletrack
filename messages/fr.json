@@ -708,14 +708,6 @@
     "source": "Source : {source}"
   },
   "explorer": {
-    "selectionCount": "{n, plural, one {# trace choisie} other {# traces choisies}}",
-    "selectionClear": "Tout effacer",
-    "selectionFull": "{n} traces au maximum : retires-en une avant d’en choisir une autre.",
-    "chosenTitle": "{n, plural, one {# trace choisie} other {# traces choisies}}",
-    "chosenFit": "Recentrer",
-    "selectionAddNamed": "Ajouter {name} à la sélection",
-    "selectionRemoveNamed": "Retirer {name} de la sélection",
-    "selectionRemove": "Retirer de la sélection",
     "search": "Chercher une trace",
     "filters": "Filtres",
     "mine": "Mes traces",

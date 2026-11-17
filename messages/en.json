@@ -708,14 +708,6 @@
     "source": "Source: {source}"
   },
   "explorer": {
-    "selectionCount": "{n, plural, one {# track selected} other {# tracks selected}}",
-    "selectionClear": "Clear all",
-    "selectionFull": "{n} tracks at most: remove one before picking another.",
-    "chosenTitle": "{n, plural, one {# track selected} other {# tracks selected}}",
-    "chosenFit": "Recenter",
-    "selectionAddNamed": "Add {name} to the selection",
-    "selectionRemoveNamed": "Remove {name} from the selection",
-    "selectionRemove": "Remove from selection",
     "search": "Search a route",
     "filters": "Filters",
     "mine": "My routes",

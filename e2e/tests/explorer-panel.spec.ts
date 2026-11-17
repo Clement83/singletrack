@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-// Carte des traces (#1532, #1582). Les données sont simulées (départs + géométries) : le test
+// Carte des traces : fiche dans le panneau (#1582), aperçu au survol (#1583), plus de sélection multiple (#1584). Les données sont simulées (départs + géométries) : le test
 // ne dépend pas du contenu de la base. Desktop souris ; le mobile tactile viendra avec #1537.
 const BLANK_PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 
@@ -96,36 +96,22 @@ test('survol : une ligne de liste montre sa trace en aperçu sur la carte', asyn
   await expect(page).not.toHaveURL(/t=e2e-b/);
 });
 
-// #1533 : liste « Traces choisies » synchronisée avec la carte.
-test('liste : traces choisies, ajout depuis la liste, retrait, recentrage, survol', async ({ page }) => {
+// #1584 : plus de sélection multiple. Une ligne de « Dans la zone » ouvre la fiche (Retour = toute la liste) ;
+// un vieux lien `?sel=` s'ouvre normalement et le paramètre disparaît.
+test('liste : une ligne ouvre la fiche, Retour revient à la liste, ancien ?sel= ignoré', async ({ page }) => {
   await load(page, '/');
   const c = await page.evaluate(() => (window as unknown as Win).__explorerMap!.getCenter());
   const starts = [mk('e2e-a', c.lng - 0.03, c.lat), mk('e2e-b', c.lng + 0.03, c.lat)];
   await page.route(/\/api\/tracks\?.*starts=1/, (r) => r.fulfill({ json: { tracks: starts, total: 2 } }));
-  await page.route(/\/api\/tracks\/geometry/, (r) => {
-    const slugs = new URL(r.request().url()).searchParams.get('slugs')!.split(',');
-    const tracks = slugs.map((slug) => {
-      const s = starts.find((x) => x.slug === slug)!;
-      return { slug, geometry: { type: 'LineString', coordinates: [s.start, [s.start[0] + 0.01, s.start[1] + 0.01]] } };
-    });
-    return r.fulfill({ json: { tracks } });
-  });
+  await page.route(/\/api\/tracks\/e2e-[a-z]$/, (r) => r.fulfill({ json: sheetOf(starts.find((x) => r.request().url().endsWith(x.slug))!) }));
   await load(page, '/?q=e2e&sel=e2e-a');
+  await expect(page).not.toHaveURL(/sel=/);
   await page.getByRole('button', { name: /^\d+ traces?$/ }).click();
-  const chosen = page.getByTestId('chosen-panel');
-  await expect(chosen.locator('li')).toHaveCount(1);
-  // Ajout depuis « Dans la zone » : sans quitter la liste.
-  await page.getByRole('button', { name: 'Ajouter e2e-b à la sélection' }).click();
-  await expect(page).toHaveURL(/sel=e2e-a(%2C|,)e2e-b/);
-  await expect(chosen.locator('li')).toHaveCount(2);
-  // Recentrer : la carte cadre les deux traces.
-  await chosen.getByRole('button', { name: 'Recentrer' }).click();
-  await expect.poll(() => page.evaluate(() => (window as unknown as Win).__explorerMap!.getCenter().lng)).toBeCloseTo(c.lng + 0.005, 1);
-  // Retrait depuis le panneau.
-  await chosen.getByRole('button', { name: 'Retirer e2e-a de la sélection' }).click();
-  await expect(page).toHaveURL(/sel=e2e-b(&|$)/);
-  await expect(chosen.locator('li')).toHaveCount(1);
-  // Survol d'une ligne : elle est mise en avant.
-  await chosen.locator('li[data-slug="e2e-b"]').hover();
-  await expect(chosen.locator('li[data-slug="e2e-b"]')).toHaveClass(/bg-accent/);
+  await expect(page.getByRole('button', { name: /Ajouter .* à la sélection/ })).toHaveCount(0);
+  await page.getByRole('button', { name: /e2e-a/ }).click();
+  await expect(page).toHaveURL(/t=e2e-a/);
+  const panel = page.getByTestId('track-panel');
+  await expect(panel.getByText(/1,4\s*km/)).toBeVisible();
+  await panel.getByRole('button', { name: 'Toutes les traces' }).click();
+  await expect(page.getByRole('heading', { name: 'Traces sur la carte' })).toBeVisible();
 });

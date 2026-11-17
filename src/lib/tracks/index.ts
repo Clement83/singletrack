@@ -10,5 +10,4 @@ export * from './edit';
 export * from './elevation';
 export * from './delete';
 export * from './same-start';
-export * from './selection';
 export * from './sheet';
