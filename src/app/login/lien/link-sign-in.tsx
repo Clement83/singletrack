@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AuthLink } from '@/components/auth-shell';
+import { safeNext } from '@/lib/safe-next';
 import { authClient, otpError } from '@/lib/auth-client';
 
 /**
@@ -15,7 +16,7 @@ import { authClient, otpError } from '@/lib/auth-client';
 export function LinkSignIn() {
   const router = useRouter();
   const t = useTranslations('auth');
-  const [creds, setCreds] = useState<{ email: string; otp: string } | null>();
+  const [creds, setCreds] = useState<{ email: string; otp: string; next?: string } | null>();
   const [error, setError] = useState<string>();
   const [pending, setPending] = useState(false);
 
@@ -23,10 +24,11 @@ export function LinkSignIn() {
     const p = new URLSearchParams(window.location.hash.slice(1));
     const email = p.get('e');
     const otp = p.get('c');
+    const next = safeNext(p.get('n'));
     // Le code ne reste pas dans la barre d'adresse ni l'historique.
     history.replaceState(null, '', window.location.pathname);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- lecture unique du fragment au montage
-    setCreds(email && otp && /^\d{6}$/.test(otp) ? { email, otp } : null);
+    setCreds(email && otp && /^\d{6}$/.test(otp) ? { email, otp, next } : null);
   }, []);
 
   if (creds === undefined) return <Skeleton className="h-button-lg w-full rounded-xl" />;
@@ -54,7 +56,7 @@ export function LinkSignIn() {
             setPending(false);
             return setError(t(`errors.${otpError(error)}`));
           }
-          router.replace(data?.user.name ? '/' : '/bienvenue');
+          router.replace(data?.user.name ? (creds.next ?? '/') : `/bienvenue${creds.next ? `?next=${encodeURIComponent(creds.next)}` : ''}`);
           router.refresh();
         }}
       >

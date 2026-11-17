@@ -27,7 +27,10 @@ export function LoginFlow({ next }: { next?: string }) {
   async function sendCode(to: string) {
     setPending(true);
     setError(undefined);
-    const { error } = await authClient.emailOtp.sendVerificationOtp({ email: to, type: 'sign-in' });
+    const { error } = await authClient.emailOtp.sendVerificationOtp(
+      { email: to, type: 'sign-in' },
+      next ? { headers: { 'x-login-next': next } } : undefined,
+    );
     setPending(false);
     if (error) return setError(t(`errors.${otpError(error)}`));
     setEmail(to);

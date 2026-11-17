@@ -3,6 +3,7 @@ import { openDb } from '@/db';
 import { createAuth, signUpDisabled } from '@/lib/auth';
 import { sendMail, type MailMessage } from '@/lib/mail';
 import { signInCodeMail, signInLink } from '@/lib/mail-templates';
+import { safeNext } from '@/lib/safe-next';
 import { createUser } from '@/lib/users';
 import { isPublicPath } from '@/lib/public-routes';
 import { NextRequest } from 'next/server';
@@ -99,6 +100,14 @@ describe('mail de connexion', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     delete process.env.RESEND_API_KEY;
+  });
+
+  it('le lien du mail porte la page d\'origine (#1595), revalidée par safeNext', () => {
+    const url = signInLink('https://x.org', 'a@b.fr', '123456', '/?t=abc&z=12');
+    expect(url).toBe('https://x.org/login/lien#e=a%40b.fr&c=123456&n=%2F%3Ft%3Dabc%26z%3D12');
+    expect(safeNext(new URLSearchParams(url.split('#')[1]).get('n'))).toBe('/?t=abc&z=12');
+    expect(safeNext('https://evil.example')).toBeUndefined();
+    expect(signInLink('https://x.org', 'a@b.fr', '123456')).not.toContain('n=');
   });
 
   it('contient le code, le lien (code dans le fragment) et un QR code inline', async () => {

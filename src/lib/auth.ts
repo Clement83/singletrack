@@ -8,6 +8,7 @@ import { sendInBackground, sendMail, type Mailer } from './mail';
 import { eq } from 'drizzle-orm';
 import { LOCALE_COOKIE, resolveLocale } from '@/i18n/config';
 import { ensureHandle } from './federation/handle';
+import { safeNext } from './safe-next';
 import { signInCodeMail, signInLink } from './mail-templates';
 
 export const OTP_MINUTES = 10;
@@ -68,12 +69,18 @@ export function createAuth(db: Db = getDb().db, opts: { disableSignUp?: boolean;
         async sendVerificationOTP({ email, otp, type }, ctx) {
           if (type !== 'sign-in') return;
           const locale = mailLocale(db, email, ctx?.request?.headers ?? ctx?.headers);
-          sendInBackground(mailer, signInCodeMail(email, otp, signInLink(baseUrl, email, otp), OTP_MINUTES, locale));
+          sendInBackground(mailer, signInCodeMail(email, otp, signInLink(baseUrl, email, otp, safeNext(headerOf(ctx, NEXT_HEADER))), OTP_MINUTES, locale));
         },
       }),
       nextCookies(),
     ],
   });
+}
+
+/** En-tête portant la page d'origine à l'envoi du code (#1595) : Better Auth ne transmet que email + type. */
+export const NEXT_HEADER = 'x-login-next';
+function headerOf(ctx: { request?: Request; headers?: Headers } | null | undefined, name: string) {
+  return ctx?.request?.headers?.get(name) ?? ctx?.headers?.get(name) ?? undefined;
 }
 
 export type Auth = ReturnType<typeof createAuth>;

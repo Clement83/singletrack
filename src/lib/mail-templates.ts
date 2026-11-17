@@ -11,8 +11,9 @@ export const esc = (s: string) =>
   s.replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]!);
 
 /** Lien de connexion : email et code dans le fragment (#), jamais envoyé au serveur ni écrit dans les logs nginx. */
-export function signInLink(baseUrl: string, email: string, otp: string) {
-  return `${baseUrl.replace(/\/$/, '')}/login/lien#${new URLSearchParams({ e: email, c: otp })}`;
+export function signInLink(baseUrl: string, email: string, otp: string, next?: string) {
+  // `next` (page d'origine, #1595) : déjà validé par `safeNext`, relu et revalidé côté client.
+  return `${baseUrl.replace(/\/$/, '')}/login/lien#${new URLSearchParams({ e: email, c: otp, ...(next ? { n: next } : {}) })}`;
 }
 
 /**
