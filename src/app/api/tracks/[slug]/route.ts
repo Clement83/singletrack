@@ -1,7 +1,7 @@
 import { getDb } from '@/db';
 import { assertUser, unauthorized } from '@/lib/current-user';
 import { readCacheHeaders, readViewer } from '@/lib/public-read';
-import { deleteTrack, trackSheet, updateEditedTrack, type EditorInput } from '@/lib/tracks';
+import { deleteTrack, setTrackVisibility, trackSheet, updateEditedTrack, type EditorInput } from '@/lib/tracks';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,4 +50,19 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ slug
   const res = deleteTrack(getDb().db, user.id, (await params).slug);
   if ('error' in res) return Response.json({ error: res.error }, { status: res.error === 'forbidden' ? 403 : 404 });
   return Response.json({ ok: true });
+}
+
+/** Privé (#1590). `PATCH /api/tracks/<slug>` `{ visibility }` : change la visibilité d'une trace de l'utilisateur (403 si elle n'est pas à lui ou vient d'une source externe, 422 si la valeur est inconnue). */
+export async function PATCH(req: Request, { params }: { params: Promise<{ slug: string }> }) {
+  let user;
+  try {
+    user = await assertUser();
+  } catch (e) {
+    return unauthorized(e);
+  }
+  const body = (await req.json().catch(() => null)) as { visibility?: unknown } | null;
+  if (!body || typeof body !== 'object') return Response.json({ error: 'invalidRequest' }, { status: 400 });
+  const res = setTrackVisibility(getDb().db, user.id, (await params).slug, body.visibility);
+  if ('error' in res) return Response.json({ error: res.error }, { status: res.error === 'forbidden' ? 403 : res.error === 'invalid' ? 422 : 404 });
+  return Response.json({ visibility: res.visibility });
 }

@@ -228,7 +228,7 @@ export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) 
 
   // Trace ouverte (#1582) : fiche complète chargée à la demande, tracé coloré par pente sur la carte, profil synchronisé.
   const openSlug = panel?.kind === 'track' ? panel.slug : null;
-  const { sheet, loading: sheetLoading, error: sheetError } = useTrackSheet(openSlug);
+  const { sheet, loading: sheetLoading, error: sheetError, setVisibility: setSheetVisibility } = useTrackSheet(openSlug);
   const [scrub, setScrub] = useState<{ slug: string; i: number } | null>(null);
   const [lineOver, setLineOver] = useState<{ slug: string; i: number } | null>(null);
   const profileCursor = scrub && scrub.slug === openSlug ? scrub.i : null;
@@ -423,7 +423,7 @@ export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) 
           panel?.kind === 'outing' && selectedOuting ? (
             <Button asChild size="lg"><Link href={`/sorties/${selectedOuting.id}`}>{tOut('seeOuting')}</Link></Button>
           ) : panel?.kind === 'track' && sheet ? (
-            <TrackPanelFooter sheet={sheet} compact={!desktop} cursor={lineCursor} onScrub={(i) => setScrub(i === null ? null : { slug: sheet.slug, i })} />
+            <TrackPanelFooter sheet={sheet} onVisibility={setSheetVisibility} compact={!desktop} cursor={lineCursor} onScrub={(i) => setScrub(i === null ? null : { slug: sheet.slug, i })} />
           ) : panel?.kind === 'filters' ? (
             <Button size="lg" onClick={() => setPanel({ kind: 'list' })}>{t('seeN', { n: total })}</Button>
           ) : undefined
@@ -434,7 +434,7 @@ export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) 
           <div className="flex flex-col gap-3">
             {groupTracks.map((g) => (
               <div key={g.slug} data-slug={g.slug} {...listHover(g.slug)}>
-                <TrackCard onSelect={() => openTrack(g.slug, panel)} title={g.name} draft={g.status === 'draft'} distanceKm={g.distanceKm} elevationM={g.gainM} difficulty={g.difficulty ?? undefined} loop={g.loop} source={tTrack(`sources.${g.source}`)} />
+                <TrackCard onSelect={() => openTrack(g.slug, panel)} title={g.name} draft={g.status === 'draft'} visibility={g.visibility} distanceKm={g.distanceKm} elevationM={g.gainM} difficulty={g.difficulty ?? undefined} loop={g.loop} source={tTrack(`sources.${g.source}`)} />
               </div>
             ))}
           </div>
@@ -484,7 +484,7 @@ export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) 
             )}
             {visible.map((tr) => (
               <div key={tr.slug} data-slug={tr.slug} {...listHover(tr.slug)} className={cn('rounded-2xl', hl === tr.slug && 'ring-2 ring-ring')}>
-                <TrackCard onSelect={() => openTrack(tr.slug, { kind: 'list' })} title={tr.name} draft={tr.status === 'draft'} distanceKm={tr.distanceKm} elevationM={tr.gainM} difficulty={tr.difficulty ?? undefined} loop={tr.loop} source={tTrack(`sources.${tr.source}`)} />
+                <TrackCard onSelect={() => openTrack(tr.slug, { kind: 'list' })} title={tr.name} draft={tr.status === 'draft'} visibility={tr.visibility} distanceKm={tr.distanceKm} elevationM={tr.gainM} difficulty={tr.difficulty ?? undefined} loop={tr.loop} source={tTrack(`sources.${tr.source}`)} />
               </div>
             ))}
           </div>

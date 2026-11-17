@@ -28,7 +28,7 @@ export async function GET(req: Request) {
   const openOn = filters.access ? (filters.access === 'today' ? today : addDays(today, 1)) : undefined;
   const { tracks, total } = queryTracks(getDb().db, filters, { lat: config.homeLat, lon: config.homeLon }, { openOn, overview, starts, userId: user?.id });
   if (starts) {
-    const light = tracks.map((t) => ({ slug: t.slug, name: t.name, source: t.source, difficulty: t.difficulty, loop: t.loop, distanceKm: t.distanceKm, gainM: t.gainM, start: t.start, status: t.status }));
+    const light = tracks.map((t) => ({ slug: t.slug, name: t.name, source: t.source, difficulty: t.difficulty, loop: t.loop, distanceKm: t.distanceKm, gainM: t.gainM, start: t.start, status: t.status, visibility: t.visibility }));
     return Response.json({ count: light.length, total, truncated: total > light.length, tracks: light }, { headers: readCacheHeaders(!user, 30) });
   }
   return Response.json({ count: tracks.length, total, truncated: total > tracks.length, tracks }, { headers: readCacheHeaders(false, 0) });

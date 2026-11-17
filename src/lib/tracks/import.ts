@@ -3,6 +3,7 @@ import type { Db } from '@/db';
 import { track } from '@/db/schema';
 import { geometryStats, haversine, type GpxFile, type TrackGeometry } from '@/lib/geo';
 import type { NormalizedTrack } from './types';
+import { isTrackVisibility } from '@/lib/user-profile';
 import { IMPORT_ORIGINS, type ImportOriginId } from './import-origins';
 
 export { IMPORT_ORIGINS, type ImportOriginId };
@@ -19,10 +20,10 @@ export type ImportInput = {
   license?: string | null;
   geometry: TrackGeometry;
   /** #1588 : absent = préférence « traces importées » du compte. */
-  visibility?: string;
+  visibility?: string | null;
 };
 
-export type ImportErrors = Partial<Record<'name' | 'origin' | 'sourceUrl' | 'author' | 'license' | 'geometry', string>>;
+export type ImportErrors = Partial<Record<'name' | 'origin' | 'sourceUrl' | 'author' | 'license' | 'geometry' | 'visibility', string>>;
 
 const clean = (s: string | null | undefined) => s?.trim() || null;
 
@@ -32,6 +33,7 @@ export function buildImportedTrack(i: ImportInput): { track: NormalizedTrack } |
   const name = clean(i.name);
   if (!name) errors.name = 'nameRequired';
   else if (name.length > 200) errors.name = 'nameTooLong';
+  if (i.visibility !== undefined && i.visibility !== null && !isTrackVisibility(i.visibility)) errors.visibility = 'visibilityInvalid';
   const origin = IMPORT_ORIGINS.find((o) => o.id === i.origin);
   if (!origin) errors.origin = 'originRequired';
   const url = clean(i.sourceUrl);

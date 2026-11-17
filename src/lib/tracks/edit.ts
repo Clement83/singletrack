@@ -21,10 +21,10 @@ export type EditorInput = {
   /** `draft` (#1450) : enregistrement automatique, nom et longueur minimale non exigés. Absent = publiée. */
   status?: 'draft' | 'published';
   /** #1588 : absent = préférence du compte (création) ou inchangé (mise à jour). */
-  visibility?: string;
+  visibility?: string | null;
 };
 
-export type EditorErrors = Partial<Record<'name' | 'geometry' | 'waypoints' | 'parent', string>>;
+export type EditorErrors = Partial<Record<'name' | 'geometry' | 'waypoints' | 'parent' | 'visibility', string>>;
 
 export const MAX_EDITOR_POINTS = 50_000;
 /** Sources dont l'auteur peut modifier la trace en place (jamais une trace OSM / Geotrek / Utagawa). */
@@ -48,6 +48,8 @@ export function validateEditorInput(i: EditorInput, draft = i?.status === 'draft
   }
   const stored = parseStored({ waypoints: i?.waypoints, modes: i?.modes });
   if (!stored) errors.waypoints = 'waypointsInvalid';
+  // #1590 : absent = défaut du compte / inchangé ; présent mais inconnu = 422.
+  if (i?.visibility !== undefined && i.visibility !== null && !isTrackVisibility(i.visibility)) errors.visibility = 'visibilityInvalid';
   let geometry: TrackGeometry | null = null;
   if (coords && !errors.geometry) {
     geometry = {
@@ -68,6 +70,19 @@ export function canEditInPlace(t: Pick<TrackRow, 'source' | 'createdBy'>, userId
 /** Document d'édition conservé dans `raw.editor` (waypoints + mode de chaque segment). */
 export function storedFromRaw(raw: unknown): StoredDoc | null {
   return parseStored((raw as { editor?: unknown } | null)?.editor);
+}
+
+/**
+ * Change la visibilité d'une trace de l'utilisateur (#1590). 404 si inconnue ou invisible de lui, 403 si ce n'est pas
+ * la sienne ou si elle vient d'une source synchronisée (toujours publique), 422 `invalid` pour une valeur inconnue.
+ */
+export function setTrackVisibility(db: Db, userId: string, slug: string, value: unknown): { ok: true; visibility: string } | { error: 'not_found' | 'forbidden' | 'invalid' } {
+  const existing = getVisibleTrack(db, slug, userId);
+  if (!existing) return { error: 'not_found' };
+  if (!canEditInPlace(existing, userId) || SYNCED_SOURCES.includes(existing.source)) return { error: 'forbidden' };
+  if (!isTrackVisibility(value)) return { error: 'invalid' };
+  db.update(track).set({ visibility: value, updatedAt: new Date() }).where(eq(track.id, existing.id)).run();
+  return { ok: true, visibility: value };
 }
 
 export type SaveResult = { slug: string } | { errors: EditorErrors } | { error: 'not_found' | 'forbidden' };

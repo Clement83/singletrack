@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Field, Input, NativeSelect, Textarea } from '@/components/ui/field';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { TrackVisibilityChips, type TrackVisibilityValue } from './track-visibility';
 import { IMPORT_ORIGINS } from '@/lib/tracks/import-origins';
 import type { TrackGeometry } from '@/lib/geo/types';
 
@@ -31,7 +32,7 @@ type Errs = Partial<Record<string, string>>;
 /** Exemple d'adresse, identique dans toutes les langues. */
 const URL_PLACEHOLDER = 'https://…';
 
-function ItemForm({ item, onSaved }: { item: Item; onSaved: (slug: string) => void }) {
+function ItemForm({ item, onSaved, defaultVisibility }: { item: Item; onSaved: (slug: string) => void; defaultVisibility: TrackVisibilityValue }) {
   const t = useTranslations('importer');
   const locale = useLocale();
   const errText = useErrorText();
@@ -39,6 +40,7 @@ function ItemForm({ item, onSaved }: { item: Item; onSaved: (slug: string) => vo
     name: item.name, description: item.description, origin: item.origin,
     sourceUrl: item.sourceUrl ?? '', author: item.author ?? '', license: '',
   });
+  const [visibility, setVisibility] = useState<TrackVisibilityValue>(defaultVisibility);
   const [errors, setErrors] = useState<Errs>({});
   const [busy, setBusy] = useState(false);
   const [slug, setSlug] = useState<string | null>(null);
@@ -51,7 +53,7 @@ function ItemForm({ item, onSaved }: { item: Item; onSaved: (slug: string) => vo
     try {
       const r = await fetch('/api/tracks/import', {
         method: 'PUT', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ ...v, geometry: item.geometry }),
+        body: JSON.stringify({ ...v, visibility, geometry: item.geometry }),
       });
       const j = await r.json();
       if (r.status === 422) return setErrors(j.errors);
@@ -115,13 +117,15 @@ function ItemForm({ item, onSaved }: { item: Item; onSaved: (slug: string) => vo
           </Field>
         </>
       )}
+      <TrackVisibilityChips value={visibility} onChange={setVisibility} hint={t('visibilityHint')} />
+      {errors.visibility && <p role="alert" className="text-small text-destructive">{errText(errors.visibility)}</p>}
       {errors.geometry && <p role="alert" className="text-small text-destructive">{errText(errors.geometry)}</p>}
       <Button type="submit" size="lg" disabled={busy}>{busy ? t('saving') : t('submit')}</Button>
     </form>
   );
 }
 
-export function GpxImporter() {
+export function GpxImporter({ defaultVisibility }: { defaultVisibility: TrackVisibilityValue }) {
   const t = useTranslations('importer');
   const errText = useErrorText();
   const input = useRef<HTMLInputElement>(null);
@@ -167,7 +171,7 @@ export function GpxImporter() {
       {fileErrors.map((e) => (
         <p key={e.file} role="alert" className="rounded-xl bg-destructive-soft p-3 text-small text-destructive"><strong>{e.file}</strong> — {errText(e.error)}</p>
       ))}
-      {items.map((it) => <ItemForm key={it.key} item={it} onSaved={() => undefined} />)}
+      {items.map((it) => <ItemForm key={it.key} item={it} onSaved={() => undefined} defaultVisibility={defaultVisibility} />)}
     </div>
   );
 }

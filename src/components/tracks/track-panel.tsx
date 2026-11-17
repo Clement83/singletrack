@@ -19,6 +19,7 @@ import { slopeFeatures } from '@/lib/geo/slope-features';
 import type { TrackSheet } from '@/lib/tracks/sheet';
 import { cn } from '@/lib/utils';
 import { DeleteTrackButton } from './delete-track';
+import { TrackVisibilityBadge, TrackVisibilityChips, type TrackVisibilityValue } from './track-visibility';
 import type { MapColors } from './use-map-colors';
 
 /** Fiche telle que la renvoie `GET /api/tracks/<slug>` (#1581) : dates en texte, sans `updatedAt`. */
@@ -39,7 +40,10 @@ export function useTrackSheet(slug: string | null) {
     return () => ctl.abort();
   }, [slug]);
   const current = slug && state?.slug === slug ? state : null;
-  return { sheet: current?.sheet, error: !!current?.error, loading: !!slug && !current };
+  /** Remplace la visibilité affichée après un changement réussi (#1590), sans recharger la fiche. */
+  const setVisibility = (visibility: NonNullable<PanelSheet['visibility']>) =>
+    setState((s) => (s?.sheet && s.slug === slug ? { ...s, sheet: { ...s.sheet, visibility } } : s));
+  return { sheet: current?.sheet, error: !!current?.error, loading: !!slug && !current, setVisibility };
 }
 
 function Stat({ icon: Icon, label, value }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string }) {
@@ -106,6 +110,7 @@ export function TrackPanelBody({ sheet, loading, error, backLabel, onBack }: { s
   const tp = useTranslations('explorer.panel');
   const locale = useLocale();
   const m = (v: number | null) => formatMeters(v, locale);
+  const visibility = sheet?.visibility;
   return (
     <div className="flex flex-col gap-3" data-testid="track-panel">
       {onBack && backLabel && (
@@ -124,6 +129,7 @@ export function TrackPanelBody({ sheet, loading, error, backLabel, onBack }: { s
         <>
           <div className="flex items-start gap-2">
             <div className="flex min-w-0 flex-1 flex-wrap gap-2">
+              {visibility && <TrackVisibilityBadge value={visibility} />}
               {sheet.status === 'draft' && <Badge variant="outline"><PencilLine aria-hidden className="size-4" /> {t('draft')}</Badge>}
               {sheet.difficulty && <DifficultyBadge level={sheet.difficulty} />}
               {sheet.source === 'geotrek' && <Badge variant="outline"><BadgeCheck aria-hidden className="size-4" /> {t('official')}</Badge>}
@@ -163,13 +169,29 @@ export function TrackPanelBody({ sheet, loading, error, backLabel, onBack }: { s
 }
 
 /** Pied du panneau : profil d'altitude synchronisé avec la carte, puis « Préparer une sortie », GPX et menu « … ». */
-export function TrackPanelFooter({ sheet, cursor, onScrub, compact }: { sheet: PanelSheet; cursor: number | null; onScrub: (i: number | null) => void; compact: boolean }) {
+export function TrackPanelFooter({ sheet, cursor, onScrub, compact, onVisibility }: { sheet: PanelSheet; cursor: number | null; onScrub: (i: number | null) => void; compact: boolean; onVisibility?: (v: TrackVisibilityValue) => void }) {
   const t = useTranslations('track');
   const tp = useTranslations('explorer.panel');
+  const tv = useTranslations('trackVisibility');
   const [more, setMore] = useState(false);
+  const [choosing, setChoosing] = useState(false);
+  const [busy, setBusy] = useState(false);
   const moreId = useId();
   const draft = sheet.status === 'draft';
   const name = sheet.name || t('untitled');
+
+  /** #1590 : change la visibilité (auteur seulement) par `PATCH /api/tracks/<slug>`. */
+  async function changeVisibility(next: TrackVisibilityValue) {
+    if (next === sheet.visibility) return;
+    setBusy(true);
+    const res = await fetch(`/api/tracks/${encodeURIComponent(sheet.slug)}`, {
+      method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ visibility: next }),
+    }).catch(() => null);
+    setBusy(false);
+    if (!res?.ok) return void toast.error(tv('error'));
+    onVisibility?.(next);
+    toast.success(tv('saved'));
+  }
 
   async function share() {
     const url = `${window.location.origin}/t/${sheet.slug}`;
@@ -207,7 +229,15 @@ export function TrackPanelFooter({ sheet, cursor, onScrub, compact }: { sheet: P
             <Button asChild variant="outline"><Link href={`/t/${sheet.slug}/edit?copie=1`}><Copy aria-hidden /> {t('editCopy')}</Link></Button>
           )}
           {sheet.rights.delete && <DeleteTrackButton slug={sheet.slug} name={name} />}
+          {sheet.rights.edit && sheet.visibility && (
+            <Button variant="outline" aria-expanded={choosing} aria-label={tv('changeAria')} onClick={() => setChoosing((o) => !o)} className="col-span-2">
+              {tv('change', { value: tv(sheet.visibility) })}
+            </Button>
+          )}
         </div>
+      )}
+      {more && choosing && sheet.rights.edit && sheet.visibility && (
+        <TrackVisibilityChips value={sheet.visibility} onChange={(v) => void changeVisibility(v)} disabled={busy} />
       )}
       <div className="flex gap-2">
         {draft ? (

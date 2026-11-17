@@ -5,7 +5,7 @@ import { openDb } from '@/db';
 import { friendship, outing, track, user } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { pairKey } from '@/lib/friends';
-import { createEditedTrack, upsertTrack, type EditorInput } from '@/lib/tracks';
+import { createEditedTrack, updateEditedTrack, upsertTrack, type EditorInput } from '@/lib/tracks';
 import { createOuting, createInvitation } from '@/lib/outings';
 import type { Position } from '@/lib/geo';
 
@@ -398,6 +398,45 @@ describe('visibilité des traces : toutes les lectures (#1589)', () => {
     expect(await createEditedTrack(db, 'b', copy, { enrich: false })).toEqual({ errors: { parent: 'parentGone' } });
     expect(await createEditedTrack(db, 'a', copy, { enrich: false })).toHaveProperty('slug');
     expect(db.select().from(track).where(eq(track.slug, slugs.private)).get()?.visibility).toBe('private');
+  });
+
+  it('visibilité (#1590) : valeur invalide ⇒ 422 à la création, à la mise à jour, à l\'import et au PATCH', async () => {
+    const db = st.db as ReturnType<typeof openDb>['db'];
+    st.uid = 'a';
+    const bad = { ...draftInput, name: 'X', status: 'published', visibility: 'nope' } as EditorInput;
+    expect(await createEditedTrack(db, 'a', bad, { enrich: false })).toEqual({ errors: { visibility: 'visibilityInvalid' } });
+    expect(await updateEditedTrack(db, 'a', slugs.public, bad, { enrich: false })).toEqual({ errors: { visibility: 'visibilityInvalid' } });
+    const call = (slug: string, body: unknown) => trackRoute.PATCH(new Request('http://x/api/tracks/x', { method: 'PATCH', body: JSON.stringify(body) }), { params: Promise.resolve({ slug }) });
+    expect((await call(slugs.public, { visibility: 'nope' })).status).toBe(422);
+    expect((await call(slugs.public, {})).status).toBe(422);
+    const imp = await trackImport.PUT(new Request('http://x/api/tracks/import', { method: 'PUT', body: JSON.stringify({ name: 'I', origin: 'perso', geometry: { type: 'LineString', coordinates: coords }, visibility: 'nope' }) }));
+    expect(imp.status).toBe(422);
+  });
+
+  it('visibilité (#1590) : seul l\'auteur la change par PATCH ; copain / autre ⇒ 404 ou 403 ; source synchronisée ⇒ 403', async () => {
+    const db = st.db as ReturnType<typeof openDb>['db'];
+    const call = (slug: string, body: unknown) => trackRoute.PATCH(new Request('http://x/api/tracks/x', { method: 'PATCH', body: JSON.stringify(body) }), { params: Promise.resolve({ slug }) });
+    st.uid = null;
+    expect((await call(slugs.public, { visibility: 'private' })).status).toBe(401);
+    st.uid = 'b'; // autre : voit la publique mais n'est pas l'auteur ; ne voit pas la privée
+    expect((await call(slugs.public, { visibility: 'private' })).status).toBe(403);
+    expect((await call(slugs.private, { visibility: 'public' })).status).toBe(404);
+    expect(db.select().from(track).where(eq(track.slug, slugs.public)).get()?.visibility).toBe('public');
+    st.uid = 'a';
+    const ok = await call(slugs.public, { visibility: 'friends' });
+    expect(ok.status).toBe(200);
+    expect(await ok.json()).toEqual({ visibility: 'friends' });
+    expect(db.select().from(track).where(eq(track.slug, slugs.public)).get()?.visibility).toBe('friends');
+    // Trace d'une source synchronisée : aucun choix.
+    const osm = await upsertTrack(db, { source: 'osm', externalId: 'r/9', name: 'O', geometry: { type: 'LineString', coordinates: coords }, raw: null, createdBy: 'a' }, { enrich: false });
+    expect((await call(osm.slug, { visibility: 'private' })).status).toBe(403);
+    // Fiche : la visibilité n'est exposée qu'à l'auteur.
+    st.uid = 'a';
+    const mine = await (await trackRoute.GET(get(`/api/tracks/${slugs.friends}`), { params: Promise.resolve({ slug: slugs.friends }) })).json();
+    expect(mine.visibility).toBe('friends');
+    st.uid = 'f';
+    const buddy = await (await trackRoute.GET(get(`/api/tracks/${slugs.friends}`), { params: Promise.resolve({ slug: slugs.friends }) })).json();
+    expect(buddy.visibility).toBeNull();
   });
 
   it('carte des sorties : un anonyme ne voit que les sorties publiques', async () => {

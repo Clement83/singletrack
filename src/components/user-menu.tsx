@@ -17,9 +17,10 @@ import { LocaleSwitcher } from '@/components/locale-switcher';
 import { DefaultOutingVisibility } from '@/components/default-outing-visibility';
 import type { OutingVisibilityValue } from '@/components/outing-visibility-switcher';
 import { FederatedAddress } from '@/components/federated-address';
+import { DefaultTrackVisibility, type TrackVisibilityValue } from '@/components/tracks/track-visibility';
 import { VisibilitySwitcher } from '@/components/visibility-switcher';
 
-type User = { id: string; name: string; email: string; profileVisibility: 'private' | 'public'; outingVisibility: OutingVisibilityValue; fed?: { handle: string; address: string; canChange: boolean } | null };
+type User = { id: string; name: string; email: string; profileVisibility: 'private' | 'public'; outingVisibility: OutingVisibilityValue; drawnTrackVisibility: TrackVisibilityValue; importedTrackVisibility: TrackVisibilityValue; fed?: { handle: string; address: string; canChange: boolean } | null };
 
 /** Initiale du prénom (avatar). */
 export function initialOf(name: string): string {
@@ -44,6 +45,7 @@ function MenuBody({ user, onDone, sourceUrl, version }: { user: User; onDone: ()
   const tTheme = useTranslations('theme');
   const tProfile = useTranslations('userProfile');
   const tOutingVis = useTranslations('outingVisibility');
+  const tTrackVis = useTranslations('trackVisibility');
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [pending, setPending] = useState(false);
@@ -86,6 +88,11 @@ function MenuBody({ user, onDone, sourceUrl, version }: { user: User; onDone: ()
       <section className="flex flex-col gap-2">
         <h3 className="text-label uppercase text-muted-foreground">{tOutingVis('menuTitle')}</h3>
         <DefaultOutingVisibility initial={user.outingVisibility} />
+      </section>
+      <section className="flex flex-col gap-2">
+        <h3 className="text-label uppercase text-muted-foreground">{tTrackVis('menuTitle')}</h3>
+        <DefaultTrackVisibility origin="drawn" initial={user.drawnTrackVisibility} />
+        <DefaultTrackVisibility origin="imported" initial={user.importedTrackVisibility} />
       </section>
       {user.fed && <FederatedAddress {...user.fed} />}
       <section>

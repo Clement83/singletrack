@@ -647,6 +647,7 @@
     "geometryInvalid": "Trace invalide.",
     "waypointsInvalid": "Points de la trace invalides.",
     "geometryTooShort": "Trace trop courte (100 m minimum).",
+    "visibilityInvalid": "Visibilité invalide.",
     "parentGone": "La trace d’origine n’existe plus.",
     "title": "Donne un titre (120 caractères max).",
     "date": "Choisis une date et une heure.",
@@ -698,6 +699,22 @@
     "close": "Fermer",
     "collapse": "Réduire",
     "expand": "Agrandir"
+  },
+  "trackVisibility": {
+    "label": "Qui peut voir cette trace",
+    "public": "Publique",
+    "friends": "Copains",
+    "private": "Privée",
+    "publicHint": "Tout le monde la voit sur la carte, même sans compte.",
+    "friendsHint": "Toi et tes copains uniquement. Le lien direct ne marche que pour eux.",
+    "privateHint": "Toi seul la vois. Pratique pour une sortie roulée qui part de chez toi.",
+    "change": "Visibilité\u00a0: {value}",
+    "changeAria": "Changer la visibilité de la trace",
+    "saved": "Visibilité enregistrée.",
+    "error": "Ça n’a pas marché, réessaie.",
+    "menuTitle": "Visibilité de mes traces",
+    "drawnLabel": "Traces que je dessine",
+    "importedLabel": "Traces que j’importe"
   },
   "trackCard": {
     "draft": "Brouillon",
@@ -910,6 +927,7 @@
     "leaveBack": "Retour"
   },
   "importer": {
+    "visibilityHint": "Un fichier importé est souvent une sortie roulée qui part de chez toi\u00a0: par défaut, il reste privé.",
     "metaTitle": "Importer une trace · Singletrack",
     "title": "Importer une trace",
     "subtitle": "Dépose un fichier GPX, KML ou KMZ, on s’occupe du reste.",

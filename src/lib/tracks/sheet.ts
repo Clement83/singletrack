@@ -34,6 +34,8 @@ export async function trackSheet(db: Db, slug: string, userId?: string | null) {
     slug: t.slug,
     name: t.name,
     status: t.status,
+    /** #1590 : seulement pour l'auteur d'une trace modifiable (jamais OSM / Geotrek) ; sert au badge et au menu « … ». */
+    visibility: mine ? t.visibility : null,
     difficulty: t.difficulty,
     loop: t.loop,
     source: t.source,

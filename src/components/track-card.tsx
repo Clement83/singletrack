@@ -3,6 +3,7 @@ import { CalendarDays, ChevronRight, Mountain, PencilLine, Repeat, Route, Users 
 import { useLocale, useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { Badge, DifficultyBadge } from '@/components/ui/badge';
+import { TrackVisibilityBadge, type TrackVisibilityValue } from '@/components/tracks/track-visibility';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Difficulty } from '@/lib/design/scales';
 import { formatElevation, formatKm, formatOutingDate } from '@/lib/format';
@@ -24,11 +25,13 @@ type Props = {
   going?: number;
   /** Brouillon (#1450) : badge « Brouillon » ; un titre vide devient « Sans titre ». */
   draft?: boolean;
+  /** #1590 : visibilité, à fournir seulement pour ses propres traces. */
+  visibility?: TrackVisibilityValue;
   className?: string;
 };
 
 /** Une trace ou une sortie dans une liste (sur mobile : listes de cartes, pas de tableau). */
-export function TrackCard({ href, onSelect, title, distanceKm, elevationM, difficulty, loop, source, date, going, draft, className }: Props) {
+export function TrackCard({ href, onSelect, title, distanceKm, elevationM, difficulty, loop, source, date, going, draft, visibility, className }: Props) {
   const t = useTranslations('trackCard');
   const locale = useLocale();
   const cls = cn(
@@ -61,7 +64,7 @@ export function TrackCard({ href, onSelect, title, distanceKm, elevationM, diffi
             </span>
           )}
         </p>
-        {(difficulty || loop || source || draft) && (
+        {(difficulty || loop || source || draft || visibility) && (
           <div className="flex flex-wrap items-center gap-2">
             {draft && (
               <Badge variant="outline">
@@ -69,6 +72,7 @@ export function TrackCard({ href, onSelect, title, distanceKm, elevationM, diffi
                 {t('draft')}
               </Badge>
             )}
+            {visibility && <TrackVisibilityBadge value={visibility} />}
             {difficulty && <DifficultyBadge level={difficulty} />}
             {loop && (
               <Badge>

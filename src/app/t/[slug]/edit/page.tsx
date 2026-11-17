@@ -6,6 +6,7 @@ import { TrackEditor, type EditorMode } from '@/components/editor/track-editor';
 import { config } from '@/lib/config';
 import { docFromGeometry, docFromStoredWithGeometry } from '@/lib/editor/doc';
 import { requireUser } from '@/lib/current-user';
+import { getDefaultTrackVisibility } from '@/lib/user-profile';
 import { canEditInPlace, ensureTrackElevation, getTrackBySlug, canViewTrack, storedFromRaw } from '@/lib/tracks';
 
 export const dynamic = 'force-dynamic';
@@ -37,6 +38,7 @@ export default async function EditTrackPage({ params, searchParams }: { params: 
       initialDescription={t.description ?? ''}
       slug={t.slug}
       initialStatus={t.status}
+      initialVisibility={mode === 'update' ? (t.visibility ?? 'public') : getDefaultTrackVisibility(getDb().db, user.id, 'drawn')}
       home={[config.homeLon, config.homeLat]}
       bounds={[t.bboxMinLon, t.bboxMinLat, t.bboxMaxLon, t.bboxMaxLat]}
     />

@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { requireUser } from '@/lib/current-user';
 import { getDb } from '@/db';
-import { getVisibility, getDefaultOutingVisibility } from '@/lib/user-profile';
+import { getVisibility, getDefaultOutingVisibility, getDefaultTrackVisibility } from '@/lib/user-profile';
 import { UserMenu } from '@/components/user-menu';
 import { federationEnabled, fedAddress } from '@/lib/federation/config';
 import { getHandle } from '@/lib/federation/handle';
@@ -21,7 +21,7 @@ export default async function PrivateLayout({ children }: { children: React.Reac
       {children}
       {/* Menu utilisateur (#1397) : en haut à gauche sur mobile, en bas de la barre latérale (centré dans ses 80 px) en desktop. */}
       <UserMenu
-        user={{ id: user.id, name: user.name, email: user.email, profileVisibility: getVisibility(getDb().db, user.id), outingVisibility: getDefaultOutingVisibility(getDb().db, user.id), fed }}
+        user={{ id: user.id, name: user.name, email: user.email, profileVisibility: getVisibility(getDb().db, user.id), outingVisibility: getDefaultOutingVisibility(getDb().db, user.id), drawnTrackVisibility: getDefaultTrackVisibility(getDb().db, user.id, 'drawn'), importedTrackVisibility: getDefaultTrackVisibility(getDb().db, user.id, 'imported'), fed }}
         sourceUrl={config.sourceUrl}
         version={config.version}
         className="fixed top-[calc(0.75rem+env(safe-area-inset-top))] left-3 z-20 lg:top-auto lg:bottom-4 lg:left-[calc((var(--spacing-rail)-var(--spacing-touch))/2)] lg:z-40"

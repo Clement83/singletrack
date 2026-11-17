@@ -1,5 +1,6 @@
 'use client';
 
+import { type TrackVisibilityValue } from '@/components/tracks/track-visibility';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useCallback, useEffect, useMemo, useDeferredValue, useReducer, useRef, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
@@ -50,6 +51,8 @@ type Props = {
   slug?: string;
   /** Statut de la trace éditée en place (#1450). */
   initialStatus?: 'draft' | 'published';
+  /** Visibilité présélectionnée (#1590) : préférence du compte à la création / copie, valeur actuelle en modification. */
+  initialVisibility?: TrackVisibilityValue;
   home: LonLat;
   /** Zoom initial (vue transmise par la carte, #1577) ; 13 par défaut. */
   initialZoom?: number;
@@ -84,6 +87,9 @@ export type EditorCtl = {
   setName: (v: string) => void;
   description: string;
   setDescription: (v: string) => void;
+  /** Visibilité de la trace (#1590), envoyée à chaque enregistrement. */
+  visibility: TrackVisibilityValue;
+  setVisibility: (v: TrackVisibilityValue) => void;
   errors: Record<string, string>;
   saving: boolean;
   save: () => Promise<void>;
@@ -116,7 +122,7 @@ const key = (a: LonLat, b: LonLat) => `${a[0]},${a[1]}|${b[0]},${b[1]}`;
  * Mise en page différenciée (#1394) : mobile = profil en haut + grosse barre d'outils en bas (#1392) ;
  * desktop = carte plein écran avec interface flottante, popover du point et raccourcis clavier (#1393).
  */
-export function TrackEditor({ mode, initialDoc, initialName = '', initialDescription = '', slug, initialStatus, home, bounds, initialZoom }: Props) {
+export function TrackEditor({ mode, initialDoc, initialName = '', initialDescription = '', slug, initialStatus, initialVisibility = 'public', home, bounds, initialZoom }: Props) {
   const t = useTranslations('editor');
   const router = useRouter();
   const colors = useMapColors();
@@ -199,6 +205,7 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
   const [tick, setTick] = useState(0);
   const [name, setName] = useState(initialName);
   const [description, setDescription] = useState(initialDescription);
+  const [visibility, setVisibility] = useState<TrackVisibilityValue>(initialVisibility);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [profileCursor, setProfileCursor] = useState<number | null>(null);
   const [mapHoverIndex, setMapHoverIndex] = useState<number | null>(null);
@@ -375,16 +382,16 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
   // Enregistrement automatique (#1450) : chaque modification est envoyée après un court délai, et à la sortie de la page.
   // Plus d'alerte « modifications non enregistrées » : seul un échec d'enregistrement ouvre une popin.
   const canAutosave = !!geometry && doc.waypoints.length >= 2 && pending.length === 0;
-  const autoSig = `${docSig(doc.waypoints, doc.segments.map((s) => s.mode), 'x')}|${name}|${description}|${geometry ? `${geometry.coordinates.length}:${Math.round(stats.distanceM)}` : ''}`;
+  const autoSig = `${docSig(doc.waypoints, doc.segments.map((s) => s.mode), 'x')}|${name}|${description}|${visibility}|${geometry ? `${geometry.coordinates.length}:${Math.round(stats.distanceM)}` : ''}`;
   const [savedSig, setSavedSig] = useState(autoSig); // état à l'ouverture = déjà enregistré
   const unsaved = autoSig !== savedSig;
   const [leaveOpen, setLeaveOpen] = useState(false);
   const leavingRef = useRef(false);
   const running = useRef(false);
   const again = useRef(false);
-  const latest = useRef({ doc, name, description, canAutosave, autoSig, liveSlug, liveStatus });
+  const latest = useRef({ doc, name, description, visibility, canAutosave, autoSig, liveSlug, liveStatus });
   useEffect(() => {
-    latest.current = { doc, name, description, canAutosave, autoSig, liveSlug, liveStatus };
+    latest.current = { doc, name, description, visibility, canAutosave, autoSig, liveSlug, liveStatus };
   });
 
   /** `ok` enregistré, `skip` rien à faire (ou impossible sans nom), `fail` échec. `publish` : nom exigé, statut publié. */
@@ -406,7 +413,7 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
       setAutosave('saving');
       const g = docGeometry(c.doc, { densifyM: 50 })!; // lignes droites densifiées : l'altitude IGN suit le terrain
       const body = JSON.stringify({
-        name: c.name, description: c.description, geometry: g, waypoints: c.doc.waypoints, modes: c.doc.segments.map((s) => s.mode),
+        name: c.name, description: c.description, visibility: c.visibility, geometry: g, waypoints: c.doc.waypoints, modes: c.doc.segments.map((s) => s.mode),
         status: asPublished ? 'published' : 'draft',
         ...(!c.liveSlug && mode === 'copy' ? { parentSlug: slug } : {}),
       });
@@ -535,7 +542,7 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
     mode, state, dispatch, doc, stats, pending, canSave, home,
     quitHref,
     slug: liveSlug,
-    dirty, autosave, saveKey: liveStatus === 'published' ? 'update' : 'publish', canDelete: !!liveSlug, requestLeave, name, setName, description, setDescription, errors, saving, save, setProfileCursor, mapHoverIndex, rider, alts, chooseAlt, cycleAlt, deviation: state.deviation, restoreDeviation, snapOn,
+    dirty, autosave, saveKey: liveStatus === 'published' ? 'update' : 'publish', canDelete: !!liveSlug, requestLeave, name, setName, description, setDescription, visibility, setVisibility, errors, saving, save, setProfileCursor, mapHoverIndex, rider, alts, chooseAlt, cycleAlt, deviation: state.deviation, restoreDeviation, snapOn,
   };
 
   return (

@@ -12,7 +12,7 @@ import type { Messages } from './messages';
  */
 type Ns = keyof Messages;
 const ROOT: Ns[] = ['common', 'errors'];
-const TRACK: Ns[] = ['profile', 'map', 'track', 'scales', 'trackDelete'];
+const TRACK: Ns[] = ['profile', 'map', 'track', 'scales', 'trackDelete', 'trackVisibility'];
 
 export const CLIENT_NAMESPACES = {
   root: ROOT,

@@ -1,5 +1,6 @@
 'use client';
 
+import { TrackVisibilityChips } from '@/components/tracks/track-visibility';
 import { DeleteTrackButton } from '@/components/tracks/delete-track';
 import { useFormatter, useTranslations } from 'next-intl';
 import { AlertTriangle, Check, Loader2 } from 'lucide-react';
@@ -44,6 +45,7 @@ export function SaveForm({ ctl, autoFocusName = false }: { ctl: EditorCtl; autoF
       <Field label={t('descriptionLabel')}>
         {(c) => <Textarea {...c} value={ctl.description} onChange={(e) => ctl.setDescription(e.target.value)} rows={3} />}
       </Field>
+      <TrackVisibilityChips value={ctl.visibility} onChange={ctl.setVisibility} />
       {(errors.geometry || errors.waypoints || errors.parent) && <p className="text-small text-destructive">{errText(errors.geometry ?? errors.waypoints ?? errors.parent)}</p>}
       <Button type="submit" size="lg" disabled={ctl.saving || !ctl.canSave}>
         {ctl.saving ? <Loader2 className="animate-spin" /> : null} {t(`saveLabel.${ctl.saveKey}`)}

@@ -3,6 +3,9 @@ import { getTranslations } from 'next-intl/server';
 import { TrackEditor } from '@/components/editor/track-editor';
 import { emptyDoc } from '@/lib/editor/doc';
 import { parseMapView } from '@/lib/tracks/map-view';
+import { getDb } from '@/db';
+import { requireUser } from '@/lib/current-user';
+import { getDefaultTrackVisibility } from '@/lib/user-profile';
 import { config } from '@/lib/config';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -15,5 +18,6 @@ export default async function NewTrackPage({ searchParams }: { searchParams: Pro
   const raw = await searchParams;
   const sp = new URLSearchParams(Object.entries(raw).flatMap(([k, v]) => (typeof v === 'string' ? [[k, v]] : [])));
   const v = parseMapView(sp);
-  return <TrackEditor mode="create" initialDoc={emptyDoc()} home={v ? [v.lng, v.lat] : [config.homeLon, config.homeLat]} initialZoom={v?.z} />;
+  const user = await requireUser();
+  return <TrackEditor mode="create" initialDoc={emptyDoc()} initialVisibility={getDefaultTrackVisibility(getDb().db, user.id, 'drawn')} home={v ? [v.lng, v.lat] : [config.homeLon, config.homeLat]} initialZoom={v?.z} />;
 }

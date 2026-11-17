@@ -647,6 +647,7 @@
     "geometryInvalid": "Invalid route.",
     "waypointsInvalid": "Invalid route points.",
     "geometryTooShort": "Route too short (100 m minimum).",
+    "visibilityInvalid": "Invalid visibility.",
     "parentGone": "The original route no longer exists.",
     "title": "Add a title (120 characters max).",
     "date": "Pick a date and a time.",
@@ -698,6 +699,22 @@
     "close": "Close",
     "collapse": "Collapse",
     "expand": "Expand"
+  },
+  "trackVisibility": {
+    "label": "Who can see this route",
+    "public": "Public",
+    "friends": "Buddies",
+    "private": "Private",
+    "publicHint": "Everyone sees it on the map, even without an account.",
+    "friendsHint": "Only you and your buddies. The direct link works for them only.",
+    "privateHint": "Only you see it. Handy for a ride that starts from your home.",
+    "change": "Visibility: {value}",
+    "changeAria": "Change the route’s visibility",
+    "saved": "Visibility saved.",
+    "error": "That didn’t work, try again.",
+    "menuTitle": "Visibility of my routes",
+    "drawnLabel": "Routes I draw",
+    "importedLabel": "Routes I import"
   },
   "trackCard": {
     "draft": "Draft",
@@ -910,6 +927,7 @@
     "leaveBack": "Back"
   },
   "importer": {
+    "visibilityHint": "An imported file is often a ride that starts from your home: it stays private by default.",
     "metaTitle": "Import a track · Singletrack",
     "title": "Import a route",
     "subtitle": "Drop a GPX, KML or KMZ file, we’ll handle the rest.",

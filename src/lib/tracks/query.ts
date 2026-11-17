@@ -27,6 +27,8 @@ export type TrackSummary = {
   status: 'draft' | 'published';
   /** Codes des massifs traversés (#1349). */
   massifs: string[];
+  /** #1590 : visibilité, seulement sur **ses propres** traces (absente sinon) ; sert au badge de « Mes traces ». */
+  visibility?: 'public' | 'friends' | 'private';
 };
 
 /** Nombre maximal de traces servies par requête (#1428) : au-delà, les plus proches du centre de la vue d'abord. */
@@ -46,7 +48,7 @@ export function toleranceForZoom(zoom?: number): number {
 }
 
 /** Départ léger d'une trace (#1530) : tout sauf la géométrie. */
-export type TrackStart = Pick<TrackSummary, 'slug' | 'name' | 'source' | 'difficulty' | 'loop' | 'distanceKm' | 'gainM' | 'start' | 'status'>;
+export type TrackStart = Pick<TrackSummary, 'slug' | 'name' | 'source' | 'difficulty' | 'loop' | 'distanceKm' | 'gainM' | 'start' | 'status' | 'visibility'>;
 
 const cache = new Map<string, TrackGeometry>();
 function simplified(id: string, updatedAt: Date, g: TrackGeometry, tol = MAP_TOLERANCE_M) {
@@ -91,7 +93,7 @@ export function queryTracks(
       id: track.id, slug: track.slug, name: track.name, source: track.source, difficulty: track.difficulty, loop: track.loop,
       distanceM: track.distanceM, elevationGainM: track.elevationGainM, startLon: track.startLon, startLat: track.startLat,
       bboxMinLon: track.bboxMinLon, bboxMinLat: track.bboxMinLat, bboxMaxLon: track.bboxMaxLon, bboxMaxLat: track.bboxMaxLat,
-      massifs: track.massifs, updatedAt: track.updatedAt, status: track.status,
+      massifs: track.massifs, updatedAt: track.updatedAt, status: track.status, visibility: track.visibility, createdBy: track.createdBy,
     })
     .from(track)
     .where(w.length ? and(...w) : undefined)
@@ -133,6 +135,7 @@ export function queryTracks(
     geometry: opts.overview || opts.starts ? null : simplified(r.id, r.updatedAt, geoms.get(r.id) ?? { type: 'LineString', coordinates: [] }),
     massifs: r.massifs ?? [],
     status: r.status,
+    ...(opts.userId && r.createdBy === opts.userId && r.visibility ? { visibility: r.visibility } : {}),
   }));
   return { tracks, total };
 }
