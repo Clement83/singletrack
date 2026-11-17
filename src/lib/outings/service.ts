@@ -3,6 +3,7 @@ import type { Db } from '@/db';
 import { calendarFeed, invitation, outing, track, OUTING_EBIKE, OUTING_LEVELS, type InvitationRow, type OutingRow } from '@/db/schema';
 import { getDefaultOutingVisibility, isOutingVisibility } from '@/lib/user-profile';
 import { ensureTrackElevation } from '@/lib/tracks/elevation';
+import { canViewTrack } from '@/lib/tracks/query';
 import { snapshotOf } from './snapshot';
 import { decryptToken, hashToken, newInviteToken, newToken } from './tokens';
 import { parisToUtc } from './time';
@@ -57,8 +58,8 @@ function validate(input: OutingInput, partial: boolean): { errors: Errors; start
 
 export async function createOuting(db: Db, userId: string, input: OutingInput): Promise<{ slug: string } | { errors: Errors } | { error: 'not_found' }> {
   const found = input.trackSlug ? db.select().from(track).where(eq(track.slug, input.trackSlug)).get() : undefined;
-  // Un brouillon (#1450) ne sert jamais à créer une sortie : même réponse qu'une trace inconnue.
-  if (!found || found.status === 'draft') return { error: 'not_found' };
+  // Un brouillon (#1450) ou une trace invisible pour l'organisateur (#1589) ne sert jamais à créer une sortie : même réponse qu'une trace inconnue.
+  if (!found || found.status === 'draft' || !canViewTrack(db, found, userId)) return { error: 'not_found' };
   const { errors, startsAt } = validate(input, false);
   if (Object.keys(errors).length) return { errors };
   const t = await ensureTrackElevation(db, found); // la sortie fige la trace : altitude IGN complétée avant (#1428)

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionCookie } from 'better-auth/cookies';
-import { isPublicPath } from '@/lib/public-routes';
+import { isPublicPath, isPublicRead } from '@/lib/public-routes';
 import { isFederationPath } from '@/lib/federation/paths';
 import { federationEnabled } from '@/lib/federation/config';
 
@@ -13,7 +13,7 @@ export async function proxy(req: NextRequest) {
     if (!federationEnabled()) return new NextResponse(null, { status: 404 });
     return await handleFederation(req);
   }
-  if (isPublicPath(pathname) || getSessionCookie(req)) return NextResponse.next();
+  if (isPublicPath(pathname) || isPublicRead(pathname, req.method) || getSessionCookie(req)) return NextResponse.next();
   if (pathname.startsWith('/api/')) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   return NextResponse.redirect(new URL('/login', req.url));
 }

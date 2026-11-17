@@ -150,7 +150,7 @@ describe('routes publiques / privées', () => {
     expect(res.headers.get('location')).toBe('http://localhost:3000/login');
   });
   it('répond 401 aux API privées sans session', async () => {
-    expect((await proxy(req('/api/tracks'))).status).toBe(401);
+    expect((await proxy(req('/api/tracks/segments'))).status).toBe(401);
   });
   it('laisse passer /s/<slug> sans session et le privé avec cookie', async () => {
     expect((await proxy(req('/s/abc'))).headers.get('location')).toBeNull();

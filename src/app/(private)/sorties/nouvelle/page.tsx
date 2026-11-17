@@ -3,11 +3,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { notFound } from 'next/navigation';
-import { eq } from 'drizzle-orm';
 import { ArrowLeft } from 'lucide-react';
 import { getDb } from '@/db';
-import { track } from '@/db/schema';
 import { requireUser } from '@/lib/current-user';
+import { getVisibleTrack } from '@/lib/tracks';
 import { getDefaultOutingVisibility } from '@/lib/user-profile';
 import { OutingForm } from '@/components/outings/outing-form';
 
@@ -20,8 +19,8 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function Page({ searchParams }: { searchParams: Promise<{ trace?: string }> }) {
   const user = await requireUser();
   const slug = (await searchParams).trace;
-  const t = slug ? getDb().db.select().from(track).where(eq(track.slug, slug)).get() : undefined;
-  if (!t || t.status === 'draft') notFound();
+  const t = slug ? getVisibleTrack(getDb().db, slug, user.id) : undefined; // règle d'accès unique (#1589)
+  if (!t || t.status === 'draft') notFound(); // invisible ⇒ 404 (jamais 403)
   const tr = await getTranslations('outings');
   return (
     <main className="mx-auto flex w-full max-w-xl flex-col gap-5 px-4 pt-4">

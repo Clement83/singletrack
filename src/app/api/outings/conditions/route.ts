@@ -1,3 +1,4 @@
+import { canViewTrack } from '@/lib/tracks/query';
 import { eq } from 'drizzle-orm';
 import { getDb } from '@/db';
 import { track } from '@/db/schema';
@@ -34,7 +35,7 @@ export async function GET(req: Request) {
     if (o) base = { geometry: o.trackSnapshot.geometry, distanceM: o.trackSnapshot.distanceM, gainM: o.trackSnapshot.elevationGainM };
   } else if (traceSlug) {
     const t = db.select().from(track).where(eq(track.slug, traceSlug)).get();
-    if (t && t.status !== 'draft') base = { geometry: t.geometry, distanceM: t.distanceM, gainM: t.elevationGainM };
+    if (t && t.status !== 'draft' && canViewTrack(db, t, user.id)) base = { geometry: t.geometry, distanceM: t.distanceM, gainM: t.elevationGainM };
   }
   if (!base) return Response.json({ error: 'not_found' }, { status: 404 });
   return Response.json(await previewConditions(db, { ...base, startsAt, lat, lon }));

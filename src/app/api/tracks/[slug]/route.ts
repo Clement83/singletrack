@@ -1,25 +1,22 @@
 import { getDb } from '@/db';
 import { assertUser, unauthorized } from '@/lib/current-user';
+import { readCacheHeaders, readViewer } from '@/lib/public-read';
 import { deleteTrack, trackSheet, updateEditedTrack, type EditorInput } from '@/lib/tracks';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * Privé (#1581). `GET /api/tracks/<slug>` : fiche complète (stats, géométrie à 5 m, profil, droits, sorties),
+ * Lecture **sans session** possible (#1589, trace publique seulement ; PUT/DELETE privés). (#1581) `GET /api/tracks/<slug>` : fiche complète (stats, géométrie à 5 m, profil, droits, sorties),
  * même calcul que la page `/t/<slug>`. Brouillon d'autrui ou slug inconnu ⇒ 404. Cache privé, ETag slug + `updatedAt`.
  */
 export async function GET(req: Request, { params }: { params: Promise<{ slug: string }> }) {
-  let user;
-  try {
-    user = await assertUser();
-  } catch (e) {
-    return unauthorized(e);
-  }
-  const sheet = await trackSheet(getDb().db, (await params).slug, user.id);
+  const { user, rejected } = await readViewer(req);
+  if (rejected) return rejected;
+  const sheet = await trackSheet(getDb().db, (await params).slug, user?.id);
   if (!sheet) return Response.json({ error: 'not_found' }, { status: 404 });
   const { updatedAt, ...body } = sheet;
-  const etag = `"${Buffer.from(`${sheet.slug}:${updatedAt.getTime()}:${user.id}:${body.outings.map((o) => o.slug).join(',')}`).toString('base64url').slice(0, 200)}"`;
-  const headers = { ETag: etag, 'Cache-Control': 'private, max-age=60, must-revalidate' };
+  const etag = `"${Buffer.from(`${sheet.slug}:${updatedAt.getTime()}:${user?.id ?? 'anon'}:${body.outings.map((o) => o.slug).join(',')}`).toString('base64url').slice(0, 200)}"`;
+  const headers = { ETag: etag, ...readCacheHeaders(!user) };
   if (req.headers.get('if-none-match') === etag) return new Response(null, { status: 304, headers });
   return Response.json(body, { headers });
 }

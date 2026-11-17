@@ -7,7 +7,7 @@ import { parseStored, type StoredDoc } from '@/lib/editor/doc';
 import type { NormalizedTrack } from './types';
 import { getDefaultTrackVisibility, isTrackVisibility } from '@/lib/user-profile';
 import { SYNCED_SOURCES, deriveColumns, upsertTrack, type UpsertOptions } from './upsert';
-import { getTrackBySlug } from './query';
+import { getTrackBySlug, getVisibleTrack } from './query';
 
 /** Ce que l'éditeur envoie à l'enregistrement. */
 export type EditorInput = {
@@ -80,7 +80,8 @@ export async function createEditedTrack(db: Db, userId: string, input: EditorInp
   const draft = input?.status === 'draft';
   const v = validateEditorInput(input, draft);
   if ('errors' in v) return v;
-  const parent = input.parentSlug ? getTrackBySlug(db, input.parentSlug) : undefined;
+  // Copie (#1589) : la trace d'origine doit être visible de l'auteur de la copie ; sinon même réponse que « disparue ».
+  const parent = input.parentSlug ? getVisibleTrack(db, input.parentSlug, userId) : undefined;
   if (input.parentSlug && !parent) return { errors: { parent: 'parentGone' } };
   const t: NormalizedTrack = {
     source: parent ? 'edited' : 'manual',

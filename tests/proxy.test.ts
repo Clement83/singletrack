@@ -20,7 +20,7 @@ describe('proxy (#1482)', () => {
     expect(new URL(res.headers.get('location')!).pathname).toBe('/login');
   });
 
-  it.each(['/api/tracks', '/api/outings', '/api/outings/x/join', '/api/friends', '/api/profile', '/api/route', '/api/contacts', '/api/inconnue'])(
+  it.each(['/api/tracks/segments', '/api/outings', '/api/outings/x/join', '/api/friends', '/api/profile', '/api/route', '/api/contacts', '/api/inconnue'])(
     'API privée ou inconnue %s : 401 JSON', async (p) => {
       const res = (await proxy(req(p)));
       expect(res.status).toBe(401);
@@ -66,6 +66,15 @@ describe('proxy (#1482)', () => {
 
   it('un préfixe voisin n’est pas public (/sorties ≠ /s, /api/sx ≠ /api/s, /tx ≠ /t)', () => {
     for (const p of ['/sorties', '/api/sx', '/tx', '/login-admin', '/api/authx', '/api/locale/x', '/ix']) expect(isPublicPath(p), p).toBe(false);
+  });
+
+  it('lectures GET de la carte publiques (#1589), écritures et sous-routes privées', async () => {
+    for (const p of ['/api/tracks?starts=1', '/api/tracks/geometry?slugs=a', '/api/tracks/un-slug', '/api/outings/map?bbox=1,2,3,4'])
+      expect((await proxy(req(p))).headers.get('x-middleware-next'), p).toBe('1');
+    for (const [p, method] of [['/api/tracks', 'POST'], ['/api/tracks/un-slug', 'PUT'], ['/api/tracks/un-slug', 'DELETE'], ['/api/tracks/segments', 'GET'], ['/api/tracks/import', 'GET'], ['/api/outings', 'GET'], ['/api/outings/map', 'POST']] as const) {
+      const res = await proxy(new NextRequest(`http://localhost${p}`, { method }));
+      expect(res.status, `${method} ${p}`).toBe(401);
+    }
   });
 
   it('avec un cookie de session, une route privée passe', async () => {

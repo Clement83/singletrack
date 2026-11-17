@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { openDb } from '@/db';
-import { outing, user } from '@/db/schema';
+import { friendship, outing, track, user } from '@/db/schema';
+import { eq } from 'drizzle-orm';
+import { pairKey } from '@/lib/friends';
 import { createEditedTrack, upsertTrack, type EditorInput } from '@/lib/tracks';
 import { createOuting, createInvitation } from '@/lib/outings';
 import type { Position } from '@/lib/geo';
@@ -33,6 +35,7 @@ import * as tracksList from '@/app/api/tracks/route';
 import * as trackGeometry from '@/app/api/tracks/geometry/route';
 import * as trackImport from '@/app/api/tracks/import/route';
 import * as trackGpx from '@/app/api/t/[slug]/gpx/route';
+import * as outingsMap from '@/app/api/outings/map/route';
 import * as trackKml from '@/app/api/t/[slug]/kml/route';
 import * as guestRespond from '@/app/api/i/[token]/route';
 import * as guestPhotos from '@/app/api/i/[token]/photos/route';
@@ -309,5 +312,107 @@ describe('/api/health et /api/locale', () => {
   it('locale : refuse une langue inconnue', async () => {
     const r = await locale.POST(json('POST', { locale: 'xx' }));
     expect(r.status).toBe(400);
+  });
+});
+
+// Matrice #1589 : anonyme / auteur / copain / autre × public / friends / private / draft ⇒ 200 ou 404, jamais 403.
+describe('visibilité des traces : toutes les lectures (#1589)', () => {
+  const VIS = ['public', 'friends', 'private'] as const;
+  // viewer → visibilité → lisible ? (brouillon : auteur seul)
+  const WHO: Record<string, [string | null, Record<string, boolean>]> = {
+    anonyme: [null, { public: true, friends: false, private: false, draft: false }],
+    auteur: ['a', { public: true, friends: true, private: true, draft: true }],
+    copain: ['f', { public: true, friends: true, private: false, draft: false }],
+    autre: ['b', { public: true, friends: false, private: false, draft: false }],
+  };
+  const slugs: Record<string, string> = {};
+  beforeEach(async () => {
+    const db = st.db as ReturnType<typeof openDb>['db'];
+    const now = new Date();
+    db.insert(user).values({ id: 'f', name: 'f', email: 'f@x.fr', emailVerified: true, createdAt: now, updatedAt: now }).run();
+    db.insert(friendship).values({ requesterId: 'a', addresseeId: 'f', pairKey: pairKey('a', 'f'), status: 'accepted' }).run();
+    for (const v of VIS) {
+      const r = (await createEditedTrack(db, 'a', { ...draftInput, name: `V-${v}`, status: 'published', visibility: v } as EditorInput, { enrich: false })) as { slug: string };
+      slugs[v] = r.slug;
+    }
+    slugs.draft = draftSlug;
+    st.uid = null;
+  });
+  const get = (url: string) => new Request(`http://x${url}`, { headers: { 'x-forwarded-for': `10.1.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}` } });
+  const KINDS = ['public', 'friends', 'private', 'draft'];
+
+  for (const [who, [uid, expected]] of Object.entries(WHO)) {
+    it(`${who} : fiche, GPX, KML, géométrie, liste de départs`, async () => {
+      st.uid = uid;
+      for (const k of KINDS) {
+        const ok = expected[k];
+        const code = ok ? 200 : 404;
+        expect((await trackRoute.GET(get('/api/tracks/x'), ctx(slugs[k]))).status, `fiche ${k}`).toBe(code);
+        expect((await trackGpx.GET(get('/'), ctx(slugs[k]))).status, `gpx ${k}`).toBe(code);
+        expect((await trackKml.GET(get('/'), ctx(slugs[k]))).status, `kml ${k}`).toBe(code);
+        const g = await (await trackGeometry.GET(get(`/api/tracks/geometry?slugs=${slugs[k]}`))).json();
+        expect(g.tracks.length, `geometry ${k}`).toBe(ok ? 1 : 0);
+      }
+      const list = await (await tracksList.GET(get('/api/tracks?starts=1'))).json();
+      const names = list.tracks.map((t: { name: string }) => t.name);
+      for (const v of VIS) expect(names.includes(`V-${v}`), `starts ${v}`).toBe(expected[v]);
+      // Un brouillon ne sort jamais de l'explorateur (seulement « Mes traces »).
+      expect(list.tracks.some((t: { status: string }) => t.status === 'draft')).toBe(false);
+    });
+  }
+
+  it('anonyme : fiche / geometry / starts en 200 avec Cache-Control public ; connecté : private ; jamais de 403', async () => {
+    const r = await trackRoute.GET(get('/api/tracks/x'), ctx(slugs.public));
+    expect(r.headers.get('cache-control')).toContain('public');
+    expect(r.headers.get('vary')).toContain('Cookie');
+    expect((await tracksList.GET(get('/api/tracks?starts=1'))).headers.get('cache-control')).toContain('public');
+    expect((await trackGeometry.GET(get(`/api/tracks/geometry?slugs=${slugs.public}`))).headers.get('cache-control')).toContain('public');
+    st.uid = 'a';
+    expect((await trackRoute.GET(get('/api/tracks/x'), ctx(slugs.public))).headers.get('cache-control')).toContain('private');
+    expect((await trackRoute.GET(get('/api/tracks/x'), ctx(slugs.private))).status).not.toBe(403);
+  });
+
+  it('anonyme : liste complète ou « mes traces » refusées (401), écritures refusées', async () => {
+    expect((await tracksList.GET(get('/api/tracks'))).status).toBe(401);
+    expect((await tracksList.GET(get('/api/tracks?starts=1&mine=1'))).status).toBe(401);
+    expect((await trackRoute.PUT(json('PUT', {}), ctx(slugs.public))).status).toBe(401);
+    expect((await trackRoute.DELETE(json('DELETE', {}), ctx(slugs.public))).status).toBe(401);
+    expect((await tracksList.POST(json('POST', {}))).status).toBe(401);
+  });
+
+  it('anonyme : limite de débit (429) sur les lectures', async () => {
+    const h = { 'x-forwarded-for': '10.9.9.9' };
+    let last = 200;
+    for (let i = 0; i < 125; i++) last = (await tracksList.GET(new Request('http://x/api/tracks?starts=1', { headers: h }))).status;
+    expect(last).toBe(429);
+  });
+
+  it('choix de trace pour une sortie et « modifier une copie » : trace invisible ⇒ introuvable', async () => {
+    const db = st.db as ReturnType<typeof openDb>['db'];
+    const input = { trackSlug: slugs.private, title: 'x', date: '2030-05-10', time: '08:30' };
+    expect(await createOuting(db, 'b', input)).toEqual({ error: 'not_found' });
+    expect(await createOuting(db, 'a', input)).toHaveProperty('slug');
+    expect(await createOuting(db, 'f', { ...input, trackSlug: slugs.friends })).toHaveProperty('slug');
+    expect(await createOuting(db, 'b', { ...input, trackSlug: slugs.friends })).toEqual({ error: 'not_found' });
+    const copy = { ...draftInput, name: 'copie', status: 'published', parentSlug: slugs.private } as EditorInput;
+    expect(await createEditedTrack(db, 'b', copy, { enrich: false })).toEqual({ errors: { parent: 'parentGone' } });
+    expect(await createEditedTrack(db, 'a', copy, { enrich: false })).toHaveProperty('slug');
+    expect(db.select().from(track).where(eq(track.slug, slugs.private)).get()?.visibility).toBe('private');
+  });
+
+  it('carte des sorties : un anonyme ne voit que les sorties publiques', async () => {
+    const db = st.db as ReturnType<typeof openDb>['db'];
+    const mk = (visibility: string, title: string) => createOuting(db, 'a', { trackSlug, title, date: '2099-05-10', time: '08:30', visibility } as never);
+    await mk('public', 'Pub'); await mk('friends', 'Cop'); await mk('invite', 'Inv');
+    const q = '/api/outings/map?bbox=-10,40,10,50';
+    const anon = await (await outingsMap.GET(get(q))).json();
+    expect(anon.outings.map((o: { title: string }) => o.title)).toEqual(['Pub']);
+    expect(anon.outings[0].mine).toBe(false);
+    expect((await outingsMap.GET(get(q))).headers.get('cache-control')).toContain('public');
+    st.uid = 'a';
+    const mine = await (await outingsMap.GET(get(q))).json();
+    expect(mine.outings.length).toBe(4); // 3 ci-dessus + celle du beforeEach
+    expect((await outingsMap.GET(get(q))).headers.get('cache-control')).toContain('private');
+    expect((await outingsMap.GET(get('/api/outings/map?bbox=x'))).status).toBe(400);
   });
 });

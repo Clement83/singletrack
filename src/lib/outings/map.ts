@@ -36,7 +36,7 @@ export type MapOuting = {
 export type MapBbox = [number, number, number, number];
 export const MAP_OUTINGS_MAX = 200;
 
-export function listMapOutings(db: Db, viewerId: string, bbox: MapBbox, now = new Date()): MapOuting[] {
+export function listMapOutings(db: Db, viewerId: string | null, bbox: MapBbox, now = new Date()): MapOuting[] {
   const today = utcToParisInputs(now).date;
   const [minLon, minLat, maxLon, maxLat] = bbox;
   const rows = db.select({ o: outing, organizer: user.name }).from(outing)
@@ -47,22 +47,23 @@ export function listMapOutings(db: Db, viewerId: string, bbox: MapBbox, now = ne
     .sort((a, b) => a.o.startsAt.getTime() - b.o.startsAt.getTime());
   if (!rows.length) return [];
 
-  const hidden = archiveOverrides(db, viewerId);
-  const mineInv = new Set(db.select({ outingId: invitation.outingId }).from(invitation)
-    .where(and(eq(invitation.userId, viewerId), isNull(invitation.revokedAt))).all().map((i) => i.outingId));
+  const hidden = viewerId ? archiveOverrides(db, viewerId) : new Map<string, boolean>();
+  const mineInv = new Set(viewerId ? db.select({ outingId: invitation.outingId }).from(invitation)
+    .where(and(eq(invitation.userId, viewerId), isNull(invitation.revokedAt))).all().map((i) => i.outingId) : []);
 
   const out: MapOuting[] = [];
   for (const { o, organizer } of rows) {
     if (out.length >= MAP_OUTINGS_MAX) break;
     if (hidden.get(o.id) === true) continue;
-    if (!outingPermissions(db, { userId: viewerId }, o, now).canView) continue;
+    // Anonyme (#1589) : seulement les sorties publiques (jamais copains ni sur invitation).
+    if (!viewerId ? o.visibility !== 'public' : !outingPermissions(db, { userId: viewerId }, o, now).canView) continue;
     const yesCount = countYes(db, o.id);
     out.push({
       id: o.id, title: o.title, startsAt: o.startsAt, lat: o.meetingLat, lon: o.meetingLon, meetingLabel: o.meetingLabel,
       distanceM: o.trackSnapshot.distanceM, gainM: o.trackSnapshot.elevationGainM ?? null,
       level: o.level, ebike: o.ebike, visibility: o.visibility, organizerName: organizer, yesCount,
       spotsLeft: o.maxParticipants == null ? null : Math.max(0, o.maxParticipants - yesCount),
-      mine: o.ownerId === viewerId || o.createdBy === viewerId || mineInv.has(o.id),
+      mine: !!viewerId && (o.ownerId === viewerId || o.createdBy === viewerId || mineInv.has(o.id)),
     });
   }
   return out;
