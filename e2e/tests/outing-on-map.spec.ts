@@ -20,6 +20,7 @@ test('sortie : parcours coloré + légende + profil, retiré à la fermeture ; a
   await page.route(/\/api\/outings\/map\/o1$/, (r) => r.fulfill({
     json: {
       geometry: { type: 'LineString', coordinates: coords }, bbox: [c.lng, c.lat, c.lng + 0.01, c.lat + 0.01], end: [c.lng + 0.01, c.lat + 0.01],
+      description: 'Ligne 1\nLigne 2', track: { name: 'Parcours figé', distanceM: 1400, elevationGainM: 80, attribution: null, license: null }, participants: null,
       profile: coords.map((p, i) => ({ distKm: i * 0.7, ele: p[2], lon: p[0], lat: p[1] })),
     },
   }));
@@ -31,6 +32,9 @@ test('sortie : parcours coloré + légende + profil, retiré à la fermeture ; a
   await page.getByRole('button', { name: /Sortie e2e/ }).click();
   await expect.poll(openLine).toBeGreaterThan(0);
   await expect(page.getByRole('button', { name: 'Pentes' })).toBeVisible();
+  // #1599 : le panneau est un OutingView (description avec retours à la ligne, RDV, qui vient), sans météo.
+  await expect(page.locator('[data-outing-view="panel"]')).toContainText('Ligne 1');
+  await expect(page.locator('[data-outing-view="panel"] p.whitespace-pre-line')).toContainText('Ligne 2');
   await expect(page.getByTestId('outing-panel-footer').getByRole('slider')).toBeVisible();
   expect(await page.content()).not.toContain('e2e-trace-slug');
   // Fermer le panneau retire le tracé.

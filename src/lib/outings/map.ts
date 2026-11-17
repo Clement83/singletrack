@@ -10,6 +10,7 @@ import { profileFor } from './profile';
 import type { TrackSnapshot } from './snapshot';
 import { utcToParisInputs } from './time';
 import { countYes, isClosed } from './service';
+import { listParticipants, type Participant } from './participants';
 
 /**
  * « Sorties à venir » sur la carte (#1461, epic #1463 P7). Une sortie apparaît à son **point de RDV** si le compte la voit
@@ -123,6 +124,11 @@ export type MapOutingTrack = {
   profile: ReturnType<typeof profileFor>;
   bbox: [number, number, number, number];
   end: [number, number];
+  /** Contenu du panneau `OutingView` (#1599) : jamais le slug ni l'id de la trace d'origine. */
+  description: string | null;
+  track: Pick<TrackSnapshot, 'name' | 'distanceM' | 'elevationGainM' | 'attribution' | 'license'>;
+  /** Prénoms seulement pour qui est rattaché à la sortie (propriétaire, créateur, invité lié) ; sinon `null` (le compteur de la liste suffit). */
+  participants: Participant[] | null;
 };
 
 /**
@@ -139,5 +145,13 @@ export function getMapOutingTrack(db: Db, viewerId: string | null, outingId: str
   const last = ls[ls.length - 1]?.at(-1);
   const bbox = bboxOf(full);
   if (!last || !bbox) return null;
-  return { geometry: simplifyGeometry(full, 5), profile: profileFor(full), bbox: [bbox.minLon, bbox.minLat, bbox.maxLon, bbox.maxLat], end: [last[0], last[1]] };
+  const t = o.trackSnapshot;
+  const attached = !!viewerId && (o.ownerId === viewerId || o.createdBy === viewerId || !!db.select({ id: invitation.id }).from(invitation)
+    .where(and(eq(invitation.outingId, o.id), eq(invitation.userId, viewerId), isNull(invitation.revokedAt))).get());
+  return {
+    geometry: simplifyGeometry(full, 5), profile: profileFor(full), bbox: [bbox.minLon, bbox.minLat, bbox.maxLon, bbox.maxLat], end: [last[0], last[1]],
+    description: o.description,
+    track: { name: t.name, distanceM: t.distanceM, elevationGainM: t.elevationGainM ?? null, attribution: t.attribution, license: t.license },
+    participants: attached ? listParticipants(db, o.id, { userId: viewerId }) : null,
+  };
 }

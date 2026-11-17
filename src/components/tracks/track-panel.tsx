@@ -27,6 +27,7 @@ import type { MapColors } from './use-map-colors';
 export type PanelSheet = Omit<TrackSheet, 'updatedAt' | 'outings'> & { outings: { slug: string; title: string; startsAt: string }[] };
 
 /** Ce qu'il faut pour dessiner un parcours ouvert : une trace (#1582) ou le parcours figé d'une sortie (#1596). */
+import type { MapOutingTrack } from '@/lib/outings/map';
 export type OpenLine = Pick<PanelSheet, 'geometry' | 'profile' | 'end' | 'bbox'>;
 
 type SheetState = { slug: string; sheet?: PanelSheet; error?: boolean };
@@ -285,7 +286,7 @@ export function OpenTrackLayers({ sheet, colors, mapRef, marked, beforeId }: { s
   );
 }
 
-type OutingTrackState = { id: string; track?: OpenLine; error?: boolean };
+type OutingTrackState = { id: string; track?: MapOutingTrack; error?: boolean };
 
 /** Parcours figé de la sortie ouverte dans le panneau (#1596), chargé à la demande (`GET /api/outings/map/<id>`). */
 export function useOutingTrack(id: string | null) {
@@ -295,7 +296,7 @@ export function useOutingTrack(id: string | null) {
     const ctl = new AbortController();
     fetch(`/api/outings/map/${encodeURIComponent(id)}`, { signal: ctl.signal })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((track: OpenLine) => setState({ id, track }))
+      .then((track: MapOutingTrack) => setState({ id, track }))
       .catch((e) => e.name !== 'AbortError' && setState({ id, error: true }));
     return () => ctl.abort();
   }, [id]);

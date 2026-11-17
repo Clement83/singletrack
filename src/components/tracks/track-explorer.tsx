@@ -14,7 +14,8 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input, NativeSelect } from '@/components/ui/field';
 import { Badge } from '@/components/ui/badge';
-import { formatElevation, formatKm, formatOutingDate } from '@/lib/format';
+import { OutingView } from '@/components/outings/outing-view';
+import { OutingParticipants } from '@/components/outings/outing-participants';
 import { activeFilterCount, parseFilters, serializeFilters, type TrackFilters } from '@/lib/tracks/filters';
 import type { TrackStart, TrackSummary } from '@/lib/tracks/query';
 import { tracksAtStart } from '@/lib/tracks/same-start';
@@ -76,7 +77,7 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
   const [outingsOn, setOutingsOn] = useOutingsPref();
   const mapOutings = useMapOutings(outingsOn, view);
   const tOut = useTranslations('outingsMap');
-  const tl = useTranslations('outingLabels');
+  const tm = useTranslations('outings');
   const [panel, setPanel] = useState<Panel>(null);
   const [hover, setHover] = useState<string | null>(null);
   // Trace survolée sur la carte (#1533) : met en avant sa ligne dans la liste.
@@ -461,18 +462,21 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
         )}
         {panel?.kind === 'outing' && !selectedOuting && <p className="text-muted-foreground">{tOut('gone')}</p>}
         {panel?.kind === 'outing' && selectedOuting && (
-          <div className="flex flex-col gap-3">
-            <h3 className="text-heading break-words">{selectedOuting.title}</h3>
-            <p className="text-body tabular-nums">{formatOutingDate(new Date(selectedOuting.startsAt), locale)}</p>
-            {selectedOuting.meetingLabel && <p className="text-small text-muted-foreground">{tOut('meeting', { place: selectedOuting.meetingLabel })}</p>}
-            <p className="text-heading tabular-nums">{formatKm(selectedOuting.distanceM / 1000, locale)}{selectedOuting.gainM != null ? ` · ${formatElevation(selectedOuting.gainM, locale)}` : ''}</p>
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="primary">{tl(`level.${selectedOuting.level}`)}</Badge>
-              <Badge variant="outline">{tl(`ebike.${selectedOuting.ebike}`)}</Badge>
-              <Badge variant="outline">{tOut('going', { n: selectedOuting.yesCount })}</Badge>
-              {selectedOuting.spotsLeft != null && <Badge variant={selectedOuting.spotsLeft === 0 ? 'danger' : 'outline'}>{tOut('spots', { n: selectedOuting.spotsLeft })}</Badge>}
-            </div>
-          </div>
+          <OutingView
+            role={signedIn ? (selectedOuting.mine ? 'guest' : 'visitor') : 'anonymous'}
+            presentation="panel"
+            outing={{ title: selectedOuting.title, startsAt: new Date(selectedOuting.startsAt), level: selectedOuting.level, ebike: selectedOuting.ebike, meetingLabel: selectedOuting.meetingLabel, meetingLat: selectedOuting.lat, meetingLon: selectedOuting.lon, description: outingTrack?.description ?? null, visibility: selectedOuting.visibility }}
+            track={outingTrack ? { ...outingTrack.track, geometry: outingTrack.geometry, bbox: outingTrack.bbox, start: [outingTrack.geometry.type === 'LineString' ? outingTrack.geometry.coordinates[0][0] : outingTrack.geometry.coordinates[0][0][0], outingTrack.geometry.type === 'LineString' ? outingTrack.geometry.coordinates[0][1] : outingTrack.geometry.coordinates[0][0][1]] } : null}
+            notices={<p className="text-small text-muted-foreground">{tm('openBy', { name: selectedOuting.organizerName })}</p>}
+            participants={outingTrack?.participants
+              ? <OutingParticipants participants={outingTrack.participants} />
+              : (
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="outline">{tOut('going', { n: selectedOuting.yesCount })}</Badge>
+                  {selectedOuting.spotsLeft != null && <Badge variant={selectedOuting.spotsLeft === 0 ? 'danger' : 'outline'}>{tOut('spots', { n: selectedOuting.spotsLeft })}</Badge>}
+                </div>
+              )}
+          />
         )}
         {panel?.kind === 'track' && (
           <TrackPanelBody
