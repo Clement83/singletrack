@@ -36,6 +36,7 @@ import * as trackGeometry from '@/app/api/tracks/geometry/route';
 import * as trackImport from '@/app/api/tracks/import/route';
 import * as trackGpx from '@/app/api/t/[slug]/gpx/route';
 import * as outingsMap from '@/app/api/outings/map/route';
+import * as outingsMapOne from '@/app/api/outings/map/[id]/route';
 import * as trackKml from '@/app/api/t/[slug]/kml/route';
 import * as guestRespond from '@/app/api/i/[token]/route';
 import * as guestPhotos from '@/app/api/i/[token]/photos/route';
@@ -485,5 +486,30 @@ describe('visibilité des traces : toutes les lectures (#1589)', () => {
     expect(mine.outings.length).toBe(4); // 3 ci-dessus + celle du beforeEach
     expect((await outingsMap.GET(get(q))).headers.get('cache-control')).toContain('private');
     expect((await outingsMap.GET(get('/api/outings/map?bbox=x'))).status).toBe(400);
+  });
+
+  it('parcours d\'une sortie sur la carte (#1596) : droits de la liste, 404 sinon, aucune fuite de la trace', async () => {
+    const db = st.db as ReturnType<typeof openDb>['db'];
+    db.update(track).set({ visibility: 'private' }).where(eq(track.slug, trackSlug)).run();
+    const mk = (visibility: string, title: string) => createOuting(db, 'a', { trackSlug, title, date: '2099-05-10', time: '08:30', visibility } as never);
+    await mk('public', 'Pub2'); await mk('invite', 'Inv2');
+    const idOf = (title: string) => db.select().from(outing).where(eq(outing.title, title)).get()!;
+    const one = (id: string) => outingsMapOne.GET(get(`/api/outings/map/${id}`), { params: Promise.resolve({ id }) });
+    st.uid = null;
+    const pub = idOf('Pub2');
+    const res = await one(pub.id);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('cache-control')).toContain('public');
+    const text = JSON.stringify(await res.json());
+    expect(text).toContain('profile');
+    expect(text).not.toContain(trackSlug);
+    expect(text).not.toContain(pub.trackId!);
+    expect((await one(idOf('Inv2').id)).status).toBe(404); // anonyme : non publique
+    expect((await one('inconnue')).status).toBe(404);
+    st.uid = 'b';
+    expect((await one(idOf('Inv2').id)).status).toBe(404); // connecté sans droit
+    expect((await one(pub.id)).status).toBe(200);
+    st.uid = 'a';
+    expect((await one(idOf('Inv2').id)).status).toBe(200);
   });
 });

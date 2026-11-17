@@ -18,6 +18,7 @@ const PRIVATE_TRACK_SUBROUTES = ['segments', 'import'];
 export function isPublicRead(pathname: string, method: string): boolean {
   if (method !== 'GET' && method !== 'HEAD') return false;
   if (PUBLIC_READ_EXACT.includes(pathname)) return true;
+  if (/^\/api\/outings\/map\/[^/]+$/.test(pathname)) return true; // GET /api/outings/map/<id> : parcours figé (#1596)
   const m = /^\/api\/tracks\/([^/]+)$/.exec(pathname); // GET /api/tracks/<slug> (fiche)
   return !!m && !PRIVATE_TRACK_SUBROUTES.includes(m[1]);
 }

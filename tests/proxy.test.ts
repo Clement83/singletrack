@@ -76,9 +76,9 @@ describe('proxy (#1482)', () => {
   });
 
   it('lectures GET de la carte publiques (#1589), écritures et sous-routes privées', async () => {
-    for (const p of ['/api/tracks?starts=1', '/api/tracks/geometry?slugs=a', '/api/tracks/un-slug', '/api/outings/map?bbox=1,2,3,4'])
+    for (const p of ['/api/tracks?starts=1', '/api/tracks/geometry?slugs=a', '/api/tracks/un-slug', '/api/outings/map?bbox=1,2,3,4', '/api/outings/map/un-id'])
       expect((await proxy(req(p))).headers.get('x-middleware-next'), p).toBe('1');
-    for (const [p, method] of [['/api/tracks', 'POST'], ['/api/tracks/un-slug', 'PUT'], ['/api/tracks/un-slug', 'DELETE'], ['/api/tracks/segments', 'GET'], ['/api/tracks/import', 'GET'], ['/api/outings', 'GET'], ['/api/outings/map', 'POST']] as const) {
+    for (const [p, method] of [['/api/tracks', 'POST'], ['/api/tracks/un-slug', 'PUT'], ['/api/tracks/un-slug', 'DELETE'], ['/api/tracks/segments', 'GET'], ['/api/tracks/import', 'GET'], ['/api/outings', 'GET'], ['/api/outings/map', 'POST'], ['/api/outings/map/un-id', 'DELETE']] as const) {
       const res = await proxy(new NextRequest(`http://localhost${p}`, { method }));
       expect(res.status, `${method} ${p}`).toBe(401);
     }

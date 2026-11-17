@@ -26,6 +26,9 @@ import type { MapColors } from './use-map-colors';
 /** Fiche telle que la renvoie `GET /api/tracks/<slug>` (#1581) : dates en texte, sans `updatedAt`. */
 export type PanelSheet = Omit<TrackSheet, 'updatedAt' | 'outings'> & { outings: { slug: string; title: string; startsAt: string }[] };
 
+/** Ce qu'il faut pour dessiner un parcours ouvert : une trace (#1582) ou le parcours figé d'une sortie (#1596). */
+export type OpenLine = Pick<PanelSheet, 'geometry' | 'profile' | 'end' | 'bbox'>;
+
 type SheetState = { slug: string; sheet?: PanelSheet; error?: boolean };
 
 /** Fiche complète de la trace ouverte dans le panneau de la carte (#1582), chargée à la demande. */
@@ -266,7 +269,7 @@ export function TrackPanelFooter({ sheet, cursor, onScrub, compact, onVisibility
 }
 
 /** Tracé de la trace ouverte sur la carte de l'explorateur : couleurs de pente, bornes km, arrivée, curseur du profil. */
-export function OpenTrackLayers({ sheet, colors, mapRef, marked, beforeId }: { sheet: PanelSheet; colors: MapColors; mapRef: RefObject<MapRef | null>; marked: number | null; beforeId?: string }) {
+export function OpenTrackLayers({ sheet, colors, mapRef, marked, beforeId }: { sheet: OpenLine; colors: MapColors; mapRef: RefObject<MapRef | null>; marked: number | null; beforeId?: string }) {
   const t = useTranslations('track');
   const data = useMemo(() => slopeFeatures(sheet.geometry), [sheet.geometry]);
   const point = marked !== null ? sheet.profile[marked] : undefined;
@@ -280,4 +283,22 @@ export function OpenTrackLayers({ sheet, colors, mapRef, marked, beforeId }: { s
       {point && <ProfileCursorMarker mapRef={mapRef} lon={point.lon} lat={point.lat} />}
     </>
   );
+}
+
+type OutingTrackState = { id: string; track?: OpenLine; error?: boolean };
+
+/** Parcours figé de la sortie ouverte dans le panneau (#1596), chargé à la demande (`GET /api/outings/map/<id>`). */
+export function useOutingTrack(id: string | null) {
+  const [state, setState] = useState<OutingTrackState | null>(null);
+  useEffect(() => {
+    if (!id) return;
+    const ctl = new AbortController();
+    fetch(`/api/outings/map/${encodeURIComponent(id)}`, { signal: ctl.signal })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((track: OpenLine) => setState({ id, track }))
+      .catch((e) => e.name !== 'AbortError' && setState({ id, error: true }));
+    return () => ctl.abort();
+  }, [id]);
+  const current = id && state?.id === id ? state : null;
+  return current?.track;
 }

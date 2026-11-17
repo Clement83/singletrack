@@ -31,8 +31,9 @@ import { OutingsLayer, useMapOutings } from './outings-layer';
 import { useOutingsPref } from './outings-pref';
 import { SinglesLayer, SinglesStatus, useSingles, useSinglesPref } from './singles-layer';
 import { SlopeLegend } from '@/components/map/slope-legend';
-import { OpenTrackLayers, TrackPanelBody, TrackPanelFooter, useTrackSheet } from './track-panel';
+import { OpenTrackLayers, TrackPanelBody, TrackPanelFooter, useOutingTrack, useTrackSheet } from './track-panel';
 import { nearestProfileIndex } from '@/lib/elevation';
+import { ElevationProfile } from '@/components/elevation-profile';
 
 type ListPanel = { kind: 'list' } | { kind: 'group'; slugs: string[] };
 /** `from` : la liste ou le groupe d'où la trace a été ouverte (bouton « Retour », #1582). */
@@ -232,10 +233,15 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
   // Trace ouverte (#1582) : fiche complète chargée à la demande, tracé coloré par pente sur la carte, profil synchronisé.
   const openSlug = panel?.kind === 'track' ? panel.slug : null;
   const { sheet, loading: sheetLoading, error: sheetError, setVisibility: setSheetVisibility } = useTrackSheet(openSlug);
+  // Sortie ouverte (#1596) : son parcours figé se dessine comme une trace ouverte (un seul tracé à la fois).
+  const openOutingId = panel?.kind === 'outing' ? panel.id : null;
+  const outingTrack = useOutingTrack(openOutingId);
+  const openLine = panel?.kind === 'outing' ? outingTrack : sheet;
+  const lineKey = openOutingId ? `outing:${openOutingId}` : openSlug;
   const [scrub, setScrub] = useState<{ slug: string; i: number } | null>(null);
   const [lineOver, setLineOver] = useState<{ slug: string; i: number } | null>(null);
-  const profileCursor = scrub && scrub.slug === openSlug ? scrub.i : null;
-  const lineCursor = lineOver && lineOver.slug === openSlug ? lineOver.i : null;
+  const profileCursor = scrub && scrub.slug === lineKey ? scrub.i : null;
+  const lineCursor = lineOver && lineOver.slug === lineKey ? lineOver.i : null;
   const openTrack = (slug: string, from?: ListPanel) => {
     setPinned(tracks?.find((x) => x.slug === slug));
     setPanel({ kind: 'track', slug, from });
@@ -244,14 +250,14 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
   const fitted = useRef<string | null>(null);
   useEffect(() => {
     const map = mapRef.current;
-    if (!sheet || !map || fitted.current === sheet.slug) return;
-    fitted.current = sheet.slug;
+    if (!openLine || !map || !lineKey || fitted.current === lineKey) return;
+    fitted.current = lineKey;
     const b = map.getBounds();
-    const [w, s, e, n] = sheet.bbox;
+    const [w, s, e, n] = openLine.bbox;
     if (b.contains([w, s]) && b.contains([e, n])) return;
     const panelW = desktop ? 420 : 0;
     map.fitBounds([[w, s], [e, n]], { padding: { top: 90, bottom: desktop ? 60 : window.innerHeight * 0.5, left: 40 + panelW, right: 40 }, maxZoom: 15, duration: 600 });
-  }, [sheet, desktop]);
+  }, [openLine, lineKey, desktop]);
 
   // Géométries à la demande (#1531), pour l'aperçu au survol : seulement celles qu'on n'a pas encore.
   const [geoms, setGeoms] = useState<Record<string, NonNullable<TrackSummary['geometry']>>>({});
@@ -286,8 +292,8 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
   // Infobulle « km depuis le départ » sur la trace ouverte (#1535), avec l'altitude du profil.
   const lineTip = useTrackTip((e) => {
     const f = e.features?.[0];
-    if (f?.layer.id !== 'open-casing' || !sheet) return null;
-    return { geometry: sheet.geometry, ele: (lon, lat) => sheet.profile[nearestProfileIndex(sheet.profile, lon, lat)]?.ele ?? null };
+    if (f?.layer.id !== 'open-casing' || !openLine) return null;
+    return { geometry: openLine.geometry, ele: (lon, lat) => openLine.profile[nearestProfileIndex(openLine.profile, lon, lat)]?.ele ?? null };
   });
   const onClick = (e: MapLayerMouseEvent) => {
     lineTip.onTap(e);
@@ -316,8 +322,8 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
   };
   const onMouseMove = (e: MapLayerMouseEvent) => {
     lineTip.onMove(e);
-    const onLine = sheet && e.features?.some((x) => x.layer.id === 'open-casing');
-    setLineOver(onLine ? { slug: sheet.slug, i: nearestProfileIndex(sheet.profile, e.lngLat.lng, e.lngLat.lat) } : null);
+    const onLine = openLine && lineKey && e.features?.some((x) => x.layer.id === 'open-casing');
+    setLineOver(onLine ? { slug: lineKey, i: nearestProfileIndex(openLine.profile, e.lngLat.lng, e.lngLat.lat) } : null);
     setHover(e.features?.some((x) => x.layer.id === 'start-hit' || x.layer.id === 'clusters') ? 'pointer' : null);
     const over = e.features?.find((x) => x.layer.id === 'start-hit')?.properties?.slug as string | undefined;
     setOverSlug((o) => (o === (over ?? null) ? o : (over ?? null)));
@@ -364,7 +370,7 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
         <Source id="preview" type="geojson" data={previewLine}>
           <Layer id="preview-line" beforeId="clusters" type="line" layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': colors.preview, 'line-width': 3.5, 'line-opacity': 0.5 }} />
         </Source>
-        {sheet && <OpenTrackLayers sheet={sheet} colors={colors} mapRef={mapRef} marked={profileCursor ?? lineCursor} beforeId="clusters" />}
+        {openLine && <OpenTrackLayers sheet={openLine} colors={colors} mapRef={mapRef} marked={profileCursor ?? lineCursor} beforeId="clusters" />}
         <Source id="starts" type="geojson" data={starts} cluster clusterRadius={50} clusterMaxZoom={CLUSTER_MAX_ZOOM}>
           <Layer id="clusters" type="circle" filter={['has', 'point_count']} paint={{ 'circle-color': colors.primary, 'circle-opacity': 0.85, 'circle-stroke-color': colors.card, 'circle-stroke-width': 3, 'circle-radius': ['step', ['get', 'point_count'], 16, 10, 22, 50, 28] }} />
           <Layer id="start-points" type="circle" filter={['!', ['has', 'point_count']]} paint={{ 'circle-color': diffColor as string, 'circle-stroke-color': colors.card, 'circle-stroke-width': 2.5, 'circle-radius': ['case', ['==', ['get', 'slug'], hl], 12, 9] }} />
@@ -410,9 +416,9 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
         <SinglesStatus state={singles} />
         {/* Légende des pentes (#1585) : sur la carte dès qu'une trace colorée est ouverte. Mobile : sous les boutons du haut,
             hors du sheet ; desktop : en bas à gauche, à droite du panneau. */}
-        {sheet && !desktop && <SlopeLegend className="static" />}
+        {openLine && !desktop && <SlopeLegend className="static" />}
       </div>
-      {sheet && desktop && <SlopeLegend className="bottom-8 left-[calc(var(--spacing-panel)+36px)]" />}
+      {openLine && desktop && <SlopeLegend className="bottom-8 left-[calc(var(--spacing-panel)+36px)]" />}
 
       {!sheetOpen && (
         <Button onClick={() => setPanel({ kind: 'list' })} className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-full px-6 shadow-md">
@@ -427,10 +433,15 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
         title={panelTitle}
         description={panel?.kind === 'list' ? t('listDesc', { visible: visible.length, total }) : undefined}
         initialSnap={panel?.kind === 'track' || panel?.kind === 'outing' ? 0.5 : 0.92}
-        tallFooter={panel?.kind === 'track' && !!sheet}
+        tallFooter={(panel?.kind === 'track' && !!sheet) || (panel?.kind === 'outing' && !!outingTrack && outingTrack.profile.length > 1)}
         footer={
           panel?.kind === 'outing' && selectedOuting ? (
-            <Button asChild size="lg">{signedIn ? <Link href={`/sorties/${selectedOuting.id}`}>{tOut('seeOuting')}</Link> : <LoginLink>{tOut('seeOuting')}</LoginLink>}</Button>
+            <div className="flex flex-col gap-3" data-testid="outing-panel-footer">
+              {outingTrack && outingTrack.profile.length > 1 && (
+                <ElevationProfile points={outingTrack.profile} slopes legend={false} compact={!desktop} cursor={lineCursor} onScrub={(p) => setScrub(p ? { slug: `outing:${selectedOuting.id}`, i: p.index } : null)} />
+              )}
+              <Button asChild size="lg">{signedIn ? <Link href={`/sorties/${selectedOuting.id}`}>{tOut('seeOuting')}</Link> : <LoginLink>{tOut('seeOuting')}</LoginLink>}</Button>
+            </div>
           ) : panel?.kind === 'track' && sheet ? (
             <TrackPanelFooter sheet={sheet} signedIn={signedIn} onVisibility={setSheetVisibility} compact={!desktop} cursor={lineCursor} onScrub={(i) => setScrub(i === null ? null : { slug: sheet.slug, i })} />
           ) : panel?.kind === 'filters' ? (

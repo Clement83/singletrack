@@ -5,6 +5,8 @@ import { outingPermissions } from './permissions';
 import { archiveOverrides } from './leave';
 import { decryptToken } from './tokens';
 import type { TrackGeometry } from '@/lib/geo/types';
+import { bboxOf, lines, simplifyGeometry } from '@/lib/geo';
+import { profileFor } from './profile';
 import { utcToParisInputs } from './time';
 import { countYes, isClosed } from './service';
 
@@ -110,4 +112,29 @@ export function getOutingDiscovery(db: Db, viewerId: string, outingId: string, n
     canJoin: perms.canJoin && !full && !isClosed(o, now) && !linkUnavailable && !inv,
     full,
   };
+}
+
+/** Parcours figé d'une sortie pour la carte (#1596) : géométrie + profil seulement, jamais le slug ni l'id de la trace d'origine. */
+export type MapOutingTrack = {
+  geometry: TrackGeometry;
+  profile: ReturnType<typeof profileFor>;
+  bbox: [number, number, number, number];
+  end: [number, number];
+};
+
+/**
+ * Parcours (`trackSnapshot`) d'une sortie visible sur la carte, chargé à la demande. Mêmes droits que `listMapOutings` :
+ * anonyme = sortie `public` seulement, connecté = `canView` ; inconnue, passée/annulée ou non visible ⇒ `null` (404, jamais 403).
+ */
+export function getMapOutingTrack(db: Db, viewerId: string | null, outingId: string, now = new Date()): MapOutingTrack | null {
+  const o = db.select().from(outing).where(eq(outing.id, outingId)).get();
+  if (!o || o.status !== 'planned') return null;
+  const ok = viewerId ? outingPermissions(db, { userId: viewerId }, o, now).canView : o.visibility === 'public';
+  if (!ok) return null;
+  const full = o.trackSnapshot.geometry;
+  const ls = lines(full);
+  const last = ls[ls.length - 1]?.at(-1);
+  const bbox = bboxOf(full);
+  if (!last || !bbox) return null;
+  return { geometry: simplifyGeometry(full, 5), profile: profileFor(full), bbox: [bbox.minLon, bbox.minLat, bbox.maxLon, bbox.maxLat], end: [last[0], last[1]] };
 }

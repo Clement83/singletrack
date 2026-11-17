@@ -47,7 +47,7 @@ describe('routes /api : liste blanche et garde de session', () => {
   });
 
   // Exceptions publiques en lecture (#1589), justifiées une par une : chaque route filtre par visibilité (anonyme = public seul).
-  const PUBLIC_READS = ['/api/tracks', '/api/tracks/geometry', '/api/tracks/x', '/api/outings/map'];
+  const PUBLIC_READS = ['/api/tracks', '/api/tracks/geometry', '/api/tracks/x', '/api/outings/map', '/api/outings/map/x'];
   it('les seules lectures GET publiques de /api/tracks et /api/outings sont celles de la carte', () => {
     const all = Object.keys(modules).map(urlPath).filter((p) => isPublicRead(p, 'GET'));
     expect(all.sort()).toEqual([...PUBLIC_READS].sort());
