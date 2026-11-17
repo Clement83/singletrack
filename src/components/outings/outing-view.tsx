@@ -9,6 +9,9 @@ import { profileFor } from '@/lib/outings/profile';
 import type { TrackSnapshot } from '@/lib/outings/snapshot';
 import type { OutingRow } from '@/db/schema';
 
+/** Parcours affiché : jamais le slug de la trace d'origine (#1592). */
+export type OutingViewTrack = Pick<TrackSnapshot, 'name' | 'geometry' | 'bbox' | 'start' | 'distanceM' | 'elevationGainM' | 'attribution' | 'license'>;
+
 export type OutingViewRole = 'organizer' | 'guest' | 'visitor' | 'anonymous';
 
 export type OutingViewOuting = Pick<OutingRow, 'title' | 'startsAt' | 'level' | 'ebike' | 'meetingLabel' | 'meetingLat' | 'meetingLon' | 'description'> & {
@@ -23,7 +26,8 @@ type Props = {
   /** `page` = page complète ; `panel` = panneau de la carte (sans conditions, roulées, photos, commentaires ni carte embarquée). */
   presentation: 'page' | 'panel';
   outing: OutingViewOuting;
-  track: TrackSnapshot;
+  /** Absent (sortie d'un autre serveur sans parcours) ⇒ bloc parcours masqué. */
+  track: OutingViewTrack | null;
   /** Lien de retour, au-dessus de l'en-tête. */
   topLink?: React.ReactNode;
   /** Bouton à droite du titre (partage du lien de groupe). */
@@ -54,7 +58,7 @@ export function OutingView({ role, presentation, outing: o, track: snap, topLink
   const t = useTranslations('share');
   const tg = useTranslations('guest');
   const panel = presentation === 'panel';
-  const end = (snap.geometry.type === 'LineString' ? snap.geometry.coordinates : snap.geometry.coordinates.flat()).at(-1)!;
+  const end = snap && (snap.geometry.type === 'LineString' ? snap.geometry.coordinates : snap.geometry.coordinates.flat()).at(-1);
   return (
     <div data-outing-view={presentation} data-role={role} className="flex flex-col gap-5">
       {topLink}
@@ -79,7 +83,7 @@ export function OutingView({ role, presentation, outing: o, track: snap, topLink
 
       {o.description && <p className="whitespace-pre-line break-words">{o.description}</p>}
 
-      <section aria-label={tg('trackRegion')} className="flex flex-col gap-3">
+      {snap && end && <section aria-label={tg('trackRegion')} className="flex flex-col gap-3">
         <h2 className="text-heading">{snap.name}</h2>
         <p className="text-small text-muted-foreground">
           {formatKm(snap.distanceM / 1000, locale)}
@@ -90,7 +94,7 @@ export function OutingView({ role, presentation, outing: o, track: snap, topLink
         {(snap.attribution || snap.license) && (
           <p className="text-caption text-muted-foreground">{[snap.attribution, snap.license && tg('license', { license: snap.license })].filter(Boolean).join(' · ')}</p>
         )}
-      </section>
+      </section>}
 
       {!panel && conditions}
       {participants}

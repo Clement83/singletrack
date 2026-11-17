@@ -7,6 +7,7 @@ import { decryptToken } from './tokens';
 import type { TrackGeometry } from '@/lib/geo/types';
 import { bboxOf, lines, simplifyGeometry } from '@/lib/geo';
 import { profileFor } from './profile';
+import type { TrackSnapshot } from './snapshot';
 import { utcToParisInputs } from './time';
 import { countYes, isClosed } from './service';
 
@@ -73,7 +74,7 @@ export function listMapOutings(db: Db, viewerId: string | null, bbox: MapBbox, n
 
 export type OutingDiscovery =
   | { kind: 'redirect'; path: string }
-  | { kind: 'show'; outing: MapOuting & { description: string | null; geometry: TrackGeometry }; canJoin: boolean; full: boolean }
+  | { kind: 'show'; outing: MapOuting & { description: string | null; geometry: TrackGeometry; track: Pick<TrackSnapshot, 'name' | 'geometry' | 'bbox' | 'start' | 'distanceM' | 'elevationGainM' | 'attribution' | 'license'> }; canJoin: boolean; full: boolean }
   | { kind: 'notFound' };
 
 /**
@@ -104,6 +105,8 @@ export function getOutingDiscovery(db: Db, viewerId: string, outingId: string, n
     kind: 'show',
     outing: {
       id: o.id, title: o.title, description: o.description, geometry: o.trackSnapshot.geometry,
+      // Jamais le slug de la trace d'origine (#1592) : champs choisis un à un.
+      track: (({ name, geometry, bbox, start, distanceM, elevationGainM, attribution, license }) => ({ name, geometry, bbox, start, distanceM, elevationGainM, attribution, license }))(o.trackSnapshot),
       startsAt: o.startsAt, lat: o.meetingLat, lon: o.meetingLon, meetingLabel: o.meetingLabel,
       distanceM: o.trackSnapshot.distanceM, gainM: o.trackSnapshot.elevationGainM ?? null,
       level: o.level, ebike: o.ebike, visibility: o.visibility, organizerName: organizer, yesCount,

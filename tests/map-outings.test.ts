@@ -66,6 +66,11 @@ describe('sorties sur la carte (#1461)', () => {
     const p = await mk('a', { visibility: 'invite', title: 'I' });
     expect(getOutingDiscovery(db, 'a', f.id)).toMatchObject({ kind: 'redirect', path: `/s/${f.slug}` });
     expect(getOutingDiscovery(db, 'b', f.id)).toMatchObject({ kind: 'show', canJoin: true });
+    // #1598 : le parcours affiché par OutingView ne contient jamais le slug de la trace d'origine.
+    const shown = getOutingDiscovery(db, 'b', f.id);
+    if (shown.kind !== 'show') throw new Error('show');
+    expect(shown.outing.track.name).toBeTruthy();
+    expect(Object.keys(shown.outing.track)).not.toContain('slug');
     expect(getOutingDiscovery(db, 'c', f.id).kind).toBe('notFound');
     expect(getOutingDiscovery(db, 'b', p.id).kind).toBe('notFound');
     invite(f, 'b');
