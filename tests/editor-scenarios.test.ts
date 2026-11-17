@@ -161,6 +161,54 @@ describe('scénarios éditeur : annuler / rétablir', () => {
     s.settle();
     sameCoords(s.segments[0].coords, fx(0).coordinates);
   });
+  it('#1578 : 3 points, annuler ×3 = trace vide, rétablir = 1 point ; plus rien à annuler / rétablir ensuite', () => {
+    const s = new EditorSim();
+    W.slice(0, 3).forEach((p) => s.add(p));
+    s.settle();
+    s.undo(); s.undo(); s.undo();
+    expect(s.waypoints).toHaveLength(0);
+    expect(s.state.past).toHaveLength(0);
+    s.undo();
+    expect(s.waypoints).toHaveLength(0);
+    s.redo();
+    expect(s.waypoints).toHaveLength(1);
+    expect(s.state.future).toHaveLength(2);
+  });
+  it('#1578 : annuler pendant qu’un tracé est en attente reste cohérent (aucun tronçon orphelin)', () => {
+    const s = new EditorSim();
+    s.add(W[0]);
+    s.add(W[1]); // tronçon non routé
+    s.undo();
+    s.settle();
+    expect(s.waypoints).toHaveLength(1);
+    expect(s.segments).toHaveLength(0);
+    s.redo();
+    s.settle();
+    expect(s.segments).toHaveLength(1);
+    sameCoords(s.segments[0].coords, fx(0).coordinates);
+  });
+  it('#1578 : annuler la suppression d’un point le ramène avec ses tronçons', () => {
+    const s = traced(3);
+    s.dispatch({ type: 'remove', i: 1 });
+    s.settle();
+    expect(s.waypoints).toHaveLength(2);
+    s.undo();
+    s.settle();
+    expect(s.waypoints).toEqual(W.slice(0, 3));
+    sameCoords(s.segments[0].coords, fx(0).coordinates);
+    sameCoords(s.segments[1].coords, fx(1).coordinates);
+  });
+  it('#1578 : annuler « tout sur les chemins » (aimant) rend les tronçons en ligne droite', () => {
+    const s = new EditorSim({ newMode: 'line' });
+    W.slice(0, 3).forEach((p) => s.add(p));
+    const before = s.segments.map((x) => x.mode);
+    s.dispatch({ type: 'allModes', mode: 'route' });
+    expect(s.segments.every((x) => x.mode === 'route')).toBe(true);
+    s.undo();
+    expect(s.segments.map((x) => x.mode)).toEqual(before);
+    s.redo();
+    expect(s.segments.every((x) => x.mode === 'route')).toBe(true);
+  });
   it('le routage n’entre pas dans l’historique', () => {
     const s = traced(2);
     expect(s.state.past).toHaveLength(2); // deux « add »
