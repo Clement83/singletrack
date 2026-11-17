@@ -438,6 +438,7 @@
     "directions": "Directions",
     "full": "Full: all {max} spots are taken.",
     "past": "This ride is over: answers are locked.",
+    "meetingRegion": "Meeting point",
     "trackRegion": "The route",
     "license": "License {license}",
     "participants": "Riders"

@@ -14,6 +14,8 @@ import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { BottomNavBar, SideNavBar } from '@/components/app-nav';
 import { RsvpPanel, type RsvpAnswer } from '@/components/rsvp-panel';
 import { ConditionsBlock } from '@/components/conditions-block';
+import { OutingView, type OutingViewRole } from '@/components/outings/outing-view';
+import type { TrackSnapshot } from '@/lib/outings/snapshot';
 import { OutingParticipants } from '@/components/outings/outing-participants';
 import type { Participant } from '@/lib/outings/participants-summary';
 import type { WeatherInfo } from '@/lib/weather';
@@ -30,6 +32,18 @@ const people = (n: number): Participant[] => [
   { id: 'o', name: 'Clément', status: 'yes', isMe: false, isOrganizer: true },
   ...NAMES.slice(0, Math.max(0, n - 1)).map((name, i) => ({ id: `p${i}`, name, status: (i % 7 === 5 ? 'maybe' : i % 7 === 6 ? 'no' : 'yes') as Participant['status'], isMe: i === 1, isOrganizer: false })),
 ];
+
+// Sortie de démonstration (#1597) : mêmes blocs pour les 4 rôles, seules les actions changent.
+const DEMO_TRACK = {
+  slug: 'demo', name: 'Lac de la Verne', geometry: { type: 'LineString', coordinates: [[6.22, 43.2], [6.25, 43.22], [6.3, 43.21], [6.28, 43.18]] },
+  bbox: [6.22, 43.18, 6.3, 43.22], start: [6.22, 43.2], distanceM: 33000, elevationGainM: 820, elevationLossM: 820, minEle: 40, maxEle: 420,
+  difficulty: 'moyen', loop: true, source: 'user', attribution: null, license: null, sourceUrl: null, takenAt: '2026-11-01T00:00:00Z',
+} as unknown as TrackSnapshot;
+const DEMO_OUTING = {
+  title: 'Lac de la Verne', startsAt: new Date(Date.UTC(2026, 10, 21, 8)), level: 'sportif', ebike: 'yes', meetingLabel: 'Chez Clément',
+  meetingLat: 43.2, meetingLon: 6.22, description: 'RDV chez moi à 9 h.\nPique-nique tiré du sac.',
+} as const;
+const ROLE_ACTION: Record<OutingViewRole, string> = { organizer: 'Gérer la sortie', guest: 'GO', visitor: 'Rejoindre', anonymous: 'Se connecter' };
 
 function Demo({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   return (
@@ -153,6 +167,28 @@ export function ComponentDemos() {
         <OutingParticipants participants={people(3)} />
         <OutingParticipants participants={people(20)} />
         <OutingParticipants participants={people(9)} max={10} />
+      </Demo>
+
+      <Demo id="sortie" title="Vue de sortie (OutingView)">
+        {(['organizer', 'guest', 'visitor', 'anonymous'] as const).map((role) => (
+          <div key={role} className="flex flex-col gap-3 rounded-2xl border border-border p-4">
+            <p className="text-small font-semibold text-muted-foreground">{role} · page</p>
+            <OutingView
+              role={role}
+              presentation="page"
+              outing={DEMO_OUTING}
+              track={DEMO_TRACK}
+              primaryAction={<Button>{ROLE_ACTION[role]}</Button>}
+              participants={<OutingParticipants participants={people(4)} max={10} organizer={role === 'organizer'} />}
+              secondaryActions={role === 'organizer' || role === 'guest' ? <Button variant="outline"><Share2 aria-hidden /> Partager</Button> : undefined}
+              comments={<p className="text-small text-muted-foreground">Commentaires…</p>}
+            />
+          </div>
+        ))}
+        <div className="flex flex-col gap-3 rounded-2xl border border-border p-4">
+          <p className="text-small font-semibold text-muted-foreground">panel (sans carte, conditions, roulées, commentaires)</p>
+          <OutingView role="visitor" presentation="panel" outing={DEMO_OUTING} track={DEMO_TRACK} primaryAction={<Button>{ROLE_ACTION.visitor}</Button>} participants={<OutingParticipants participants={people(4)} />} />
+        </div>
       </Demo>
 
       <Demo id="cartes" title="Traces et sorties (TrackCard)">
