@@ -1,5 +1,6 @@
 import type { TrackGeometry, Position } from '@/lib/geo';
-import { difficultyFromMtbScale, type NormalizedTrack } from '@/lib/tracks';
+import { difficultyFromMtbScale } from '@/lib/tracks/difficulty';
+import type { NormalizedTrack } from '@/lib/tracks/types';
 import { stitchWays } from './stitch';
 
 export type OverpassMember = {
