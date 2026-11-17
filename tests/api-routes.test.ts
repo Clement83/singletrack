@@ -117,6 +117,35 @@ describe('/api/tracks/[slug] PUT / DELETE', () => {
   });
 });
 
+describe('GET /api/tracks/[slug] (#1581)', () => {
+  const get = (h: Record<string, string> = {}) => new Request('http://x/api/tracks/s', { headers: h });
+  it('200 : fiche complète, droits, ETag 304', async () => {
+    const r = await trackRoute.GET(get(), ctx(trackSlug));
+    expect(r.status).toBe(200);
+    const b = await r.json();
+    expect(b.slug).toBe(trackSlug);
+    expect(b.geometry.coordinates.length).toBeGreaterThan(1);
+    expect(b.bbox).toHaveLength(4);
+    expect(b.start).toHaveLength(2);
+    expect(b.end).toHaveLength(2);
+    expect(b.rights).toEqual({ edit: false, copy: true, delete: false }); // source OSM : pas modifiable en place
+    const d = await (await trackRoute.GET(get(), ctx(draftSlug))).json();
+    expect(d.rights).toEqual({ edit: true, copy: false, delete: true });
+    expect(Array.isArray(b.outings)).toBe(true);
+    expect(b.durationMin).toBeGreaterThan(0);
+    const etag = r.headers.get('etag')!;
+    expect((await trackRoute.GET(get({ 'if-none-match': etag }), ctx(trackSlug))).status).toBe(304);
+  });
+  it('404 : inconnue et brouillon d’autrui ; droits d’un autre utilisateur', async () => {
+    expect((await trackRoute.GET(get(), ctx('inconnue'))).status).toBe(404);
+    st.uid = 'b';
+    expect((await trackRoute.GET(get(), ctx(draftSlug))).status).toBe(404);
+    const b = await (await trackRoute.GET(get(), ctx(trackSlug))).json();
+    expect(b.rights.edit).toBe(false);
+    st.uid = 'a';
+  });
+});
+
 describe('/api/tracks starts + geometry (#1530)', () => {
   const get = (url: string, h: Record<string, string> = {}) => new Request(`http://x${url}`, { headers: h });
   it('starts=1 : objets légers sans géométrie, brouillon d’autrui exclu', async () => {

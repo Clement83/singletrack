@@ -10,14 +10,10 @@ import { Badge, DifficultyBadge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { getCurrentUser } from '@/lib/current-user';
 import { formatDuration, formatKm, formatMeters, formatOutingDate } from '@/lib/format';
-import { outingsOfTrack } from '@/lib/outings';
-import { lines, profileOf, simplifyGeometry } from '@/lib/geo';
 import { DeleteTrackButton } from '@/components/tracks/delete-track';
-import { canEditInPlace, ensureTrackElevation, estimateDurationMin, getVisibleTrack } from '@/lib/tracks';
+import { getVisibleTrack, trackSheet } from '@/lib/tracks';
 
 export const dynamic = 'force-dynamic';
-
-const PROFILE_POINTS = 240;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const user = await getCurrentUser().catch(() => null);
@@ -43,28 +39,16 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   const { slug } = await params;
   const user = await getCurrentUser().catch(() => null);
   // Brouillon (#1450) : 404 pour tout autre que son auteur.
-  const found = getVisibleTrack(getDb().db, slug, user?.id);
-  if (!found) notFound();
-  const t = await ensureTrackElevation(getDb().db, found); // altitude IGN à la première ouverture (#1428)
+  const sheet = await trackSheet(getDb().db, slug, user?.id);
+  if (!sheet) notFound();
+  const { geometry, profile, outings, rights } = sheet;
+  const t = { ...sheet, elevationGainM: sheet.gainM, elevationLossM: sheet.lossM };
   const draft = t.status === 'draft';
   const tr = await getTranslations('track');
   const locale = await getLocale();
   const m = (v: number | null) => formatMeters(v, locale);
-
-  // Carte : géométrie à 5 m ; profil : ~240 points régulièrement échantillonnés avec leur position.
-  const geometry = simplifyGeometry(t.geometry, 5);
-  const coords = lines(t.geometry).flat();
-  const full = profileOf(coords);
-  const withEle = coords.filter((p) => typeof p[2] === 'number');
-  const step = Math.max(1, Math.floor(full.length / PROFILE_POINTS));
-  const profile = full
-    .map((p, i) => ({ ...p, lon: withEle[i][0], lat: withEle[i][1] }))
-    .filter((_, i, a) => i % step === 0 || i === a.length - 1);
-  const ls = lines(t.geometry);
-  const end = ls[ls.length - 1].at(-1)!;
-  const mine = !!user && canEditInPlace(t, user.id);
-  const outings = user ? outingsOfTrack(getDb().db, user.id, t.id) : [];
-  const duration = estimateDurationMin(t.distanceM, t.elevationGainM);
+  const mine = rights.edit;
+  const duration = sheet.durationMin;
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 pt-4 pb-32">
@@ -85,9 +69,9 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
 
       <TrackDetail
         geometry={geometry}
-        bbox={[t.bboxMinLon, t.bboxMinLat, t.bboxMaxLon, t.bboxMaxLat]}
-        start={[t.startLon, t.startLat]}
-        end={[end[0], end[1]]}
+        bbox={sheet.bbox}
+        start={sheet.start}
+        end={sheet.end}
         profile={profile}
       />
 
@@ -137,7 +121,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
           <h2 className="text-heading">{tr('outingsOn')}</h2>
           <ul className="flex flex-col gap-2">
             {outings.map((o) => (
-              <li key={o.id}>
+              <li key={o.slug}>
                 <Link href={`/s/${o.slug}`} className="flex min-h-touch items-center justify-between gap-2 rounded-2xl border border-border bg-card px-4 py-2 transition-colors duration-150 hover:bg-accent/40 active:bg-accent/60">
                   <span className="font-semibold">{o.title}</span>
                   <span className="text-small text-muted-foreground">{formatOutingDate(o.startsAt, locale)}</span>

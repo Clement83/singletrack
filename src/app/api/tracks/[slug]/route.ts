@@ -1,8 +1,28 @@
 import { getDb } from '@/db';
 import { assertUser, unauthorized } from '@/lib/current-user';
-import { deleteTrack, updateEditedTrack, type EditorInput } from '@/lib/tracks';
+import { deleteTrack, trackSheet, updateEditedTrack, type EditorInput } from '@/lib/tracks';
 
 export const dynamic = 'force-dynamic';
+
+/**
+ * Privé (#1581). `GET /api/tracks/<slug>` : fiche complète (stats, géométrie à 5 m, profil, droits, sorties),
+ * même calcul que la page `/t/<slug>`. Brouillon d'autrui ou slug inconnu ⇒ 404. Cache privé, ETag slug + `updatedAt`.
+ */
+export async function GET(req: Request, { params }: { params: Promise<{ slug: string }> }) {
+  let user;
+  try {
+    user = await assertUser();
+  } catch (e) {
+    return unauthorized(e);
+  }
+  const sheet = await trackSheet(getDb().db, (await params).slug, user.id);
+  if (!sheet) return Response.json({ error: 'not_found' }, { status: 404 });
+  const { updatedAt, ...body } = sheet;
+  const etag = `"${Buffer.from(`${sheet.slug}:${updatedAt.getTime()}:${user.id}:${body.outings.map((o) => o.slug).join(',')}`).toString('base64url').slice(0, 200)}"`;
+  const headers = { ETag: etag, 'Cache-Control': 'private, max-age=60, must-revalidate' };
+  if (req.headers.get('if-none-match') === etag) return new Response(null, { status: 304, headers });
+  return Response.json(body, { headers });
+}
 
 /** Privé (éditeur, #1340). `PUT /api/tracks/<slug>` : met à jour en place une trace de l'utilisateur (403 sinon : faire une copie). */
 export async function PUT(req: Request, { params }: { params: Promise<{ slug: string }> }) {
