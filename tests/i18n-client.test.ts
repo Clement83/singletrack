@@ -75,7 +75,7 @@ const ROUTES: Record<string, string[]> = {
   editor: [A('t/[slug]/edit/page.tsx')],
   guest: pagesUnder(A('i')),
   outing: pagesUnder(A('s')),
-  private: pagesUnder(A('(private)'), ['styleguide']),
+  private: [...pagesUnder(A('(private)'), ['styleguide']), ...pagesUnder(A('(explore)'))], // carte publique (#1591) : même zone
 };
 
 describe('messages client par zone (#1405)', () => {

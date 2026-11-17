@@ -14,10 +14,17 @@ describe('proxy (#1482)', () => {
       expect((await proxy(req(p))).headers.get('x-middleware-next')).toBe('1');
     });
 
-  it.each(['/', '/new', '/importer', '/sorties', '/copains', '/styleguide', '/u/x', '/bienvenue'])('page privée %s : redirigée vers /login', async (p) => {
+  it.each(['/new', '/importer', '/sorties', '/copains', '/styleguide', '/u/x', '/bienvenue'])('page privée %s : redirigée vers /login', async (p) => {
     const res = (await proxy(req(p)));
     expect(res.status).toBe(307);
     expect(new URL(res.headers.get('location')!).pathname).toBe('/login');
+  });
+
+  it('carte des traces / (#1591) : passe sans session, ses voisins restent privés', async () => {
+    expect(isPublicPath('/')).toBe(true);
+    expect((await proxy(req('/'))).headers.get('x-middleware-next')).toBe('1');
+    expect((await proxy(req('/?t=abc&z=12&lat=43.1&lng=6.1'))).headers.get('x-middleware-next')).toBe('1');
+    for (const p of ['/new', '/sorties', '/importer']) expect(isPublicPath(p), p).toBe(false);
   });
 
   it.each(['/api/tracks/segments', '/api/outings', '/api/outings/x/join', '/api/friends', '/api/profile', '/api/route', '/api/contacts', '/api/inconnue'])(

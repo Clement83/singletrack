@@ -137,15 +137,15 @@ describe('routes publiques / privées', () => {
     '%s est publique',
     (p) => expect(isPublicPath(p)).toBe(true),
   );
-  it.each(['/', '/sorties', '/styleguide', '/api/tracks', '/api/outings', '/api/outings/x/invitations', '/sorties/new', '/login-evil', '/bienvenue', '/sorties-s'])('%s est privée', (p) =>
+  it.each(['/sorties', '/styleguide', '/api/tracks', '/api/outings', '/api/outings/x/invitations', '/sorties/new', '/login-evil', '/bienvenue', '/sorties-s'])('%s est privée', (p) =>
     expect(isPublicPath(p)).toBe(false),
   );
 
   const req = (path: string, cookie?: string) =>
     new NextRequest(`http://localhost:3000${path}`, { headers: cookie ? { cookie } : {} });
 
-  it('redirige vers /login sans cookie de session', async () => {
-    const res = (await proxy(req('/')));
+  it('redirige vers /login sans cookie de session (la carte / est publique depuis #1591)', async () => {
+    const res = (await proxy(req('/sorties')));
     expect(res.status).toBe(307);
     expect(res.headers.get('location')).toBe('http://localhost:3000/login');
   });

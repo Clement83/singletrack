@@ -74,7 +74,7 @@ describe('rattacher un invité à son compte (#1434)', () => {
     expect(p.rides[0]).not.toHaveProperty('slug');
   });
 
-  it('safeNext n’accepte que les liens invités', () => {
+  it('safeNext n’accepte que les liens invités et la carte', () => {
     expect(safeNext(`/i/${'a'.repeat(43)}`)).toBe(`/i/${'a'.repeat(43)}`);
     expect(safeNext('https://evil.fr')).toBeUndefined();
     expect(safeNext('//evil.fr')).toBeUndefined();

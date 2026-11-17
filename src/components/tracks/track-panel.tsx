@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { LoginLink } from '@/components/login-link';
 import { useEffect, useId, useMemo, useRef, useState, type RefObject } from 'react';
 import { Marker, type MapRef } from 'react-map-gl/maplibre';
 import { ArrowLeft, BadgeCheck, CalendarPlus, Clock, Copy, Download, Ellipsis, ExternalLink, Flag, HelpCircle, Mountain, MoveDown, Pencil, PencilLine, Route, Share2, TrendingDown, TrendingUp } from 'lucide-react';
@@ -169,7 +170,8 @@ export function TrackPanelBody({ sheet, loading, error, backLabel, onBack }: { s
 }
 
 /** Pied du panneau : profil d'altitude synchronisé avec la carte, puis « Préparer une sortie », GPX et menu « … ». */
-export function TrackPanelFooter({ sheet, cursor, onScrub, compact, onVisibility }: { sheet: PanelSheet; cursor: number | null; onScrub: (i: number | null) => void; compact: boolean; onVisibility?: (v: TrackVisibilityValue) => void }) {
+/** `signedIn=false` (visiteur, #1591) : « Préparer une sortie » et « Modifier une copie » mènent à la connexion, qui ramène sur la même vue. */
+export function TrackPanelFooter({ sheet, cursor, onScrub, compact, onVisibility, signedIn = true }: { sheet: PanelSheet; cursor: number | null; onScrub: (i: number | null) => void; compact: boolean; onVisibility?: (v: TrackVisibilityValue) => void; signedIn?: boolean }) {
   const t = useTranslations('track');
   const tp = useTranslations('explorer.panel');
   const tv = useTranslations('trackVisibility');
@@ -225,8 +227,11 @@ export function TrackPanelFooter({ sheet, cursor, onScrub, compact, onVisibility
           {sheet.rights.edit && !draft && (
             <Button asChild variant="outline"><Link href={`/t/${sheet.slug}/edit`}><Pencil aria-hidden /> {t('edit')}</Link></Button>
           )}
-          {sheet.rights.copy && (
-            <Button asChild variant="outline"><Link href={`/t/${sheet.slug}/edit?copie=1`}><Copy aria-hidden /> {t('editCopy')}</Link></Button>
+          {/* Visiteur (#1591) : l'API ne lui donne aucun droit ; le bouton reste visible et mène à la connexion. */}
+          {(sheet.rights.copy || (!signedIn && !draft)) && (
+            <Button asChild variant="outline">
+              {signedIn ? <Link href={`/t/${sheet.slug}/edit?copie=1`}><Copy aria-hidden /> {t('editCopy')}</Link> : <LoginLink><Copy aria-hidden /> {t('editCopy')}</LoginLink>}
+            </Button>
           )}
           {sheet.rights.delete && <DeleteTrackButton slug={sheet.slug} name={name} />}
           {sheet.rights.edit && sheet.visibility && (
@@ -243,7 +248,9 @@ export function TrackPanelFooter({ sheet, cursor, onScrub, compact, onVisibility
         {draft ? (
           <Button asChild size="lg" className="min-w-0 flex-1"><Link href={`/t/${sheet.slug}/edit`}><Pencil aria-hidden /> {t('continueDraft')}</Link></Button>
         ) : (
-          <Button asChild size="lg" className="min-w-0 flex-1"><Link href={`/sorties/nouvelle?trace=${sheet.slug}`}><CalendarPlus aria-hidden /> {tp('prepareOuting')}</Link></Button>
+          <Button asChild size="lg" className="min-w-0 flex-1">
+            {signedIn ? <Link href={`/sorties/nouvelle?trace=${sheet.slug}`}><CalendarPlus aria-hidden /> {tp('prepareOuting')}</Link> : <LoginLink><CalendarPlus aria-hidden /> {tp('prepareOuting')}</LoginLink>}
+          </Button>
         )}
         <Button asChild size="lg" variant="outline" className="w-auto shrink-0">
           <a href={`/api/t/${sheet.slug}/gpx`} download aria-label={t('downloadGpx')}>

@@ -47,6 +47,7 @@
     "dark": "Dark"
   },
   "userMenu": {
+    "signIn": "Sign in",
     "open": "My account",
     "title": "My account",
     "language": "Language",

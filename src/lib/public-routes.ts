@@ -5,7 +5,8 @@ import { isFederationPath } from './federation/paths';
  * Les routes de données publiques vont sous /api/s/ et /api/t/ (cache hors-ligne, voir AGENTS.md).
  */
 const PUBLIC_BASES = ['/login', '/s', '/t', '/i', '/api/auth', '/api/health', '/api/s', '/api/t', '/api/i', '/cal', '/offline', '/icons'];
-const PUBLIC_EXACT = ['/api/locale', '/manifest.webmanifest', '/sw.js', '/icon.svg', '/favicon.ico', '/robots.txt'];
+// `/` : carte des traces ouverte aux visiteurs sans compte (#1591), qui n'y voient que le public.
+const PUBLIC_EXACT = ['/', '/api/locale', '/manifest.webmanifest', '/sw.js', '/icon.svg', '/favicon.ico', '/robots.txt'];
 
 /**
  * Lectures **GET seulement** ouvertes sans session pour la carte (#1589). Chaque route filtre elle-même par visibilité

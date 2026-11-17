@@ -20,6 +20,7 @@ import type { TrackStart, TrackSummary } from '@/lib/tracks/query';
 import { tracksAtStart } from '@/lib/tracks/same-start';
 import { VIEW_PARAMS, parseMapView, parseOpenTrack, viewChanged, viewQuery, writeMapView, type MapView } from '@/lib/tracks/map-view';
 import { LAST_EXPLORER_KEY } from '@/components/tracks/back-to-map';
+import { LoginLink } from '@/components/login-link';
 import { haversine } from '@/lib/geo/distance';
 import { DESKTOP, useMediaQuery } from '@/lib/use-media-query';
 import { cn } from '@/lib/utils';
@@ -44,7 +45,8 @@ const inView = (p: [number, number], v: View) => p[0] >= v[0] && p[0] <= v[2] &&
 const CLUSTER_MAX_ZOOM = 16;
 const openSlugOf = (p: Panel) => (p?.kind === 'track' ? p.slug : null);
 
-export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) {
+/** `signedIn=false` : mode visiteur (#1591), sans « Mes traces », import ni création ; les actions réservées mènent à la connexion. */
+export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; lon: number }; signedIn?: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
@@ -53,7 +55,8 @@ export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) 
   const mapRef = useRef<MapRef>(null);
 
   // Le filtre d'accès aux massifs (`access`, #1349) n'est plus proposé ici (#1407) : ignoré s'il traîne dans un vieux lien.
-  const filters = useMemo(() => ({ ...parseFilters(new URLSearchParams(sp.toString())), access: undefined }), [sp]);
+  // « Mes traces » n'a pas de sens sans compte (#1591) : un `mine=1` dans le lien d'un visiteur est ignoré.
+  const filters = useMemo(() => ({ ...parseFilters(new URLSearchParams(sp.toString())), access: undefined, ...(signedIn ? {} : { mine: undefined }) }), [sp, signedIn]);
   const filterKey = useMemo(() => serializeFilters({ ...filters, bbox: undefined }).toString(), [filters]);
 
   const [tracks, setTracks] = useState<TrackStart[] | null>(null);
@@ -380,20 +383,26 @@ export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) 
           <SlidersHorizontal />
           {nFilters > 0 && <span className="absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full bg-primary text-caption text-primary-foreground">{nFilters}</span>}
         </Button>
-        <Button asChild variant="outline" size="icon" className="shadow-md">
-          <Link href="/importer" aria-label={t('import')}><Upload /></Link>
-        </Button>
-        <Button asChild variant="outline" size="icon" className="shadow-md">
-          <Link href={newHref} aria-label={t('create')}><PencilRuler /></Link>
-        </Button>
+        {signedIn && (
+          <>
+            <Button asChild variant="outline" size="icon" className="shadow-md">
+              <Link href="/importer" aria-label={t('import')}><Upload /></Link>
+            </Button>
+            <Button asChild variant="outline" size="icon" className="shadow-md">
+              <Link href={newHref} aria-label={t('create')}><PencilRuler /></Link>
+            </Button>
+          </>
+        )}
       </div>
 
       {/* Singles : plus de bouton (#1436), réglage dans les filtres ; seule l'indication « tronqué » reste ici. */}
       <div className={cn('absolute top-[4.5rem] left-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-col items-start gap-2', desktop && sheetOpen && 'left-[calc(var(--spacing-panel)+36px)]')}>
         <div className="flex flex-wrap gap-2">
-          <Button variant={mine ? 'primary' : 'outline'} aria-pressed={mine} onClick={() => apply({ ...filters, mine: mine ? undefined : true })} className="shadow-md">
-            <UserRound aria-hidden /> {t('mine')}
-          </Button>
+          {signedIn && (
+            <Button variant={mine ? 'primary' : 'outline'} aria-pressed={mine} onClick={() => apply({ ...filters, mine: mine ? undefined : true })} className="shadow-md">
+              <UserRound aria-hidden /> {t('mine')}
+            </Button>
+          )}
           <Button variant={outingsOn ? 'primary' : 'outline'} aria-pressed={outingsOn} onClick={() => setOutingsOn(!outingsOn)} className="shadow-md">
             <CalendarDays aria-hidden /> {tOut('toggle')}
           </Button>
@@ -421,9 +430,9 @@ export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) 
         tallFooter={panel?.kind === 'track' && !!sheet}
         footer={
           panel?.kind === 'outing' && selectedOuting ? (
-            <Button asChild size="lg"><Link href={`/sorties/${selectedOuting.id}`}>{tOut('seeOuting')}</Link></Button>
+            <Button asChild size="lg">{signedIn ? <Link href={`/sorties/${selectedOuting.id}`}>{tOut('seeOuting')}</Link> : <LoginLink>{tOut('seeOuting')}</LoginLink>}</Button>
           ) : panel?.kind === 'track' && sheet ? (
-            <TrackPanelFooter sheet={sheet} onVisibility={setSheetVisibility} compact={!desktop} cursor={lineCursor} onScrub={(i) => setScrub(i === null ? null : { slug: sheet.slug, i })} />
+            <TrackPanelFooter sheet={sheet} signedIn={signedIn} onVisibility={setSheetVisibility} compact={!desktop} cursor={lineCursor} onScrub={(i) => setScrub(i === null ? null : { slug: sheet.slug, i })} />
           ) : panel?.kind === 'filters' ? (
             <Button size="lg" onClick={() => setPanel({ kind: 'list' })}>{t('seeN', { n: total })}</Button>
           ) : undefined
