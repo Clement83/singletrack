@@ -8,7 +8,9 @@ import type { Difficulty } from '@/lib/design/scales';
 import { formatElevation, formatKm, formatOutingDate } from '@/lib/format';
 
 type Props = {
-  href: string;
+  /** Lien de la carte ; ou bien `onSelect` : la carte devient un bouton (ex. ouvrir la trace dans le panneau, #1582). */
+  href?: string;
+  onSelect?: () => void;
   title: string;
   distanceKm: number;
   /** `null` : D+ pas encore calculé (altitude IGN à la première ouverture, #1428). */
@@ -26,17 +28,15 @@ type Props = {
 };
 
 /** Une trace ou une sortie dans une liste (sur mobile : listes de cartes, pas de tableau). */
-export function TrackCard({ href, title, distanceKm, elevationM, difficulty, loop, source, date, going, draft, className }: Props) {
+export function TrackCard({ href, onSelect, title, distanceKm, elevationM, difficulty, loop, source, date, going, draft, className }: Props) {
   const t = useTranslations('trackCard');
   const locale = useLocale();
-  return (
-    <Link
-      href={href}
-      className={cn(
-        'flex items-center gap-3 rounded-2xl border border-border bg-card p-4 text-card-foreground shadow-sm transition-colors duration-150 hover:bg-accent/40 active:bg-accent/60',
-        className,
-      )}
-    >
+  const cls = cn(
+    'flex items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left text-card-foreground shadow-sm transition-colors duration-150 hover:bg-accent/40 active:bg-accent/60',
+    className,
+  );
+  const body = (
+    <>
       <div className="flex min-w-0 flex-1 flex-col gap-2">
         {date && (
           <p className="flex items-center gap-1.5 text-small font-semibold text-primary">
@@ -81,6 +81,15 @@ export function TrackCard({ href, title, distanceKm, elevationM, difficulty, loo
         )}
       </div>
       <ChevronRight aria-hidden className="size-5 shrink-0 text-muted-foreground" />
+    </>
+  );
+  return onSelect ? (
+    <button type="button" onClick={onSelect} className={cn(cls, 'w-full')}>
+      {body}
+    </button>
+  ) : (
+    <Link href={href ?? '#'} className={cls}>
+      {body}
     </Link>
   );
 }

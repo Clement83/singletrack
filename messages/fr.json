@@ -730,7 +730,6 @@
     "panelList": "Traces sur la carte",
     "panelTrack": "Trace",
     "listDesc": "{visible} sur {total} dans la vue",
-    "seeTrack": "Voir la fiche",
     "seeN": "Voir {n, plural, one {# trace} other {# traces}}",
     "gainUnknown": "D+ inconnu",
     "sort": {
@@ -746,7 +745,21 @@
     "emptyFilters": "Aucune trace pour ces filtres",
     "emptyFiltersBody": "Assouplis un filtre, ou importe un GPX.",
     "emptyView": "Aucune trace dans cette vue",
-    "emptyViewBody": "Déplace ou dézoome la carte."
+    "emptyViewBody": "Déplace ou dézoome la carte.",
+    "panel": {
+      "backToList": "Toutes les traces",
+      "backToGroup": "Les traces d’ici",
+      "sourceInfo": "D’où vient cette trace\u00a0?",
+      "loadError": "Impossible de charger la trace",
+      "loadErrorBody": "Réessaie dans un instant.",
+      "prepareOuting": "Préparer une sortie",
+      "gpx": "GPX",
+      "more": "Plus d’actions",
+      "less": "Moins d’actions",
+      "share": "Partager le lien",
+      "copied": "Lien copié",
+      "copyFailed": "Copie impossible\u00a0: réessaie."
+    }
   },
   "filters": {
     "difficulty": "Difficulté",

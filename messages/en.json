@@ -730,7 +730,6 @@
     "panelList": "Routes on the map",
     "panelTrack": "Route",
     "listDesc": "{visible} of {total} in view",
-    "seeTrack": "Open the route",
     "seeN": "Show {n, plural, one {# route} other {# routes}}",
     "gainUnknown": "Climb unknown",
     "sort": {
@@ -746,7 +745,21 @@
     "emptyFilters": "No route for these filters",
     "emptyFiltersBody": "Loosen a filter, or import a GPX.",
     "emptyView": "No route in this view",
-    "emptyViewBody": "Move or zoom out the map."
+    "emptyViewBody": "Move or zoom out the map.",
+    "panel": {
+      "backToList": "All tracks",
+      "backToGroup": "Tracks from here",
+      "sourceInfo": "Where does this track come from?",
+      "loadError": "Couldn’t load the track",
+      "loadErrorBody": "Try again in a moment.",
+      "prepareOuting": "Plan a ride",
+      "gpx": "GPX",
+      "more": "More actions",
+      "less": "Fewer actions",
+      "share": "Share the link",
+      "copied": "Link copied",
+      "copyFailed": "Couldn’t copy: try again."
+    }
   },
   "filters": {
     "difficulty": "Difficulty",

@@ -15,6 +15,8 @@ type Props = {
   slopes?: boolean;
   /** Version basse (éditeur mobile, #1392) : profil de 64 px, sans légende. */
   compact?: boolean;
+  /** Légende des pentes sous le profil (défaut : oui). La carte des traces la porte sur la carte (#1582). */
+  legend?: boolean;
   className?: string;
 };
 
@@ -32,7 +34,7 @@ const DEFAULT_W = 320;
  * - clavier : flèches gauche/droite (Maj = 10 points), Début/Fin, Échap.
  * Le curseur montre km, altitude et pente du tronçon (couleur + libellé) ; `onScrub` donne le point à marquer sur la carte.
  */
-export function ElevationProfile({ points, onScrub, cursor = null, slopes = false, compact = false, className }: Props) {
+export function ElevationProfile({ points, onScrub, cursor = null, slopes = false, compact = false, legend = true, className }: Props) {
   const t = useTranslations('profile');
   const format = useFormatter();
   const ref = useRef<SVGSVGElement>(null);
@@ -181,7 +183,7 @@ export function ElevationProfile({ points, onScrub, cursor = null, slopes = fals
           {t('estimated')}
         </p>
       )}
-      {slopes && !compact && (
+      {slopes && legend && !compact && (
         <div className="mt-1 space-y-1 text-caption text-muted-foreground">
           {(['up', 'down'] as const).map((dir) => (
             <p key={dir} className="flex items-center gap-1">

@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Layer, Source, type MapLayerMouseEvent, type MapRef } from 'react-map-gl/maplibre';
 import type { GeoJSONSource } from 'maplibre-gl';
-import { BadgeCheck, CalendarDays, Crosshair, List, Plus, UserRound, Search, Route, SearchX, SlidersHorizontal, PencilRuler, Upload, X } from 'lucide-react';
+import { CalendarDays, Crosshair, List, Plus, UserRound, Search, Route, SearchX, SlidersHorizontal, PencilRuler, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLocale, useTranslations } from 'next-intl';
 import BaseMap from '@/components/BaseMap';
@@ -31,8 +31,12 @@ import { TrackTip, useTrackTip } from '@/components/map/track-tip';
 import { OutingsLayer, useMapOutings } from './outings-layer';
 import { useOutingsPref } from './outings-pref';
 import { SinglesLayer, SinglesStatus, useSingles, useSinglesPref } from './singles-layer';
+import { OpenTrackLayers, TrackPanelBody, TrackPanelFooter, useTrackSheet } from './track-panel';
+import { nearestProfileIndex } from '@/lib/elevation';
 
-type Panel = { kind: 'list' } | { kind: 'group'; slugs: string[] } | { kind: 'filters' } | { kind: 'track'; slug: string } | { kind: 'outing'; id: string } | null;
+type ListPanel = { kind: 'list' } | { kind: 'group'; slugs: string[] };
+/** `from` : la liste ou le groupe d'où la trace a été ouverte (bouton « Retour », #1582). */
+type Panel = ListPanel | { kind: 'filters' } | { kind: 'track'; slug: string; from?: ListPanel } | { kind: 'outing'; id: string } | null;
 type Sort = 'near' | 'short' | 'long' | 'gain' | 'name';
 type View = [number, number, number, number];
 
@@ -212,6 +216,30 @@ export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) 
   const hl = selected?.slug ?? (hover && hover !== 'pointer' ? hover : overSlug) ?? '';
   const groupTracks = panel?.kind === 'group' ? (tracks ?? []).filter((t) => panel.slugs.includes(t.slug)) : [];
 
+  // Trace ouverte (#1582) : fiche complète chargée à la demande, tracé coloré par pente sur la carte, profil synchronisé.
+  const openSlug = panel?.kind === 'track' ? panel.slug : null;
+  const { sheet, loading: sheetLoading, error: sheetError } = useTrackSheet(openSlug);
+  const [scrub, setScrub] = useState<{ slug: string; i: number } | null>(null);
+  const [lineOver, setLineOver] = useState<{ slug: string; i: number } | null>(null);
+  const profileCursor = scrub && scrub.slug === openSlug ? scrub.i : null;
+  const lineCursor = lineOver && lineOver.slug === openSlug ? lineOver.i : null;
+  const openTrack = (slug: string, from?: ListPanel) => {
+    setPinned(tracks?.find((x) => x.slug === slug));
+    setPanel({ kind: 'track', slug, from });
+  };
+  // À l'ouverture, la carte se cale sur la trace si elle n'est pas entièrement dans la vue (une fois par trace).
+  const fitted = useRef<string | null>(null);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!sheet || !map || fitted.current === sheet.slug) return;
+    fitted.current = sheet.slug;
+    const b = map.getBounds();
+    const [w, s, e, n] = sheet.bbox;
+    if (b.contains([w, s]) && b.contains([e, n])) return;
+    const panelW = desktop ? 420 : 0;
+    map.fitBounds([[w, s], [e, n]], { padding: { top: 90, bottom: desktop ? 60 : window.innerHeight * 0.5, left: 40 + panelW, right: 40 }, maxZoom: 15, duration: 600 });
+  }, [sheet, desktop]);
+
   // Sélection multiple (#1532) : l'URL (`?sel=slug1,slug2`) est la source de vérité (retour arrière, partage, rechargement).
   const selection = useMemo(() => parseSelection(sp.get('sel')), [sp]);
   // Le numéro de couleur d'une trace reste le même tant qu'elle est choisie (même si une autre est retirée).
@@ -311,6 +339,7 @@ export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) 
   // la distance réelle de la trace recale l'échelle.
   const lineTip = useTrackTip((e) => {
     const f = e.features?.[0];
+    if (f?.layer.id === 'open-casing' && sheet) return { geometry: sheet.geometry, ele: (lon, lat) => sheet.profile[nearestProfileIndex(sheet.profile, lon, lat)]?.ele ?? null };
     if (f?.layer.id !== 'selected-casing') return null;
     const slug = f.properties?.slug as string | undefined;
     const geometry = slug ? geoms[slug] : undefined;
@@ -334,14 +363,17 @@ export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) 
       });
       return;
     }
-    // Repère de départ : toutes les traces qui partent d'ici ; une seule → sa fiche, plusieurs → la liste.
+    if (f.layer.id !== 'start-hit') return;
+    // Repère de départ : toutes les traces qui partent d'ici ; une seule → sa fiche dans le panneau, plusieurs → la liste.
     const at = (f.geometry as GeoJSON.Point).coordinates as [number, number];
     const here = tracksAtStart(tracks ?? [], at);
     if (here.length > 1) setPanel({ kind: 'group', slugs: here.map((t) => t.slug) });
-    else if (f.properties?.slug) toggleTrack(f.properties.slug as string);
+    else if (f.properties?.slug) openTrack(f.properties.slug as string);
   };
   const onMouseMove = (e: MapLayerMouseEvent) => {
     lineTip.onMove(e);
+    const onLine = sheet && e.features?.some((x) => x.layer.id === 'open-casing');
+    setLineOver(onLine ? { slug: sheet.slug, i: nearestProfileIndex(sheet.profile, e.lngLat.lng, e.lngLat.lat) } : null);
     setHover(e.features?.some((x) => x.layer.id === 'start-hit' || x.layer.id === 'clusters') ? 'pointer' : null);
     const over = e.features?.find((x) => x.layer.id === 'start-hit')?.properties?.slug as string | undefined;
     setOverSlug((o) => (o === (over ?? null) ? o : (over ?? null)));
@@ -374,7 +406,7 @@ export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) 
     colors.primary,
   ];
 
-  const panelTitle = panel?.kind === 'filters' ? t('filters') : panel?.kind === 'group' ? t('panelGroup', { n: groupTracks.length }) : panel?.kind === 'outing' ? tOut('panelTitle') : panel?.kind === 'track' ? (selected ? selected.name || tTrack('untitled') : t('panelTrack')) : t('panelList');
+  const panelTitle = panel?.kind === 'filters' ? t('filters') : panel?.kind === 'group' ? t('panelGroup', { n: groupTracks.length }) : panel?.kind === 'outing' ? tOut('panelTitle') : panel?.kind === 'track' ? (sheet ? sheet.name || tTrack('untitled') : selected ? selected.name || tTrack('untitled') : t('panelTrack')) : t('panelList');
   const sheetOpen = panel !== null;
   const selectedOuting = panel?.kind === 'outing' ? mapOutings.find((o) => o.id === panel.id) : undefined;
 
@@ -389,8 +421,8 @@ export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) 
         onMoveEnd={syncView}
         onClick={onClick}
         onMouseMove={onMouseMove}
-        onMouseLeave={() => { setHover(null); setOverSlug(null); lineTip.clear(); }}
-        interactiveLayerIds={['clusters', 'start-hit', 'selected-casing']}
+        onMouseLeave={() => { setHover(null); setOverSlug(null); setLineOver(null); lineTip.clear(); }}
+        interactiveLayerIds={['clusters', 'start-hit', 'selected-casing', 'open-casing']}
         cursor={hover === 'pointer' ? 'pointer' : undefined}
       >
         <TrackTip tip={lineTip.tip} />
@@ -403,6 +435,7 @@ export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) 
             onCluster={(lat, lon) => mapRef.current?.easeTo({ center: [lon, lat], zoom: Math.min(zoom + 2, 14) })}
           />
         )}
+        {sheet && <OpenTrackLayers sheet={sheet} colors={colors} mapRef={mapRef} marked={profileCursor ?? lineCursor} />}
         <Source id="selected" type="geojson" data={selectedLines}>
           <Layer id="selected-casing" type="line" layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': colors.card, 'line-width': ['case', ['get', 'last'], 10, 8], 'line-opacity': 0.9 }} />
           <Layer id="selected-line" type="line" layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': ['get', 'color'], 'line-width': ['case', ['get', 'last'], 6, 4], 'line-opacity': ['case', ['get', 'last'], 1, 0.85] }} />
@@ -471,11 +504,12 @@ export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) 
         title={panelTitle}
         description={panel?.kind === 'list' ? t('listDesc', { visible: visible.length, total }) : undefined}
         initialSnap={panel?.kind === 'track' || panel?.kind === 'outing' ? 0.5 : 0.92}
+        tallFooter={panel?.kind === 'track' && !!sheet}
         footer={
           panel?.kind === 'outing' && selectedOuting ? (
             <Button asChild size="lg"><Link href={`/sorties/${selectedOuting.id}`}>{tOut('seeOuting')}</Link></Button>
-          ) : panel?.kind === 'track' && selected ? (
-            <Button asChild size="lg"><Link href={`/t/${selected.slug}`}>{t('seeTrack')}</Link></Button>
+          ) : panel?.kind === 'track' && sheet ? (
+            <TrackPanelFooter sheet={sheet} compact={!desktop} cursor={lineCursor} onScrub={(i) => setScrub(i === null ? null : { slug: sheet.slug, i })} />
           ) : panel?.kind === 'filters' ? (
             <Button size="lg" onClick={() => setPanel({ kind: 'list' })}>{t('seeN', { n: total })}</Button>
           ) : undefined
@@ -485,7 +519,7 @@ export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) 
         {panel?.kind === 'group' && (
           <div className="flex flex-col gap-3">
             {groupTracks.map((g) => (
-              <TrackCard key={g.slug} href={`/t/${g.slug}`} title={g.name} draft={g.status === 'draft'} distanceKm={g.distanceKm} elevationM={g.gainM} difficulty={g.difficulty ?? undefined} loop={g.loop} source={tTrack(`sources.${g.source}`)} />
+              <TrackCard key={g.slug} onSelect={() => openTrack(g.slug, panel)} title={g.name} draft={g.status === 'draft'} distanceKm={g.distanceKm} elevationM={g.gainM} difficulty={g.difficulty ?? undefined} loop={g.loop} source={tTrack(`sources.${g.source}`)} />
             ))}
           </div>
         )}
@@ -504,22 +538,14 @@ export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) 
             </div>
           </div>
         )}
-        {panel?.kind === 'track' && selected && (
-          <div className="flex flex-col gap-3">
-            <p className="text-heading tabular-nums">{formatKm(selected.distanceKm, locale)} · {selected.gainM != null ? formatElevation(selected.gainM, locale) : t('gainUnknown')}</p>
-            <div className="flex flex-wrap gap-2">
-              {selected.status === 'draft' && <Badge variant="outline">{tTrack('draft')}</Badge>}
-              {selected.difficulty && <DifficultyBadge level={selected.difficulty} />}
-              {selected.source === 'geotrek' && <Badge variant="outline"><BadgeCheck aria-hidden className="size-4" /> {tTrack('official')}</Badge>}
-              {selected.loop && <Badge>{tTrack('loop')}</Badge>}
-            </div>
-            <p className="text-small text-muted-foreground">{tTrack('source', { source: tTrack(`sources.${selected.source}`) })}</p>
-            {selection.includes(selected.slug) && (
-              <Button variant="outline" onClick={() => toggleTrack(selected.slug)}>
-                <X aria-hidden /> {t('selectionRemove')}
-              </Button>
-            )}
-          </div>
+        {panel?.kind === 'track' && (
+          <TrackPanelBody
+            sheet={sheet}
+            loading={sheetLoading}
+            error={sheetError}
+            backLabel={panel.from ? (panel.from.kind === 'group' ? t('panel.backToGroup') : t('panel.backToList')) : undefined}
+            onBack={panel.from ? () => setPanel(panel.from ?? null) : undefined}
+          />
         )}
         {panel?.kind === 'list' && (
           <div className="flex flex-col gap-3">
@@ -570,7 +596,7 @@ export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) 
               const chosen = selection.includes(tr.slug);
               return (
                 <div key={tr.slug} data-slug={tr.slug} onMouseEnter={() => setHover(tr.slug)} onMouseLeave={() => setHover(null)} className={cn('flex items-stretch gap-2 rounded-2xl', hl === tr.slug && 'ring-2 ring-ring')}>
-                  <TrackCard className="min-w-0 flex-1" href={`/t/${tr.slug}`} title={tr.name} draft={tr.status === 'draft'} distanceKm={tr.distanceKm} elevationM={tr.gainM} difficulty={tr.difficulty ?? undefined} loop={tr.loop} source={tTrack(`sources.${tr.source}`)} />
+                  <TrackCard className="min-w-0 flex-1" onSelect={() => openTrack(tr.slug, { kind: 'list' })} title={tr.name} draft={tr.status === 'draft'} distanceKm={tr.distanceKm} elevationM={tr.gainM} difficulty={tr.difficulty ?? undefined} loop={tr.loop} source={tTrack(`sources.${tr.source}`)} />
                   <Button variant={chosen ? 'primary' : 'outline'} size="icon" className="h-auto min-h-touch self-stretch" aria-pressed={chosen} aria-label={chosen ? t('selectionRemoveNamed', { name: tr.name || tTrack('untitled') }) : t('selectionAddNamed', { name: tr.name || tTrack('untitled') })} onClick={() => toggleFromList(tr.slug)}>
                     {chosen ? <X aria-hidden /> : <Plus aria-hidden />}
                   </Button>

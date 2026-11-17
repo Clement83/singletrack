@@ -22,6 +22,8 @@ type Props = {
   footer?: React.ReactNode;
   /** Cran initial sur mobile. */
   initialSnap?: Snap;
+  /** Pied haut (ex. profil + actions, #1582) : réserve plus de place sous le contenu sur mobile. */
+  tallFooter?: boolean;
 };
 
 /**
@@ -29,7 +31,7 @@ type Props = {
  * en desktop. Non modal : la carte reste utilisable derrière. Clavier : Échap ferme, le bouton
  * « Agrandir / Réduire » fait passer d'un cran à l'autre.
  */
-export function BottomSheet({ open, onOpenChange, title, description, children, footer, initialSnap = 0.5 }: Props) {
+export function BottomSheet({ open, onOpenChange, title, description, children, footer, initialSnap = 0.5, tallFooter = false }: Props) {
   const tSheet = useTranslations('sheet');
   const desktop = useMediaQuery(DESKTOP);
   const [snap, setSnap] = useState<Snap | string | number | null>(initialSnap);
@@ -94,7 +96,7 @@ export function BottomSheet({ open, onOpenChange, title, description, children, 
               <X />
             </Button>
           </header>
-          <div className={cn('flex-1 px-4 pt-2 pb-4', full ? 'overflow-y-auto' : 'overflow-hidden', footer && 'pb-28')}>
+          <div className={cn('flex-1 px-4 pt-2 pb-4', full ? 'overflow-y-auto' : 'overflow-hidden', footer && (tallFooter ? 'pb-64' : 'pb-28'))}>
             {children}
           </div>
         </Drawer.Content>

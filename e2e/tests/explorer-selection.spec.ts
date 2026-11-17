@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-// #1532 : sélection multiple sur la carte des traces. Les données sont simulées (départs + géométries) : le test
+// Carte des traces (#1532, #1582). Les données sont simulées (départs + géométries) : le test
 // ne dépend pas du contenu de la base. Desktop souris ; le mobile tactile viendra avec #1537.
 const BLANK_PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 
@@ -17,19 +17,26 @@ const mk = (slug: string, lon: number, lat: number) => ({
   slug, name: slug, start: [lon, lat], distanceKm: 10, gainM: 200, difficulty: 'blue', loop: true, source: 'user', status: 'published', bbox: [lon, lat, lon + 0.01, lat + 0.01],
 });
 
-test('carte : toucher des départs affiche leurs traces, retoucher les retire, Tout effacer vide', async ({ page }) => {
+// #1582 : un départ ou une ligne de liste ouvre la fiche **dans le panneau** (pas de navigation), tracé et profil compris.
+const sheetOf = (s: ReturnType<typeof mk>) => {
+  const [x, y] = s.start as number[];
+  const coords = [[x, y, 100], [x + 0.005, y + 0.005, 180], [x + 0.01, y + 0.01, 140]];
+  return {
+    slug: s.slug, name: s.name, status: 'published', difficulty: 'blue', loop: true, source: 'osm', distanceM: 1400, gainM: 80, lossM: 40, minEle: 100, maxEle: 180, durationMin: 20,
+    description: null, author: 'Alice', license: 'ODbL', attribution: '© OpenStreetMap', sourceUrl: null,
+    geometry: { type: 'LineString', coordinates: coords }, bbox: [x, y, x + 0.01, y + 0.01], start: [x, y], end: [x + 0.01, y + 0.01],
+    profile: coords.map((c, i) => ({ distKm: i * 0.7, ele: c[2], lon: c[0], lat: c[1] })),
+    rights: { edit: false, copy: true, delete: false }, outings: [],
+  };
+};
+
+test('panneau : un départ commun liste ses traces, une ligne ouvre la fiche sans quitter la carte, Retour', async ({ page }) => {
   await load(page, '/');
   const c = await page.evaluate(() => (window as unknown as Win).__explorerMap!.getCenter());
-  const starts = [mk('e2e-a', c.lng - 0.03, c.lat), mk('e2e-b', c.lng + 0.03, c.lat)];
-  await page.route(/\/api\/tracks\?.*starts=1/, (r) => r.fulfill({ json: { tracks: starts, total: 2 } }));
-  await page.route(/\/api\/tracks\/geometry/, (r) => {
-    const slugs = new URL(r.request().url()).searchParams.get('slugs')!.split(',');
-    const tracks = slugs.map((slug) => {
-      const s = starts.find((x) => x.slug === slug)!;
-      return { slug, geometry: { type: 'LineString', coordinates: [s.start, [s.start[0] + 0.01, s.start[1] + 0.01]] } };
-    });
-    return r.fulfill({ json: { tracks } });
-  });
+  // Deux traces au même parking, une troisième seule.
+  const starts = [mk('e2e-a', c.lng - 0.03, c.lat), mk('e2e-b', c.lng - 0.03, c.lat), mk('e2e-c', c.lng + 0.03, c.lat)];
+  await page.route(/\/api\/tracks\?.*starts=1/, (r) => r.fulfill({ json: { tracks: starts, total: 3 } }));
+  await page.route(/\/api\/tracks\/e2e-[a-z]$/, (r) => r.fulfill({ json: sheetOf(starts.find((x) => r.request().url().endsWith(x.slug))!) }));
   await load(page, '/?q=e2e');
   const box = (await page.locator('.maplibregl-canvas').boundingBox())!;
   const tap = async (slug: string) => {
@@ -37,24 +44,31 @@ test('carte : toucher des départs affiche leurs traces, retoucher les retire, T
     const p = await page.evaluate((ll) => (window as unknown as Win).__explorerMap!.project(ll), s.start);
     await page.mouse.click(box.x + p.x, box.y + p.y);
   };
-  const lines = () => page.evaluate(() => new Set((window as unknown as Win).__explorerMap!.querySourceFeatures('selected').map((f) => f.properties.slug)).size);
+  const openLine = () => page.evaluate(() => (window as unknown as Win).__explorerMap!.querySourceFeatures('open').length);
 
   await expect(page.getByRole('button', { name: /traces?$/ }).first()).toBeVisible();
+  // Départ commun : la liste des traces d'ici (grappe ou repères superposés).
   await tap('e2e-a');
-  await expect(page).toHaveURL(/sel=e2e-a$/);
-  await expect.poll(lines).toBe(1);
-  await tap('e2e-b');
-  await expect(page).toHaveURL(/sel=e2e-a%2Ce2e-b|sel=e2e-a,e2e-b/);
-  await expect.poll(lines).toBe(2);
-  await tap('e2e-a');
-  await expect(page).toHaveURL(/sel=e2e-b$/);
-  await expect.poll(lines).toBe(1);
-  // Rechargement : la sélection vient de l'URL.
-  await load(page, page.url());
-  await expect.poll(lines).toBe(1);
-  await page.getByRole('button', { name: 'Tout effacer' }).click();
-  await expect(page).not.toHaveURL(/sel=/);
-  await expect.poll(lines).toBe(0);
+  await expect(page.getByRole('heading', { name: '2 traces partent d’ici' })).toBeVisible();
+  await page.getByRole('button', { name: /e2e-b/ }).click();
+  const panel = page.getByTestId('track-panel');
+  await expect(panel.getByText(/1,4\s*km/)).toBeVisible();
+  await expect(page).toHaveURL(/^[^?]*\/\?(.*&)?t=e2e-b/);
+  await expect.poll(openLine).toBeGreaterThan(0);
+  const footer = page.getByTestId('track-panel-footer');
+  await expect(footer.getByRole('slider')).toBeVisible();
+  await expect(footer.getByRole('link', { name: 'Télécharger le GPX' })).toHaveAttribute('href', '/api/t/e2e-b/gpx');
+  await expect(footer.getByRole('link', { name: /Préparer une sortie/ })).toHaveAttribute('href', '/sorties/nouvelle?trace=e2e-b');
+  // Sources derrière le « ? ».
+  await panel.getByRole('button', { name: /D’où vient cette trace/ }).click();
+  await expect(panel.getByText('© OpenStreetMap')).toBeVisible();
+  // Retour au groupe.
+  await panel.getByRole('button', { name: 'Les traces d’ici' }).click();
+  await expect(page.getByRole('heading', { name: '2 traces partent d’ici' })).toBeVisible();
+  // Départ seul : la fiche s'ouvre directement.
+  await tap('e2e-c');
+  await expect(page).toHaveURL(/t=e2e-c/);
+  await expect(page.getByTestId('track-panel').getByText(/1,4\s*km/)).toBeVisible();
 });
 
 // #1533 : liste « Traces choisies » synchronisée avec la carte.
@@ -84,7 +98,7 @@ test('liste : traces choisies, ajout depuis la liste, retrait, recentrage, survo
   await expect.poll(() => page.evaluate(() => (window as unknown as Win).__explorerMap!.getCenter().lng)).toBeCloseTo(c.lng + 0.005, 1);
   // Retrait depuis le panneau.
   await chosen.getByRole('button', { name: 'Retirer e2e-a de la sélection' }).click();
-  await expect(page).toHaveURL(/sel=e2e-b$/);
+  await expect(page).toHaveURL(/sel=e2e-b(&|$)/);
   await expect(chosen.locator('li')).toHaveCount(1);
   // Survol d'une ligne : elle est mise en avant.
   await chosen.locator('li[data-slug="e2e-b"]').hover();
