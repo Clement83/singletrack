@@ -11,6 +11,7 @@ import { LazyMap } from '@/components/lazy-map';
 import { Button } from '@/components/ui/button';
 import { Field, Input, NativeSelect, Textarea } from '@/components/ui/field';
 import { ChoiceChips } from '@/components/ui/choice-chips';
+import { outingWiderThanTrack } from '@/lib/outings/track-exposure';
 import type { OutingVisibilityValue } from '@/components/outing-visibility-switcher';
 import { ConditionsVerdict } from './conditions-verdict';
 
@@ -35,10 +36,12 @@ type Props = {
   initial: OutingFormValues;
   /** Fédération active (#1476) : rappelle qu'une annulation envoyée aux autres serveurs n'est pas garantie. */
   federated?: boolean;
+  /** Visibilité de la trace d'origine (#1592) : avertit quand la sortie est plus large. */
+  trackVisibility?: string | null;
 };
 
 /** Formulaire court (charte) : date, heure, titre, RDV (tap sur la carte), niveau, VAE. */
-export function OutingForm({ mode, initial, federated = false }: Props) {
+export function OutingForm({ mode, initial, federated = false, trackVisibility = null }: Props) {
   const t = useTranslations('outingForm');
   const tl = useTranslations('outingLabels');
   const tv = useTranslations('outingVisibility');
@@ -174,6 +177,7 @@ export function OutingForm({ mode, initial, federated = false }: Props) {
           className="flex-col items-stretch"
         />
         <p className={v.visibility === 'public' ? 'rounded-2xl border border-border bg-accent/40 p-3 text-small' : 'text-small text-muted-foreground'}>{tv(`form.${v.visibility}Hint`)}</p>
+        {outingWiderThanTrack(v.visibility, trackVisibility) && <p role="note" className="rounded-2xl border border-border bg-accent/40 p-3 text-small">{tv('form.trackStaysPrivate')}</p>}
         {federated && <p className="text-small text-muted-foreground">{tv('form.federationNote')}</p>}
         {v.visibility !== 'public' && (
           <label className="flex min-h-touch items-center gap-3 text-body">

@@ -30,6 +30,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ t
       <h1 className="text-title">{tr('newTitle')}</h1>
       <OutingForm
         federated={federationEnabled()}
+        trackVisibility={t.visibility}
         mode={{ kind: 'create', trackSlug: t.slug }}
         initial={{ title: t.name, description: '', date: '', time: '09:00', meetingLat: t.startLat, meetingLon: t.startLon, meetingLabel: '', level: 'sportif', ebike: 'yes', maxParticipants: '', visibility: getDefaultOutingVisibility(getDb().db, user.id), participantsCanInvite: false }}
       />

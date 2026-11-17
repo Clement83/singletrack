@@ -439,6 +439,38 @@ describe('visibilité des traces : toutes les lectures (#1589)', () => {
     expect(buddy.visibility).toBeNull();
   });
 
+  it('sortie publique sur trace privée (#1592) : parcours figé visible, trace introuvable, aucune fuite du slug', async () => {
+    const db = st.db as ReturnType<typeof openDb>['db'];
+    db.update(track).set({ visibility: 'private' }).where(eq(track.slug, trackSlug)).run();
+    const o = await createOuting(db, 'a', { trackSlug, title: 'PubPriv', date: '2099-05-10', time: '08:30', visibility: 'public' } as never) as { slug: string };
+    expect(o.slug).toBeTruthy();
+    const row = db.select().from(outing).where(eq(outing.slug, o.slug)).get()!;
+    const q = '/api/outings/map?bbox=-10,40,10,50';
+    for (const uid of [null, 'b']) {
+      st.uid = uid;
+      const res = await outingsMap.GET(get(q));
+      const body = JSON.stringify(await res.json());
+      expect(body, `carte ${uid}`).toContain('PubPriv');
+      expect(body).not.toContain(trackSlug);
+      expect(body).not.toContain(row.trackId!);
+      // La trace elle-même : 404 (fiche, géométrie, GPX).
+      expect((await trackRoute.GET(get(`/api/tracks/${trackSlug}`), ctx(trackSlug))).status, `fiche ${uid}`).toBe(404);
+      expect((await trackGpx.GET(get('/'), ctx(trackSlug))).status, `gpx ${uid}`).toBe(404);
+    }
+    // Fiche de découverte d'un autre compte : parcours figé, sans slug de trace.
+    const { getOutingDiscovery } = await import('@/lib/outings/map');
+    const d = getOutingDiscovery(db, 'b', row.id);
+    expect(d.kind).toBe('show');
+    expect(JSON.stringify(d)).not.toContain(trackSlug);
+    expect((d as { outing: { distanceM: number } }).outing.distanceM).toBeGreaterThan(0);
+    // Avertissement du formulaire : sortie plus large que la trace.
+    const { outingWiderThanTrack } = await import('@/lib/outings/track-exposure');
+    expect(outingWiderThanTrack('public', 'private')).toBe(true);
+    expect(outingWiderThanTrack('friends', 'friends')).toBe(false);
+    expect(outingWiderThanTrack('public', 'public')).toBe(false);
+    expect(outingWiderThanTrack('invite', 'private')).toBe(true);
+  });
+
   it('carte des sorties : un anonyme ne voit que les sorties publiques', async () => {
     const db = st.db as ReturnType<typeof openDb>['db'];
     const mk = (visibility: string, title: string) => createOuting(db, 'a', { trackSlug, title, date: '2099-05-10', time: '08:30', visibility } as never);

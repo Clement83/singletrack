@@ -4,7 +4,8 @@ import { notFound } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { eq } from 'drizzle-orm';
 import { getDb } from '@/db';
-import { user as userTable } from '@/db/schema';
+import { track, user as userTable } from '@/db/schema';
+import { canViewTrack } from '@/lib/tracks/query';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { ConditionsBlock } from '@/components/conditions-block';
 import { PhotoSection } from '@/components/outings/photo-section';
@@ -49,6 +50,9 @@ export default async function Page({ params, searchParams }: { params: Promise<{
     revoked: !!i.revokedAt, shareable: perms.canRevoke(i), respondedAt: i.respondedAt?.toISOString() ?? null,
   }));
   const snap = o.trackSnapshot;
+  // #1592 : lien vers la trace d'origine seulement si ce lecteur a le droit de la voir (sinon parcours figé sans lien).
+  const origin = o.trackId ? db.select().from(track).where(eq(track.id, o.trackId)).get() : undefined;
+  const canOpenTrack = !!origin && canViewTrack(db, origin, user.id) && origin.slug === snap.slug;
   const proposer = o.createdBy ? db.select({ name: userTable.name }).from(userTable).where(eq(userTable.id, o.createdBy)).get()?.name : undefined;
   const tg = await getTranslations('guest');
   const end = (snap.geometry.type === 'LineString' ? snap.geometry.coordinates : snap.geometry.coordinates.flat()).at(-1)!;
@@ -73,7 +77,7 @@ export default async function Page({ params, searchParams }: { params: Promise<{
           </>
         )}
         <p className="text-small text-muted-foreground">
-          {tp.rich('track', {
+          {tp.rich(canOpenTrack ? 'track' : 'trackFrozen', {
             name: snap.name,
             km: formatKm(snap.distanceM / 1000, locale),
             date: new Date(snap.takenAt).toLocaleDateString(locale === 'en' ? 'en-GB' : 'fr-FR', { timeZone: 'Europe/Paris' }),

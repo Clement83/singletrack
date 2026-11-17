@@ -504,6 +504,7 @@
     "metaTitle": "My ride — singletrack",
     "back": "My rides",
     "track": "Route: <link>{name}</link> · {km} (frozen on {date})",
+    "trackFrozen": "Route: {name} · {km} (frozen on {date})",
     "backToOuting": "The ride",
     "proposedBy": "Proposed by {name}",
     "publicNotice": "Public ride: the date, place and route no longer change. To discuss, use the comments."
@@ -1191,6 +1192,7 @@
       "friendsHint": "Your friends see it and can join without an invitation. Only you can edit it.",
       "inviteHint": "Only invited people see it. Only you can edit it.",
       "publicHint": "Any signed-in account sees it and can join. Careful: a public outing is frozen and has no organizer. Date, place, route and spots can no longer change, and it cannot be cancelled.",
+      "trackStaysPrivate": "The route will be visible to everyone who can see the ride; the track itself stays private.",
       "federationNote": "Rides can reach other servers: a deletion or cancellation is sent to them, but can’t be guaranteed.",
       "participantsCanInvite": "Signed-up participants can invite their friends"
     }

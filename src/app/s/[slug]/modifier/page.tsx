@@ -5,6 +5,8 @@ import { getTranslations } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { getDb } from '@/db';
+import { track } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 import { OutingForm } from '@/components/outings/outing-form';
 import { requireUser } from '@/lib/current-user';
 import { getOwnedOuting, utcToParisInputs } from '@/lib/outings';
@@ -19,6 +21,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   const slug = (await params).slug;
   const o = getOwnedOuting(getDb().db, user.id, slug);
   if (!o) notFound();
+  const tk = o.trackId ? getDb().db.select().from(track).where(eq(track.id, o.trackId)).get() : undefined;
   const { date, time } = utcToParisInputs(o.startsAt);
   const tr = await getTranslations('outings');
   const tp = await getTranslations('outingPage');
@@ -30,6 +33,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
       <h1 className="text-title">{tr('editTitle')}</h1>
       <OutingForm
         federated={federationEnabled()}
+        trackVisibility={tk?.visibility ?? null}
         mode={{ kind: 'edit', outingSlug: o.slug }}
         initial={{ title: o.title, description: o.description ?? '', date, time, meetingLat: o.meetingLat, meetingLon: o.meetingLon, meetingLabel: o.meetingLabel ?? '', level: o.level, ebike: o.ebike, maxParticipants: o.maxParticipants?.toString() ?? '', visibility: o.visibility, participantsCanInvite: o.participantsCanInvite }}
       />
