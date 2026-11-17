@@ -50,7 +50,11 @@ test('panneau : un départ commun liste ses traces, une ligne ouvre la fiche san
   // Départ commun : la liste des traces d'ici (grappe ou repères superposés).
   await tap('e2e-a');
   await expect(page.getByRole('heading', { name: '2 traces partent d’ici' })).toBeVisible();
+  // #1585 : la légende des pentes n'est sur la carte que lorsqu'une trace est ouverte.
+  const legend = page.getByRole('button', { name: 'Pentes' });
+  await expect(legend).toHaveCount(0);
   await page.getByRole('button', { name: /e2e-b/ }).click();
+  await expect(legend).toBeVisible();
   const panel = page.getByTestId('track-panel');
   await expect(panel.getByText(/1,4\s*km/)).toBeVisible();
   await expect(page).toHaveURL(/^[^?]*\/\?(.*&)?t=e2e-b/);
@@ -108,7 +112,13 @@ test('liste : une ligne ouvre la fiche, Retour revient à la liste, ancien ?sel=
   await expect(page).not.toHaveURL(/sel=/);
   await page.getByRole('button', { name: /^\d+ traces?$/ }).click();
   await expect(page.getByRole('button', { name: /Ajouter .* à la sélection/ })).toHaveCount(0);
+  // #1585 : la légende des pentes n'apparaît sur la carte qu'avec une trace ouverte.
+  const legend = page.getByRole('button', { name: /^Pentes/ });
+  await expect(legend).toHaveCount(0);
   await page.getByRole('button', { name: /e2e-a/ }).click();
+  await expect(legend).toBeVisible();
+  await legend.click();
+  await expect(legend).toHaveAttribute('aria-expanded', 'true');
   await expect(page).toHaveURL(/t=e2e-a/);
   const panel = page.getByTestId('track-panel');
   await expect(panel.getByText(/1,4\s*km/)).toBeVisible();

@@ -29,6 +29,7 @@ import { TrackTip, useTrackTip } from '@/components/map/track-tip';
 import { OutingsLayer, useMapOutings } from './outings-layer';
 import { useOutingsPref } from './outings-pref';
 import { SinglesLayer, SinglesStatus, useSingles, useSinglesPref } from './singles-layer';
+import { SlopeLegend } from '@/components/map/slope-legend';
 import { OpenTrackLayers, TrackPanelBody, TrackPanelFooter, useTrackSheet } from './track-panel';
 import { nearestProfileIndex } from '@/lib/elevation';
 
@@ -398,7 +399,11 @@ export function TrackExplorer({ home }: { home: { lat: number; lon: number } }) 
           </Button>
         </div>
         <SinglesStatus state={singles} />
+        {/* Légende des pentes (#1585) : sur la carte dès qu'une trace colorée est ouverte. Mobile : sous les boutons du haut,
+            hors du sheet ; desktop : en bas à gauche, à droite du panneau. */}
+        {sheet && !desktop && <SlopeLegend className="static" />}
       </div>
+      {sheet && desktop && <SlopeLegend className="bottom-8 left-[calc(var(--spacing-panel)+36px)]" />}
 
       {!sheetOpen && (
         <Button onClick={() => setPanel({ kind: 'list' })} className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-full px-6 shadow-md">
