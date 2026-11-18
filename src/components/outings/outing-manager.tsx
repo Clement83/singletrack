@@ -17,12 +17,14 @@ import type { Rsvp } from '@/lib/design/scales';
 type Inv = { id: string; contactId: string | null; name: string; status: Rsvp; comment: string | null; origin: string; linked: boolean; revoked: boolean; shareable: boolean; respondedAt: string | null };
 export type BookContact = { id: string; name: string; note: string | null };
 export type Candidate = { userId: string; name: string };
-type Props = { outingId: string; isOwner?: boolean; candidates?: Candidate[]; frozen?: boolean; slug: string; title: string; cancelled: boolean; done?: boolean; openLink: { enabled: boolean; token: string }; invitations: Inv[]; contacts: BookContact[]; reinvite?: { contactIds: string[]; names: string[] } };
+type Props = { outingId: string; isOwner?: boolean; candidates?: Candidate[]; frozen?: boolean; slug: string; title: string; cancelled: boolean; done?: boolean; openLink: { enabled: boolean; token: string }; invitations: Inv[]; contacts: BookContact[]; reinvite?: { contactIds: string[]; names: string[] }; /** `invite` = invités et lien ouvert, `manage` = modifier, dupliquer, annuler… (menu « … », #1619). */ view?: 'all' | 'invite' | 'manage' };
 
 const json = (body: unknown): RequestInit => ({ method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
 
 /** Gestion de la sortie côté organisateur : invitations nominatives, lien ouvert, annulation. */
-export function OutingManager({ outingId, isOwner = false, candidates = [], frozen = false, slug, title, cancelled, done = false, openLink, invitations, contacts, reinvite }: Props) {
+export function OutingManager({ outingId, isOwner = false, candidates = [], frozen = false, slug, title, cancelled, done = false, openLink, invitations, contacts, reinvite, view = 'all' }: Props) {
+  const showInvite = view !== 'manage';
+  const showManage = view !== 'invite';
   const t = useTranslations('outingManager');
   const tc = useTranslations('common');
   const [confirming, setConfirming] = useState<{ kind: 'revoke'; id: string; name: string } | { kind: 'cancel' } | null>(null);
@@ -120,6 +122,7 @@ export function OutingManager({ outingId, isOwner = false, candidates = [], froz
 
   return (
     <div className="flex flex-col gap-6">
+      {showInvite && <>
       <section aria-label={t('inviteRegion')} className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm">
         <h2 className="text-heading">{t('invite')}</h2>
         {hasReinvite && <p className="rounded-xl bg-accent p-3 text-small">{t('reinviteHint')}</p>}
@@ -221,7 +224,9 @@ export function OutingManager({ outingId, isOwner = false, candidates = [], froz
         )}
       </section>
 
-      <section aria-label={t('manageRegion')} className="flex flex-col gap-2">
+      </>}
+
+      {showManage && <section aria-label={t('manageRegion')} className="flex flex-col gap-2">
         {!frozen && <Button asChild variant="outline"><Link href={`/s/${slug}/modifier`}><Pencil aria-hidden /> {t('edit')}</Link></Button>}
         <Button asChild variant="outline"><Link href={`/s/${slug}/dupliquer`}><CopyPlus aria-hidden /> {t('duplicate')}</Link></Button>
         {!frozen && (
@@ -235,13 +240,13 @@ export function OutingManager({ outingId, isOwner = false, candidates = [], froz
         {frozen ? null : cancelled ? (
           <Button variant="secondary" disabled={busy} onClick={() => patch({ action: 'restore' })}>{t('restore')}</Button>
         ) : done ? null : (
-          <Button variant="ghost" className="text-destructive" disabled={busy} onClick={() => setConfirming({ kind: 'cancel' })}>{t('cancel')}</Button>
+          <Button variant="destructive" disabled={busy} onClick={() => setConfirming({ kind: 'cancel' })}>{t('cancel')}</Button>
         )}
         {!done && !cancelled && (isOwner || frozen) && (
           <Button variant="outline" disabled={busy} onClick={() => setLeaving(isOwner ? 'owner' : 'creator')}><DoorOpen aria-hidden /> {t('leave')}</Button>
         )}
-      </section>
-      {picked.length > 0 && (
+      </section>}
+      {showInvite && picked.length > 0 && (
         <div className="sticky bottom-0 z-10 -mx-4 border-t border-border bg-background/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur">
           <Button size="lg" className="w-full" disabled={busy || cancelled} onClick={inviteFromBook}><Check aria-hidden /> {t('inviteN', { n: picked.length })}</Button>
         </div>

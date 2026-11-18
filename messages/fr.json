@@ -1246,6 +1246,9 @@
     "summaryOthers": "{names} et {others, plural, one {# autre} other {# autres}}",
     "seeAll": "Voir tout le monde ({count})",
     "sheetTitle": "Qui vient\u00a0?",
+    "inlineNames": "{count, plural, one {{names} vient} other {{names} viennent}}",
+    "inlineOthers": "{names} +{others} viennent",
+    "countOnly": "{count, plural, one {# participant} other {# participants}}",
     "organizerTag": "orga",
     "emptyGuest": "Personne n’a encore dit GO — sois le premier\u00a0!",
     "emptyOrganizer": "Personne n’a encore répondu — on relance\u00a0?",
@@ -1255,5 +1258,17 @@
       "pending": "Pas de réponse ({count})",
       "no": "Ne viennent pas ({count})"
     }
+  },
+  "outingView": {
+    "menu": "Menu de la sortie",
+    "invite": "Inviter",
+    "share": "Partager et exporter",
+    "more": "Lire plus",
+    "less": "Réduire",
+    "organizedBy": "Organisée par {name}",
+    "conditions": "Conditions",
+    "activity": "Roulées et photos",
+    "back": "Carte",
+    "openConditions": "Conditions : voir le détail"
   }
 }

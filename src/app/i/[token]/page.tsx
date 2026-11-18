@@ -2,7 +2,11 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getDb } from '@/db';
 import { getLocale, getTranslations } from 'next-intl/server';
-import { ConditionsBlock } from '@/components/conditions-block';
+import { ChevronLeft } from 'lucide-react';
+import { eq } from 'drizzle-orm';
+import { user as userTable } from '@/db/schema';
+import { BackToMap } from '@/components/tracks/back-to-map';
+import { ConditionsBlock, ConditionsLine } from '@/components/conditions-block';
 import { GuestClaim } from '@/components/outings/guest-claim';
 import { InviteFriends } from '@/components/outings/invite-friends';
 import { GuestResponse } from '@/components/outings/guest-response';
@@ -37,12 +41,16 @@ export default async function Page({ params }: { params: Promise<{ token: string
   const locale = await getLocale();
   const t = await getTranslations('share');
   const tg = await getTranslations('guest');
+  const tv = await getTranslations('outingView');
   const { invitation: inv, outing: o } = found;
   const snap = o.trackSnapshot;
   const viewer = await getCurrentUser();
   // Rattachement (#1434) : proposé tant que l'invitation n'a pas de compte ; l'organisateur n'a pas à se rattacher à sa propre sortie.
   const claimState = inv.userId ? (viewer && inv.userId === viewer.id ? 'mine' : null) : viewer ? (viewer.id === o.ownerId ? null : 'available') : 'anonymous';
   const closed = isClosed(o);
+  const organizerName = o.ownerId ? db.select({ name: userTable.name }).from(userTable).where(eq(userTable.id, o.ownerId)).get()?.name : undefined;
+  const weather = await outingWeather(o, estimateDurationMin(snap.distanceM, snap.elevationGainM));
+  const fireInfoValue = fireApplies(o.meetingLon, o.meetingLat) ? fireInfo(db, massifsForGeometry(db, snap.geometry), parisDate(o.startsAt)) : undefined;
   const participants = listParticipants(db, o.id, { invitationId: inv.id, userId: viewer?.id });
   const yes = participants.filter((p) => p.status === 'yes' && !p.isOrganizer).length;
   const full = o.maxParticipants != null && yes >= o.maxParticipants && inv.status !== 'yes';
@@ -56,6 +64,9 @@ export default async function Page({ params }: { params: Promise<{ token: string
         presentation="page"
         outing={{ ...o, cancelled: o.status === 'cancelled' }}
         track={snap}
+        organizerName={organizerName}
+        topLink={<BackToMap className="flex min-h-touch items-center gap-1 text-body font-semibold text-primary underline-offset-4 hover:underline active:opacity-70"><ChevronLeft aria-hidden className="size-5" /> {tv('back')}</BackToMap>}
+        conditionsLine={<ConditionsLine weather={weather} fireInfo={fireInfoValue} />}
         headerAction={groupPath ? <HeaderShareButton sharePath={groupPath} shareText={shareText} title={o.title} /> : undefined}
         notices={
           <>
@@ -69,14 +80,14 @@ export default async function Page({ params }: { params: Promise<{ token: string
         primaryAction={<GuestResponse token={token} name={inv.name} status={inv.status} comment={inv.comment ?? ''} locked={closed} />}
         conditions={
           <ConditionsBlock
-            weather={await outingWeather(o, estimateDurationMin(snap.distanceM, snap.elevationGainM))}
+            weather={weather}
             // Incendie et chasse : sources du Var seulement (#1428), « non disponible » ailleurs.
             outsideVar={!fireApplies(o.meetingLon, o.meetingLat) && !huntingApplies(o.meetingLon, o.meetingLat)}
-            fireInfo={fireApplies(o.meetingLon, o.meetingLat) ? fireInfo(db, massifsForGeometry(db, snap.geometry), parisDate(o.startsAt)) : undefined}
+            fireInfo={fireInfoValue}
             hunting={huntingApplies(o.meetingLon, o.meetingLat) ? huntingInfo(parisDate(o.startsAt)) : undefined}
           />
         }
-        participants={<OutingParticipants participants={participants} max={o.maxParticipants} />}
+        participants={<OutingParticipants inline participants={participants} max={o.maxParticipants} />}
         secondaryActions={
           <>
             <OutingShare

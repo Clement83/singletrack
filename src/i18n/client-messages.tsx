@@ -18,12 +18,12 @@ export const CLIENT_NAMESPACES = {
   root: ROOT,
   auth: [...ROOT, 'auth', 'welcome'],
   track: [...ROOT, ...TRACK, 'userMenu'],
-  guest: [...ROOT, ...TRACK, 'rsvp', 'share', 'conditions', 'comments', 'ride', 'photos', 'claim', 'inviteFriends', 'userMenu', 'participants'],
-  outing: [...ROOT, ...TRACK, 'rsvp', 'join', 'share', 'outingManager', 'inviteFriends', 'contacts', 'outingForm', 'outingVisibility', 'duplicate', 'outingLabels', 'conditions', 'comments', 'ride', 'photos', 'userMenu', 'participants'],
+  guest: [...ROOT, ...TRACK, 'rsvp', 'share', 'conditions', 'comments', 'ride', 'photos', 'claim', 'inviteFriends', 'userMenu', 'participants', 'outingView'],
+  outing: [...ROOT, ...TRACK, 'rsvp', 'join', 'share', 'outingManager', 'inviteFriends', 'contacts', 'outingForm', 'outingVisibility', 'duplicate', 'outingLabels', 'conditions', 'comments', 'ride', 'photos', 'userMenu', 'participants', 'outingView'],
   editor: [...ROOT, ...TRACK, 'editor', 'singles', 'userMenu', 'userProfile', 'outingVisibility'],
   private: [
     ...ROOT, ...TRACK, 'nav', 'sheet', 'theme', 'share', 'userMenu', 'explorer', 'filters', 'trackCard', 'singles', 'importer', 'editor', 'contacts', 'friends', 'history', 'userProfile',
-    'outingForm', 'outingVisibility', 'outingLabels', 'conditions', 'outings', 'outingsMap', 'remoteOutings', 'moderation', 'guest', 'participants',
+    'outingForm', 'outingVisibility', 'outingLabels', 'conditions', 'outings', 'outingsMap', 'remoteOutings', 'moderation', 'guest', 'participants', 'outingView',
   ],
   all: 'all',
 } satisfies Record<string, Ns[] | 'all'>;

@@ -232,3 +232,33 @@ export function ConditionsBlock({ weather, fire, fireInfo, hunting, outsideVar, 
     </section>
   );
 }
+
+/**
+ * Ligne « conditions » de la carte d'identité de la sortie (#1619) : icône du ciel, ciel · températures et pastille
+ * du verdict (météo + incendie). Le détail est dans la section repliée « Conditions ».
+ */
+export function ConditionsLine({ weather, fire, fireInfo }: Pick<Props, 'weather' | 'fire' | 'fireInfo'>) {
+  const t = useTranslations('conditions');
+  const tw = useTranslations('weather');
+  const tf = useTranslations('fire');
+  const format = useFormatter();
+  const locale = useLocale();
+  const msg = fireInfo ? fireMessage(fireInfo, tf, locale) : undefined;
+  const fireTone = msg?.tone ?? (fire === undefined ? undefined : fire <= 2 ? 'ok' : fire === 3 ? 'warn' : 'danger');
+  const tone = overallTone({ fire: fireTone, weather });
+  const verdict = OVERALL[tone];
+  const w = weather?.kind === 'ok' ? weather : undefined;
+  const Icon = w?.sky ? SKY_ICON[w.sky] : CloudSun;
+  const round = (v: number) => format.number(v, { maximumFractionDigits: 0 });
+  const text = w
+    ? [w.sky && tw(`sky.${w.sky}`), w.tempMin !== null && tw('temp', { min: round(w.tempMin), max: round(w.tempMax ?? w.tempMin) })].filter(Boolean).join(' · ')
+    : t(`overall.${tone}`);
+  return (
+    <>
+      <Icon aria-hidden className="size-6 shrink-0 text-muted-foreground" strokeWidth={1.75} />
+      <span className="min-w-0 flex-1 truncate text-body tabular-nums">{text}</span>
+      <verdict.icon aria-hidden className={cn('size-5 shrink-0', verdict.className)} />
+      <span className="sr-only">{t(`overall.${tone}`)}</span>
+    </>
+  );
+}

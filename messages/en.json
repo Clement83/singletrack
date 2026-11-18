@@ -1246,6 +1246,9 @@
     "summaryOthers": "{names} and {others, plural, one {# other} other {# others}}",
     "seeAll": "See everyone ({count})",
     "sheetTitle": "Who’s coming?",
+    "inlineNames": "{count, plural, one {{names} is coming} other {{names} are coming}}",
+    "inlineOthers": "{names} +{others} coming",
+    "countOnly": "{count, plural, one {# participant} other {# participants}}",
     "organizerTag": "host",
     "emptyGuest": "Nobody has said GO yet — be the first!",
     "emptyOrganizer": "Nobody has answered yet — time to nudge?",
@@ -1255,5 +1258,17 @@
       "pending": "No answer ({count})",
       "no": "Not coming ({count})"
     }
+  },
+  "outingView": {
+    "menu": "Outing menu",
+    "invite": "Invite",
+    "share": "Share and export",
+    "more": "Read more",
+    "less": "Show less",
+    "organizedBy": "Organised by {name}",
+    "conditions": "Conditions",
+    "activity": "Rides and photos",
+    "back": "Map",
+    "openConditions": "Conditions: see details"
   }
 }

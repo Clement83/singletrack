@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { CalendarPlus, Link2, Plus, Share2, Trash2, Zap, Mountain } from 'lucide-react';
+import { CalendarPlus, Link2, Plus, Share2, Trash2, Zap, Mountain, MoreHorizontal } from 'lucide-react';
 import { ElevationProfile } from '@/components/elevation-profile';
 import { Button } from '@/components/ui/button';
 import { Badge, DifficultyBadge, FireBadge, RsvpBadge } from '@/components/ui/badge';
@@ -13,7 +13,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { BottomNavBar, SideNavBar } from '@/components/app-nav';
 import { RsvpPanel, type RsvpAnswer } from '@/components/rsvp-panel';
-import { ConditionsBlock } from '@/components/conditions-block';
+import { ConditionsBlock, ConditionsLine } from '@/components/conditions-block';
 import { OutingView, type OutingViewRole } from '@/components/outings/outing-view';
 import type { TrackSnapshot } from '@/lib/outings/snapshot';
 import { OutingParticipants } from '@/components/outings/outing-participants';
@@ -178,9 +178,14 @@ export function ComponentDemos() {
               presentation="page"
               outing={DEMO_OUTING}
               track={DEMO_TRACK}
+              organizerName="Clément"
+              headerAction={role === 'organizer' || role === 'guest' ? <Button variant="outline" size="icon" aria-label="Partager"><Share2 aria-hidden /></Button> : undefined}
+              headerMenu={role === 'organizer' ? <Button variant="outline" size="icon" aria-label="Menu de la sortie"><MoreHorizontal aria-hidden /></Button> : undefined}
+              conditionsLine={<ConditionsLine weather={SUNNY} />}
+              conditions={<ConditionsBlock weather={SUNNY} outsideVar />}
+              activity={<p className="text-small text-muted-foreground">Après la sortie</p>}
               primaryAction={<Button>{ROLE_ACTION[role]}</Button>}
-              participants={<OutingParticipants participants={people(4)} max={10} organizer={role === 'organizer'} />}
-              secondaryActions={role === 'organizer' || role === 'guest' ? <Button variant="outline"><Share2 aria-hidden /> Partager</Button> : undefined}
+              participants={<OutingParticipants inline countOnly={role === 'anonymous'} participants={people(role === 'anonymous' ? 9 : 4)} max={10} />}
               comments={<p className="text-small text-muted-foreground">Commentaires…</p>}
             />
           </div>
