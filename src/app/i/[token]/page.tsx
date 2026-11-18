@@ -16,6 +16,9 @@ import { RideSection } from '@/components/outings/ride-section';
 import { OutingParticipants } from '@/components/outings/outing-participants';
 import { HeaderShareButton, OutingShare } from '@/components/outings/outing-share';
 import { OutingView } from '@/components/outings/outing-view';
+import { NextStepCard } from '@/components/outings/next-step-card';
+import { nextStep } from '@/lib/outings/next-step';
+import { directionsUrl } from '@/lib/outings/labels';
 import { getCurrentUser } from '@/lib/current-user';
 import { fireInfo, massifsForGeometry, parisDate } from '@/lib/fire';
 import { canUploadRide, getInvitationByToken, isClosed, listInvitableFriends, outingPermissions, listPhotos, listRides, listParticipants } from '@/lib/outings';
@@ -55,6 +58,8 @@ export default async function Page({ params }: { params: Promise<{ token: string
   const yes = participants.filter((p) => p.status === 'yes' && !p.isOrganizer).length;
   const full = o.maxParticipants != null && yes >= o.maxParticipants && inv.status !== 'yes';
   const groupPath = o.openLinkEnabled && o.openLinkToken ? `/s/${o.openLinkToken}/join` : null;
+  const photos = listPhotos(db, o.id, { kind: 'guest', invitationId: inv.id });
+  const step = nextStep({ role: 'guest', answer: inv.status, past: closed, organizerName, meetingLabel: o.meetingLabel, startsAt: o.startsAt, now: new Date(), photoCount: photos.length, locale });
   const shareText = t('message', { title: o.title, date: formatShareDate(o.startsAt, locale) });
 
   return (
@@ -77,6 +82,7 @@ export default async function Page({ params }: { params: Promise<{ token: string
             {closed && o.status !== 'cancelled' && <p className="text-muted-foreground">{tg('past')}</p>}
           </>
         }
+        nextStep={o.status === 'cancelled' ? undefined : <NextStepCard step={step} directionsHref={directionsUrl(o.meetingLat, o.meetingLon)} />}
         primaryAction={<GuestResponse token={token} name={inv.name} status={inv.status} comment={inv.comment ?? ''} locked={closed} />}
         conditions={
           <ConditionsBlock
@@ -109,7 +115,7 @@ export default async function Page({ params }: { params: Promise<{ token: string
           </>
         }
         activity={
-          inv.status === 'yes' ? (
+          inv.status === 'yes' || (closed && photos.length > 0) ? (
             <>
               <RideSection
                 base={`/api/i/${token}/ride`}
@@ -119,7 +125,7 @@ export default async function Page({ params }: { params: Promise<{ token: string
               />
               <PhotoSection
                 base={`/api/i/${token}/photos`}
-                photos={listPhotos(db, o.id, { kind: 'guest', invitationId: inv.id })}
+                photos={photos}
                 planned={{ geometry: snap.geometry, bbox: snap.bbox }}
                 canUpload={canUploadRide(o)}
               />

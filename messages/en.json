@@ -1270,5 +1270,28 @@
     "activity": "Rides and photos",
     "back": "Map",
     "openConditions": "Conditions: see details"
+  },
+  "nextStep": {
+    "label": "Next step",
+    "title": {
+      "importRide": "Import your ride",
+      "addRide": "Add your photos or ride",
+      "seePhotosNone": "See the photos",
+      "seePhotoOne": "See the photo",
+      "seePhotos": "See the {count} photos",
+      "answer": "Reply to {name}",
+      "confirm": "Confirm you’re coming",
+      "changeAnswer": "Change my answer",
+      "meeting": "Meet at {place}",
+      "remindOne": "Remind {a}",
+      "remindTwo": "Remind {a} and {b}",
+      "remindMany": "Remind {a}, {b} +{others}"
+    },
+    "context": {
+      "pendingGuestsOne": "{count} guest hasn’t replied",
+      "pendingGuests": "{count} guests haven’t replied",
+      "meetingWhen": "{day} · {time}",
+      "meetingSoon": "Leaving in {hours} h"
+    }
   }
 }

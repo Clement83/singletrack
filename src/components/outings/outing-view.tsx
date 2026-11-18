@@ -44,6 +44,8 @@ type Props = {
   conditionsLine?: React.ReactNode;
   /** Bandeaux d'état sous les badges (sortie publique figée, annulée, complète, passée). */
   notices?: React.ReactNode;
+  /** Encart « Prochaine étape » (#1620), sous la carte d'identité (page seulement). */
+  nextStep?: React.ReactNode;
   /** Action principale : Répondre / Gérer / Rejoindre / Se connecter. */
   primaryAction?: React.ReactNode;
   /** Phrase sous le titre du parcours (trace d'origine, attribution). */
@@ -63,13 +65,13 @@ type Props = {
  * Ordre (`panel`) : en-tête → action principale → RDV + itinéraire → description → parcours → qui vient. La présentation
  * `page` (#1619) est dans `PageView`.
  */
-export function OutingView({ role, presentation, outing: o, track: snap, topLink, headerAction, headerMenu, organizerName, conditionsLine, notices, primaryAction, trackNote, conditions, participants, secondaryActions, activity, comments }: Props) {
+export function OutingView({ role, presentation, outing: o, track: snap, topLink, headerAction, headerMenu, organizerName, conditionsLine, notices, nextStep, primaryAction, trackNote, conditions, participants, secondaryActions, activity, comments }: Props) {
   const locale = useLocale();
   const t = useTranslations('share');
   const tg = useTranslations('guest');
   const panel = presentation === 'panel';
   const end = snap && (snap.geometry.type === 'LineString' ? snap.geometry.coordinates : snap.geometry.coordinates.flat()).at(-1);
-  if (!panel) return <PageView {...{ role, outing: o, snap, end, topLink, headerAction, headerMenu, organizerName, conditionsLine, notices, primaryAction, trackNote, conditions, participants, secondaryActions, activity, comments }} />;
+  if (!panel) return <PageView {...{ role, outing: o, snap, end, topLink, headerAction, headerMenu, organizerName, conditionsLine, notices, nextStep, primaryAction, trackNote, conditions, participants, secondaryActions, activity, comments }} />;
   return (
     <div data-outing-view={presentation} data-role={role} className="flex flex-col gap-5">
       {topLink}
@@ -116,7 +118,7 @@ export function OutingView({ role, presentation, outing: o, track: snap, topLink
   );
 }
 
-type PageProps = Pick<Props, 'role' | 'topLink' | 'headerAction' | 'headerMenu' | 'organizerName' | 'conditionsLine' | 'notices' | 'primaryAction' | 'trackNote' | 'conditions' | 'participants' | 'secondaryActions' | 'activity' | 'comments'> & {
+type PageProps = Pick<Props, 'role' | 'topLink' | 'headerAction' | 'headerMenu' | 'organizerName' | 'conditionsLine' | 'notices' | 'nextStep' | 'primaryAction' | 'trackNote' | 'conditions' | 'participants' | 'secondaryActions' | 'activity' | 'comments'> & {
   outing: OutingViewOuting;
   snap: OutingViewTrack | null;
   end: number[] | null | undefined | false;
@@ -126,7 +128,7 @@ type PageProps = Pick<Props, 'role' | 'topLink' | 'headerAction' | 'headerMenu' 
  * Présentation page (#1619) : en-tête → carte d'identité → action principale (emplacement « Prochaine étape », P2) →
  * parcours (P3) → sections repliées (Conditions, Roulées et photos) → actions des invités → commentaires (P4).
  */
-function PageView({ role, outing: o, snap, end, topLink, headerAction, headerMenu, organizerName, conditionsLine, notices, primaryAction, trackNote, conditions, participants, secondaryActions, activity, comments }: PageProps) {
+function PageView({ role, outing: o, snap, end, topLink, headerAction, headerMenu, organizerName, conditionsLine, notices, nextStep, primaryAction, trackNote, conditions, participants, secondaryActions, activity, comments }: PageProps) {
   const locale = useLocale();
   const t = useTranslations('share');
   const tg = useTranslations('guest');
@@ -168,6 +170,7 @@ function PageView({ role, outing: o, snap, end, topLink, headerAction, headerMen
         {participants}
       </section>
 
+      {nextStep}
       {primaryAction}
 
       {snap && end && <section aria-label={tg('trackRegion')} className="flex flex-col gap-3">

@@ -38,7 +38,7 @@ export function GuestResponse({ token, name, status, comment, locked }: Props) {
 
   if (locked) return null;
   return (
-    <div className="flex flex-col gap-4">
+    <div id="respond" className="flex scroll-mt-4 flex-col gap-4">
       <RsvpPanel name={name} value={status === 'pending' ? null : status} pending={busy} onChange={(s) => send({ status: s })} />
       <details className="rounded-2xl border border-border bg-card p-4">
         <summary className="flex min-h-touch cursor-pointer items-center font-semibold">{t('nameAndWord')}</summary>

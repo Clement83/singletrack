@@ -1270,5 +1270,28 @@
     "activity": "Roulées et photos",
     "back": "Carte",
     "openConditions": "Conditions : voir le détail"
+  },
+  "nextStep": {
+    "label": "Prochaine étape",
+    "title": {
+      "importRide": "Importer ta roulée",
+      "addRide": "Ajouter tes photos ou ta roulée",
+      "seePhotosNone": "Voir les photos",
+      "seePhotoOne": "Voir la photo",
+      "seePhotos": "Voir les {count} photos",
+      "answer": "Réponds à {name}",
+      "confirm": "Confirme ta venue",
+      "changeAnswer": "Changer ma réponse",
+      "meeting": "RDV {place}",
+      "remindOne": "Relancer {a}",
+      "remindTwo": "Relancer {a} et {b}",
+      "remindMany": "Relancer {a}, {b} +{others}"
+    },
+    "context": {
+      "pendingGuestsOne": "{count} invité sans réponse",
+      "pendingGuests": "{count} invités sans réponse",
+      "meetingWhen": "{day} · {time}",
+      "meetingSoon": "Départ dans {hours} h"
+    }
   }
 }

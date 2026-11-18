@@ -19,6 +19,9 @@ import { InviteFriends } from '@/components/outings/invite-friends';
 import { HeaderShareButton, OutingShare } from '@/components/outings/outing-share';
 import { requireUser } from '@/lib/current-user';
 import { OutingView } from '@/components/outings/outing-view';
+import { NextStepCard } from '@/components/outings/next-step-card';
+import { nextStep } from '@/lib/outings/next-step';
+import { directionsUrl } from '@/lib/outings/labels';
 import { formatKm } from '@/lib/format';
 import { fireInfo, massifsForGeometry, parisDate } from '@/lib/fire';
 import { transferCandidates, isFrozen, outingPermissions, canUploadRide, getManagedOuting, isClosed, listInvitableFriends, isDone, listContacts, listPhotos, listRides, listInvitations, listParticipants, reinviteCandidates } from '@/lib/outings';
@@ -76,6 +79,8 @@ export default async function Page({ params, searchParams }: { params: Promise<{
       reinvite={reinvite}
     />
   );
+  const pendingGuests = invitations.filter((i) => !i.revoked && i.status === 'pending').map((i) => i.name);
+  const step = nextStep({ role: 'organizer', past: isClosed(o), pendingGuests, meetingLabel: o.meetingLabel, startsAt: o.startsAt, now: new Date(), locale });
   const proposer = o.createdBy ? db.select({ name: userTable.name }).from(userTable).where(eq(userTable.id, o.createdBy)).get()?.name : undefined;
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col gap-5 px-4 pt-4 pb-12">
@@ -109,6 +114,7 @@ export default async function Page({ params, searchParams }: { params: Promise<{
             }
           />
         }
+        nextStep={o.status === 'cancelled' ? undefined : <NextStepCard step={step} directionsHref={directionsUrl(o.meetingLat, o.meetingLon)} />}
         conditionsLine={<ConditionsLine weather={weather} fireInfo={fireInfoValue} />}
         headerAction={o.openLinkEnabled && o.openLinkToken ? (
           <HeaderShareButton sharePath={`/s/${o.openLinkToken}/join`} shareText={t('message', { title: o.title, date: formatShareDate(o.startsAt, locale) })} title={o.title} />

@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Download, MoreHorizontal, UserPlus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { ActionSheet } from '@/components/ui/action-sheet';
 import { Button } from '@/components/ui/button';
+import { OPEN_INVITE_EVENT } from '@/components/outings/next-step-card';
 
 /**
  * Menu « … » de l'organisateur (#1619) : modifier, dupliquer, annuler (`manage`), inviter (`invite`), partage et
@@ -13,6 +14,12 @@ import { Button } from '@/components/ui/button';
 export function OutingMenu({ manage, invite, share }: { manage: React.ReactNode; invite: React.ReactNode; share?: React.ReactNode }) {
   const t = useTranslations('outingView');
   const [open, setOpen] = useState<'menu' | 'invite' | 'share' | null>(null);
+  // « Relancer … » de l'encart Prochaine étape (#1620) ouvre directement l'invitation.
+  useEffect(() => {
+    const on = () => setOpen('invite');
+    window.addEventListener(OPEN_INVITE_EVENT, on);
+    return () => window.removeEventListener(OPEN_INVITE_EVENT, on);
+  }, []);
   const close = (o: boolean) => !o && setOpen(null);
   return (
     <>
