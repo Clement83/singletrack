@@ -25,13 +25,13 @@ import { editorReducer, initialState, type EditorAction, type EditorState } from
 import { liveStats, type LiveStats } from '@/lib/editor/stats';
 import type { Position } from '@/lib/geo';
 import { DesktopPointPopover, EditorDesktop } from './editor-desktop';
-import { AltCard, AltLabels, DeviationCard, DeviationLabel, HoverTip, LineMenu, RouteNoteMarker, type HoverTipState, type LineMenuState } from './editor-desktop-map';
+import { AltCard, AltLabels, ChoiceLabels, DeviationCard, DeviationLabel, HoverTip, LineMenu, RouteNoteMarker, type HoverTipState, type LineMenuState } from './editor-desktop-map';
 import { useRider } from '@/lib/editor/rider';
 import { snapTolerance, hitWidth } from '@/lib/editor/snap';
 import { useSnapPref } from '@/lib/editor/snap-pref';
 import { FINE_POINTER } from '@/lib/use-desktop-autofocus';
 import type { Deviation } from '@/lib/editor/doc';
-import { withoutChoiceAlts } from '@/lib/editor/choice';
+import { buildWiden, choiceSegs, planWiden, withoutChoiceAlts, type ChoiceWhich } from '@/lib/editor/choice';
 import { docSig, liveAltSets, nextAlt, upsertAlt, type AltSet } from '@/lib/editor/alts';
 import { chooseAltResult, snapPointIn, decideClick, dragPointAction, endLineDrag, moveLineDrag, pointDragExclude, resolveRouted, type HitFeature } from '@/lib/editor/gestures';
 import type { Quality } from '@/lib/routing/alternatives';
@@ -106,6 +106,8 @@ export type EditorCtl = {
   chooseAlt: (i: number, seg: number) => void;
   /** Passe à l'itinéraire suivant (raccourci A). */
   cycleAlt: () => void;
+  /** Valide la paire de chemins : l'option sélectionnée reste, l'autre disparaît (#1642). */
+  keepChoice: () => void;
   /** Parcours d'origine de la dernière déviation (#1451), rétablissable d'un tap ; `null` dès le geste suivant. */
   deviation: Deviation | null;
   restoreDeviation: () => void;
@@ -289,6 +291,41 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
     }
   }, [doc, pending.join(), rider]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Déviation élargie (#1641, desktop) : après un glisser, on route les ancres lointaines puis on ouvre la paire « nouveau / ancien ».
+  const routeCoords = async (from: LonLat, to: LonLat): Promise<Position[] | null> => {
+    const k = `${rider}|${key(from, to)}`;
+    const hit = cache.current.get(k);
+    if (hit) return hit.coords;
+    try {
+      const r = await fetch('/api/route', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ from, to, rider }) });
+      const j = (await r.json().catch(() => ({}))) as { coordinates?: Position[]; alternatives?: AltAnswer[] };
+      if (!r.ok || !j.coordinates) return null;
+      cache.current.set(k, { coords: j.coordinates, alts: j.alternatives ?? [] });
+      return j.coordinates;
+    } catch {
+      return null;
+    }
+  };
+  useEffect(() => {
+    const pd = state.pending;
+    if (!desktop || !pd || state.choice) return;
+    const plan = planWiden(pd);
+    if (!plan) return;
+    let cancelled = false;
+    void (async () => {
+      const [up, down] = await Promise.all([
+        plan.up === null ? null : routeCoords(pd.base.waypoints[plan.up], pd.p),
+        plan.down === null ? null : routeCoords(pd.p, pd.base.waypoints[plan.down]),
+      ]);
+      if (cancelled) return;
+      const result = buildWiden(pd, plan, up, down);
+      if (result) dispatch({ type: 'widen', result });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [state.pending, desktop]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Un jeu par tronçon recalculé : après un glisser (2 tronçons) on garde les alternatives des deux (#1527).
   const alts = withoutChoiceAlts(liveAltSets(altSets, (i) => doc.segments[i]?.coords ?? undefined, rider), state.choice);
   const chooseAlt = (i: number, seg: number) => {
@@ -320,6 +357,32 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
     [alts],
   );
 
+  // Paire de choix (#1642) : tronçons qui diffèrent de chaque option (halo + clic), pentes de l'option non retenue.
+  const choice = state.choice;
+  const choiceFeatures = useMemo(
+    () => ({
+      type: 'FeatureCollection' as const,
+      features: !choice
+        ? []
+        : (['new', 'old'] as const).flatMap((w) => {
+            const d = w === 'new' ? choice.new : choice.old;
+            return choiceSegs(choice, w).map((k) => ({
+              type: 'Feature' as const,
+              properties: { which: w, sel: w === choice.selected },
+              geometry: { type: 'LineString' as const, coordinates: segmentLine(d, k) },
+            }));
+          }),
+    }),
+    [choice],
+  );
+  const otherSlopeData = useMemo(() => {
+    if (!choice) return slopeFeaturesForRuns([]);
+    const w: ChoiceWhich = choice.selected === 'new' ? 'old' : 'new';
+    const d = w === 'new' ? choice.new : choice.old;
+    return slopeFeaturesForRuns(choiceSegs(choice, w).map((k) => ({ coords: segmentLine(d, k), route: d.segments[k]?.mode === 'route' })));
+  }, [choice]);
+  const keepChoice = () => dispatch({ type: 'commitChoice' });
+
   const stats = useMemo(() => liveStats(doc), [doc]);
   const segFeatures = useMemo(
     () => ({
@@ -343,6 +406,11 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
   const onMapClick = useCallback(
     (e: MapLayerMouseEvent) => {
       const features: HitFeature[] = (e.features ?? []).map((f) => ({ layer: f.layer.id, props: f.properties as HitFeature['props'] }));
+      const other = (e.features ?? []).find((f) => f.layer.id === 'choice-hit');
+      if (other) {
+        dispatch({ type: 'selectChoice', which: other.properties.which as ChoiceWhich });
+        return;
+      }
       const d = decideClick({
         features, p: [e.lngLat.lng, e.lngLat.lat], selected: state.selected, lineMenuOpen: !!lineMenu,
         sinceDragMs: Date.now() - lastDrag.current, snap: (p) => snapPoint(p),
@@ -543,7 +611,7 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
     mode, state, dispatch, doc, stats, pending, canSave, home,
     quitHref,
     slug: liveSlug,
-    dirty, autosave, saveKey: liveStatus === 'published' ? 'update' : 'publish', canDelete: !!liveSlug, requestLeave, name, setName, description, setDescription, visibility, setVisibility, errors, saving, save, setProfileCursor, mapHoverIndex, rider, alts, chooseAlt, cycleAlt, deviation: state.deviation, restoreDeviation, snapOn,
+    dirty, autosave, saveKey: liveStatus === 'published' ? 'update' : 'publish', canDelete: !!liveSlug, requestLeave, name, setName, description, setDescription, visibility, setVisibility, errors, saving, save, setProfileCursor, mapHoverIndex, rider, alts, chooseAlt, cycleAlt, deviation: state.deviation, restoreDeviation, snapOn, keepChoice,
   };
 
   return (
@@ -566,7 +634,7 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
       <div className="relative min-h-0 flex-1">
         {colors && (
           <BaseMap lat={home[1]} lon={home[0]} zoom={initialZoom ?? 13} mapRef={mapRef} bounds={bounds} onLoad={onMapLoad} onMoveEnd={syncSinglesView} onClick={onMapClick}
-            interactiveLayerIds={['alt-hit', 'dev-hit', 'edit-hit']}
+            interactiveLayerIds={['choice-hit', 'alt-hit', 'dev-hit', 'edit-hit']}
             onMouseDown={(e) => {
               // Glisser la ligne = insérer un point et le placer, en un geste (desktop, #1384).
               if (!desktop || e.originalEvent.button !== 0) return;
@@ -614,6 +682,11 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
             cursor={dragLine?.moved ? 'grabbing' : overLine ? 'copy' : 'crosshair'}
           >
             <SinglesLayer state={singles} colors={colors} />
+            <Source id="choice" type="geojson" data={choiceFeatures}>
+              <Layer id="choice-halo-other" type="line" filter={['==', ['get', 'sel'], false]} layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': colors.muted, 'line-width': 14, 'line-opacity': 0.55 }} />
+              <Layer id="choice-halo-sel" type="line" filter={['==', ['get', 'sel'], true]} layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': colors.primary, 'line-width': 22, 'line-opacity': 0.55 }} />
+            </Source>
+            <SlopeRouteLayer id="slope-other" data={otherSlopeData} colors={colors} arrows={false} />
             <Source id="edit" type="geojson" data={segFeatures}>
               <Layer id="edit-hit" type="line" layout={{ 'line-cap': 'round' }} paint={{ 'line-color': colors.primary, 'line-width': hitPx, 'line-opacity': 0.01 }} />
               <Layer id="edit-casing" type="line" layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': colors.card, 'line-width': 9 }} />
@@ -628,6 +701,9 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
               <Layer id="dev-line" type="line" layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': colors.muted, 'line-width': 3, 'line-dasharray': [2, 1.5] }} />
             </Source>
             <SlopeRouteLayer id="slope" data={slopeData} colors={colors} />
+            <Source id="choice-hit-src" type="geojson" data={choiceFeatures}>
+              <Layer id="choice-hit" type="line" filter={['==', ['get', 'sel'], false]} layout={{ 'line-cap': 'round' }} paint={{ 'line-color': colors.muted, 'line-width': hitPx, 'line-opacity': 0.01 }} />
+            </Source>
             <KmMarkers geometry={geometry} />
             {cursorPos && <ProfileCursorMarker mapRef={mapRef} lon={cursorPos[0]} lat={cursorPos[1]} />}
             {doc.waypoints.map((w, i) => {
@@ -705,6 +781,7 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
                 <span aria-hidden className="block size-6 rounded-full border-2 border-card bg-card shadow-md ring-4 ring-ring" />
               </Marker>
             )}
+            {desktop && choice && <ChoiceLabels choice={choice} onSelect={(which) => dispatch({ type: 'selectChoice', which })} />}
             {desktop && alts.map((a) => <AltLabels key={a.seg} alts={a} onChoose={(i) => chooseAlt(i, a.seg)} />)}
             {desktop && state.deviation && <DeviationLabel deviation={state.deviation} onRestore={restoreDeviation} />}
             {routeNote && <RouteNoteMarker note={routeNote} />}

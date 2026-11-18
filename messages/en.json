@@ -192,7 +192,8 @@
       "mod": "Ctrl",
       "shift": "Shift",
       "delete": "Del",
-      "escape": "Esc"
+      "escape": "Esc",
+      "enter": "Enter"
     },
     "shortcutLabels": {
       "modeRoute": "New sections: follow trails",
@@ -207,7 +208,8 @@
       "snapAll": "Snap everything to trails",
       "reverse": "Reverse direction",
       "close": "Close the loop",
-      "altRoute": "Try the next route (leg)"
+      "altRoute": "Try the next route (leg)",
+      "keepChoice": "Keep the selected path"
     },
     "lineMenu": "Segment",
     "insertHere": "Insert a point here",
@@ -223,6 +225,14 @@
       "ebike": "E-bike",
       "hint": "Routing avoids climbs steeper than 4% on pedal power, 8% on an e-bike.",
       "current": "Rider: {rider} (click to switch)"
+    },
+    "choice": {
+      "group": "Choose between two paths",
+      "keep": "Keep this path",
+      "new": "New path",
+      "old": "Old path",
+      "label": "{km} km · {gain} m D+",
+      "labelKm": "{km} km"
     },
     "deviation": {
       "title": "Route changed",

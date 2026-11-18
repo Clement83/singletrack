@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { Position } from '@/lib/geo';
 import { densify, type LonLat } from '@/lib/editor/doc';
-import { choiceOptions } from '@/lib/editor/choice';
+import { choiceDeltas, choiceOptions, choiceSegs } from '@/lib/editor/choice';
 import { EditorSim } from './helpers/editor-sim';
 
 /**
@@ -140,5 +140,21 @@ describe('déviation élargie aux points posés à la main (#1641)', () => {
     const s = build();
     s.dragPoint(4, [6.041, Y]);
     expect(s.state.choice).toBeNull();
+  });
+
+  it('tronçons et écarts de chaque option (#1642) : « nouveau » plus long, symétrique pour « ancien »', () => {
+    const s = build();
+    s.dragPoint(4, P);
+    s.settle();
+    const c = s.state.choice!;
+    expect(choiceSegs(c, 'new')).toEqual(c.newSegs);
+    expect(choiceSegs(c, 'old')).toHaveLength(c.oldSegs[1] - c.oldSegs[0]);
+    expect(choiceSegs(c, 'old').length).toBeGreaterThan(0);
+    const d = choiceDeltas(c);
+    expect(d.new.km).toBeGreaterThan(0);
+    expect(d.old.km).toBeCloseTo(-d.new.km, 9);
+    // Sélectionner « ancien » ne change pas les écarts : la valeur est relative à l'autre option, pas à l'affichage.
+    s.dispatch({ type: 'selectChoice', which: 'old' });
+    expect(choiceDeltas(s.state.choice!).new.km).toBeCloseTo(d.new.km, 6);
   });
 });

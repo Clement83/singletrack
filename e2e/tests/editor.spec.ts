@@ -99,3 +99,30 @@ test.fixme('#1527 : des alternatives sont proposées après chaque modification'
   await twoPoints(page);
   expect(await altCount(page)).toBeGreaterThan(0);
 });
+
+// #1642 : paire « nouveau / ancien » après un glisser. Dépend des chemins réels de BRouter : sans paire proposée, le scénario s'arrête.
+test('éditeur : deux chemins après un glisser, clic sur l’autre, « Garder ce chemin » ne laisse qu’un tracé', async ({ page }) => {
+  await openEditor(page);
+  const { b } = await twoPoints(page);
+  // Il faut des points posés de chaque côté du point tiré pour qu'une déviation élargie existe.
+  await clickAt(page, { x: b.x + 120, y: b.y - 40 });
+  await clickAt(page, { x: b.x + 240, y: b.y });
+  await waitRouted(page, 3);
+  await dragMouse(page, b, { x: b.x + 40, y: b.y - 110 });
+  const keep = page.getByRole('button', { name: /Garder ce chemin|Keep this path/ });
+  const shown = await keep.waitFor({ timeout: 15_000 }).then(() => true, () => false);
+  test.skip(!shown, 'BRouter ne propose pas deux chemins pour ce glisser');
+  const halos = () =>
+    page.evaluate(() => {
+      const m = (window as unknown as { __editorMap: { getSource(id: string): { serialize(): { data: { features: { properties: { which: string; sel: boolean } }[] } } } } }).__editorMap;
+      return m.getSource('choice').serialize().data.features.map((f) => f.properties);
+    });
+  const first = await halos();
+  expect(new Set(first.map((f) => f.which))).toEqual(new Set(['new', 'old']));
+  expect(first.find((f) => f.sel)?.which).toBe('new');
+  await page.getByRole('button', { name: /^(Ancien chemin|Old path)/ }).click();
+  await expect.poll(async () => (await halos()).find((f) => f.sel)?.which).toBe('old');
+  await keep.click();
+  await expect(keep).toHaveCount(0);
+  expect(await halos()).toHaveLength(0);
+});

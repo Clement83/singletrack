@@ -166,3 +166,15 @@ export function withoutChoiceAlts(sets: AltSet[], c: ChoicePair | null): AltSet[
   if (!c) return sets;
   return sets.filter((s) => (c.selected === 'new' ? !c.newSegs.includes(s.seg) : s.seg < c.oldSegs[0] || s.seg >= c.oldSegs[1]));
 }
+
+/** Tronçons (indices dans le document de l'option) qui diffèrent : seuls ceux-là reçoivent halo et étiquette. */
+export const choiceSegs = (c: ChoicePair, which: ChoiceWhich): number[] =>
+  which === 'new' ? c.newSegs : Array.from({ length: Math.max(0, c.oldSegs[1] - c.oldSegs[0]) }, (_, k) => c.oldSegs[0] + k);
+
+/** Écart de chaque option par rapport à l'autre : km et D+ (null si le dénivelé est inconnu d'un côté). */
+export function choiceDeltas(c: ChoicePair): Record<ChoiceWhich, { km: number; gainM: number | null }> {
+  const [n, o] = choiceOptions(c);
+  const gain = n.stats.gainM !== null && o.stats.gainM !== null ? n.stats.gainM - o.stats.gainM : null;
+  const km = (n.stats.distanceM - o.stats.distanceM) / 1000;
+  return { new: { km, gainM: gain }, old: { km: -km, gainM: gain === null ? null : -gain } };
+}

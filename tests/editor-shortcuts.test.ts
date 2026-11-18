@@ -46,6 +46,10 @@ describe('raccourcis de l’éditeur desktop (#1393)', () => {
     expect(isTypingTarget(el({ tagName: 'BUTTON' }))).toBe(false);
     expect(isTypingTarget(null)).toBe(false);
   });
+  it('Entrée valide le chemin choisi (#1642), sauf dans un champ', () => {
+    expect(shortcutFor({ key: 'Enter' })).toBe('keepChoice');
+    expect(shortcutFor({ key: 'Enter' }, true)).toBeNull();
+  });
   it('chaque action a sa valeur aria-keyshortcuts', () => {
     for (const s of SHORTCUTS) expect(ariaShortcut(s.action)).toBeTruthy();
   });

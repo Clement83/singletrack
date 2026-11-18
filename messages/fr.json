@@ -192,7 +192,8 @@
       "mod": "Ctrl",
       "shift": "Maj",
       "delete": "Suppr",
-      "escape": "Échap"
+      "escape": "Échap",
+      "enter": "Entrée"
     },
     "shortcutLabels": {
       "modeRoute": "Nouveaux tronçons : suivre les chemins",
@@ -207,7 +208,8 @@
       "snapAll": "Tout recaler sur les chemins",
       "reverse": "Inverser le sens",
       "close": "Fermer la boucle",
-      "altRoute": "Essayer l’itinéraire suivant (tronçon)"
+      "altRoute": "Essayer l’itinéraire suivant (tronçon)",
+      "keepChoice": "Garder le chemin sélectionné"
     },
     "lineMenu": "Tronçon",
     "insertHere": "Insérer un point ici",
@@ -223,6 +225,14 @@
       "ebike": "VAE",
       "hint": "Le routage évite les montées au-delà de 4 % en musculaire, 8 % en VAE.",
       "current": "Cycliste : {rider} (cliquer pour changer)"
+    },
+    "choice": {
+      "group": "Choisir entre deux chemins",
+      "keep": "Garder ce chemin",
+      "new": "Nouveau chemin",
+      "old": "Ancien chemin",
+      "label": "{km} km · {gain} m D+",
+      "labelKm": "{km} km"
     },
     "deviation": {
       "title": "Parcours modifié",

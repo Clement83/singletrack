@@ -4,7 +4,7 @@ import { Fragment, useEffect, useRef, useState, useSyncExternalStore } from 'rea
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { Marker } from 'react-map-gl/maplibre';
-import { Bike, Zap } from 'lucide-react';
+import { Bike, Check, Zap } from 'lucide-react';
 import { setRider } from '@/lib/editor/rider';
 import {
   ArrowLeft, ArrowLeftRight, ArrowLeftToLine, ArrowRightToLine, ChevronDown, ChevronUp, CircleHelp, Home, LineChart, Loader2,
@@ -126,9 +126,14 @@ export function EditorDesktop({ ctl }: { ctl: EditorCtl }) {
           if (sel === null) return;
           dispatch({ type: 'remove', i: sel });
           break;
+        case 'keepChoice':
+          if (!state.choice || saveOpen || help) return;
+          ctl.keepChoice();
+          break;
         case 'escape':
           if (help) setHelp(false);
           else if (saveOpen) setSaveOpen(false);
+          else if (state.choice) ctl.keepChoice();
           else if (sel !== null) dispatch({ type: 'select', i: null });
           else return;
           break;
@@ -142,8 +147,9 @@ export function EditorDesktop({ ctl }: { ctl: EditorCtl }) {
           dispatch({ type: 'newMode', mode: state.newMode === 'route' ? 'line' : 'route' });
           break;
         case 'altRoute':
-          if (!ctl.alts.length) return;
-          ctl.cycleAlt();
+          if (state.choice) dispatch({ type: 'selectChoice', which: state.choice.selected === 'new' ? 'old' : 'new' });
+          else if (!ctl.alts.length) return;
+          else ctl.cycleAlt();
           break;
         case 'reverse':
           if (doc.waypoints.length < 2) return;
@@ -264,6 +270,15 @@ export function EditorDesktop({ ctl }: { ctl: EditorCtl }) {
             )}
           </section>
         ))}
+
+      {/* Bas centre : valider la paire de chemins (#1642) */}
+      {state.choice && !saveOpen && (
+        <div role="group" aria-label={t('choice.group')} className="absolute bottom-10 left-1/2 z-10 -translate-x-1/2">
+          <Button className="shadow-md" aria-keyshortcuts={ariaShortcut('keepChoice')} onClick={ctl.keepChoice}>
+            <Check aria-hidden /> {t('choice.keep')}
+          </Button>
+        </div>
+      )}
 
       {/* Bas droite : action principale */}
       {!saveOpen && (

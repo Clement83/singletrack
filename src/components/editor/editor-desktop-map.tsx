@@ -9,6 +9,8 @@ import { cn } from '@/lib/utils';
 import type { Deviation, LonLat } from '@/lib/editor/doc';
 import { slopeClass, slopeCssColor } from '@/lib/geo/slopes';
 import type { AltSet } from '@/lib/editor/alts';
+import { choiceDeltas, choiceSegs, type ChoicePair, type ChoiceWhich } from '@/lib/editor/choice';
+import { segmentLine } from '@/lib/editor/doc';
 import type { EditorCtl } from './track-editor';
 
 export type LineMenuState = { seg: number; p: LonLat } | null;
@@ -206,4 +208,44 @@ export function DeviationCard({ onRestore }: { onRestore: () => void }) {
       </Button>
     </div>
   );
+}
+
+/**
+ * Étiquette de chaque chemin d'une paire de choix (desktop, #1642) : écart de km et de D+ par rapport à l'autre
+ * option, posée sur la ligne. Un clic = sélectionner ce chemin ; la sélectionnée est marquée par `aria-pressed`.
+ */
+export function ChoiceLabels({ choice, onSelect }: { choice: ChoicePair; onSelect: (w: ChoiceWhich) => void }) {
+  const t = useTranslations('editor');
+  const format = useFormatter();
+  const d = choiceDeltas(choice);
+  return (['new', 'old'] as const).map((w) => {
+    const doc = w === 'new' ? choice.new : choice.old;
+    const line = choiceSegs(choice, w).flatMap((k) => segmentLine(doc, k));
+    if (line.length === 0) return null;
+    const mid = line[Math.floor(line.length / 2)];
+    const km = format.number(d[w].km, { minimumFractionDigits: 1, maximumFractionDigits: 1, signDisplay: 'always' });
+    const g = d[w].gainM;
+    const text = g === null ? t('choice.labelKm', { km }) : t('choice.label', { km, gain: format.number(Math.round(g), { signDisplay: 'always' }) });
+    const on = choice.selected === w;
+    return (
+      <Marker key={w} longitude={mid[0]} latitude={mid[1]} anchor="center">
+        <button
+          type="button"
+          aria-pressed={on}
+          aria-label={`${t(`choice.${w}`)} : ${text}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelect(w);
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+          className={cn(
+            'min-h-11 rounded-full border-2 px-3 text-small font-semibold whitespace-nowrap tabular-nums shadow-md',
+            on ? 'border-primary bg-popover text-popover-foreground' : 'border-border bg-popover text-popover-foreground hover:bg-accent',
+          )}
+        >
+          {text}
+        </button>
+      </Marker>
+    );
+  });
 }

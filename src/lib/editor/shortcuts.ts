@@ -1,7 +1,7 @@
 // Raccourcis clavier de l'éditeur desktop (#1393, complétés en #1384 : M, I, B, Maj+R). Logique pure, testée dans tests/editor-shortcuts.test.ts.
 
 export type ShortcutAction =
-  | 'undo' | 'redo' | 'delete' | 'escape' | 'modeRoute' | 'modeLine' | 'toggleMode' | 'reverse' | 'close' | 'snapAll' | 'altRoute' | 'save' | 'help';
+  | 'undo' | 'redo' | 'delete' | 'escape' | 'modeRoute' | 'modeLine' | 'toggleMode' | 'reverse' | 'close' | 'snapAll' | 'altRoute' | 'keepChoice' | 'save' | 'help';
 
 export type KeyLike = { key: string; ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean; altKey?: boolean };
 
@@ -15,6 +15,7 @@ export const SHORTCUTS: { action: ShortcutAction; keys: string[]; aria: string }
   { action: 'toggleMode', keys: ['M'], aria: 'M' },
   { action: 'snapAll', keys: ['shift', 'R'], aria: 'Shift+R' },
   { action: 'altRoute', keys: ['A'], aria: 'A' },
+  { action: 'keepChoice', keys: ['enter'], aria: 'Enter' },
   { action: 'reverse', keys: ['I'], aria: 'I' },
   { action: 'close', keys: ['B'], aria: 'B' },
   { action: 'undo', keys: ['mod', 'Z'], aria: 'Control+Z Meta+Z' },
@@ -54,6 +55,7 @@ export function shortcutFor(e: KeyLike, typing = false): ShortcutAction | null {
     return null;
   }
   if (mod || e.altKey) return null;
+  if (key === 'Enter') return 'keepChoice';
   if (key === 'Delete' || key === 'Backspace') return 'delete';
   if (key === '?') return 'help';
   if (key === 'r') return e.shiftKey ? 'snapAll' : 'modeRoute';
