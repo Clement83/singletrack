@@ -1,5 +1,5 @@
 import { getDb } from '@/db';
-import { getVisibility, getDefaultOutingVisibility, getDefaultTrackVisibility } from '@/lib/user-profile';
+import { getVisibility, getDefaultOutingVisibility, getDefaultTrackVisibility, getCharte } from '@/lib/user-profile';
 import { UserMenu } from '@/components/user-menu';
 import { SignInButton } from '@/components/sign-in-button';
 import { federationEnabled, fedAddress } from '@/lib/federation/config';
@@ -17,7 +17,7 @@ export function AccountMenu({ user }: { user: { id: string; name: string; email:
   const fed = handle && federationEnabled() ? { handle, address: fedAddress(handle), canChange } : null; // adresse fédérée (#1474), visible seulement si la fédération est active
   return (
     <UserMenu
-      user={{ id: user.id, name: user.name, email: user.email, profileVisibility: getVisibility(db, user.id), outingVisibility: getDefaultOutingVisibility(db, user.id), drawnTrackVisibility: getDefaultTrackVisibility(db, user.id, 'drawn'), importedTrackVisibility: getDefaultTrackVisibility(db, user.id, 'imported'), fed }}
+      user={{ id: user.id, name: user.name, email: user.email, profileVisibility: getVisibility(db, user.id), outingVisibility: getDefaultOutingVisibility(db, user.id), drawnTrackVisibility: getDefaultTrackVisibility(db, user.id, 'drawn'), importedTrackVisibility: getDefaultTrackVisibility(db, user.id, 'imported'), charte: getCharte(db, user.id), fed }}
       sourceUrl={config.sourceUrl}
       version={config.version}
       className={PLACE}

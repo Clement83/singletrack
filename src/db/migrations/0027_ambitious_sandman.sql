@@ -1,0 +1,1 @@
+ALTER TABLE `user` ADD `charte` text DEFAULT 'classique' NOT NULL;

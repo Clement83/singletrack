@@ -33,7 +33,7 @@ Un second axe, **indépendant du clair/sombre** : la *charte* (`chartes` dans `t
 - Nouveaux tokens : `surface-glass` (+ `-foreground`), `glass-opacity`, `glass-blur` (valeur de `backdrop-filter` : `none` ou `blur(16px)`), `border-width` (variable seule), polices `display` et `mono`.
 - Utilitaire **`glass`** (`globals.css`) : fond `surface-glass` à `glass-opacity` + `glass-blur`, repli opaque sans `backdrop-filter` ou sous `prefers-reduced-transparency`. Posé sur la barre de navigation, le `BottomSheet`, les boutons de carte et les toasts. Classique = 100 % / `none` : surfaces pleines.
 - Contrastes vérifiés pour chaque charte × thème (texte sur verre contre le repli opaque).
-- `/styleguide` : `CharteSwitcher` (attribut `data-charte`, sans compte). Le choix de charte par compte viendra avec l'epic #1623.
+- `/styleguide` : `CharteSwitcher` (attribut `data-charte`, sans compte). Le choix par compte (#1625) est dans le menu utilisateur.
 
 ### Garde-fous (verts dans le conteneur, `npm test` et `npm run lint`)
 

@@ -26,6 +26,8 @@ export const user = sqliteTable('user', {
   /** #1588 : visibilité préremplie des traces dessinées / importées. */
   defaultDrawnTrackVisibility: text('default_drawn_track_visibility').notNull().default('public'),
   defaultImportedTrackVisibility: text('default_imported_track_visibility').notNull().default('private'),
+  /** Charte graphique du compte (#1625) : id d'une charte de design/tokens.json, `classique` par défaut. */
+  charte: text('charte').notNull().default('classique'),
   /** Identifiant fédéré (#1474) : `[a-z0-9_]{3,30}`, minuscules, unique. NULL tant que le prénom n'est pas saisi. */
   handle: text('handle'),
   /** Date de l'unique modification du handle ; NULL = jamais modifié. */

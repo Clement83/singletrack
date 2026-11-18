@@ -1,6 +1,7 @@
 import { and, eq, isNull } from 'drizzle-orm';
 import type { Db } from '@/db';
 import { contact, invitation, outing, user, OUTING_VISIBILITIES, TRACK_VISIBILITIES } from '@/db/schema';
+import { CHARTES } from '@/lib/design/themes';
 import { areFriends } from '@/lib/friends';
 import { isDone, listClaimedHistory, listHistory } from '@/lib/outings/history';
 import { outingPermissions, type OutingFacts } from '@/lib/outings/permissions';
@@ -62,6 +63,20 @@ export function getDefaultTrackVisibility(db: Db, userId: string, origin: TrackO
 export function setDefaultTrackVisibility(db: Db, userId: string, origin: TrackOrigin, value: unknown): { ok: true } | { ok: false; error: string } {
   if (!isTrackVisibility(value)) return { ok: false, error: 'invalid' };
   db.update(user).set({ ...(origin === 'drawn' ? { defaultDrawnTrackVisibility: value } : { defaultImportedTrackVisibility: value }), updatedAt: new Date() }).where(eq(user.id, userId)).run();
+  return { ok: true };
+}
+
+/** Charte graphique du compte (#1625) : id déclaré dans design/tokens.json ; inconnu ⇒ `classique`. */
+export const isCharte = (v: unknown): v is string => CHARTES.some((c) => c.id === v);
+
+export function getCharte(db: Db, userId: string): string {
+  const v = db.select({ v: user.charte }).from(user).where(eq(user.id, userId)).get()?.v;
+  return isCharte(v) ? v : CHARTES[0].id;
+}
+
+export function setCharte(db: Db, userId: string, value: unknown): { ok: true } | { ok: false; error: string } {
+  if (!isCharte(value)) return { ok: false, error: 'charteInvalid' };
+  db.update(user).set({ charte: value, updatedAt: new Date() }).where(eq(user.id, userId)).run();
   return { ok: true };
 }
 

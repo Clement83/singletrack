@@ -190,6 +190,13 @@
       "when": 1794914186222,
       "tag": "0026_black_senator_kelly",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "6",
+      "when": 1795007811644,
+      "tag": "0027_ambitious_sandman",
+      "breakpoints": true
     }
   ]
 }

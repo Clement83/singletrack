@@ -44,6 +44,7 @@ import * as outingPhotos from '@/app/api/outings/[slug]/photos/route';
 import * as outingComments from '@/app/api/outings/[slug]/comments/route';
 import * as health from '@/app/api/health/route';
 import * as locale from '@/app/api/locale/route';
+import * as profileRoute from '@/app/api/profile/route';
 
 const ctx = (slug: string) => ({ params: Promise.resolve({ slug, token: slug }) });
 const json = (method: string, body: unknown) =>
@@ -511,5 +512,20 @@ describe('visibilité des traces : toutes les lectures (#1589)', () => {
     expect((await one(pub.id)).status).toBe(200);
     st.uid = 'a';
     expect((await one(idOf('Inv2').id)).status).toBe(200);
+  });
+});
+
+describe('/api/profile : charte du compte (#1625)', () => {
+  it('401 sans session, 422 charte inconnue, 200 et persistance', async () => {
+    st.uid = null;
+    expect((await profileRoute.PUT(json('PUT', { charte: 'classique' }))).status).toBe(401);
+    st.uid = 'a';
+    const bad = await profileRoute.PUT(json('PUT', { charte: 'nope' }));
+    expect(bad.status).toBe(422);
+    expect((await bad.json()).error).toBe('charteInvalid');
+    const ok = await profileRoute.PUT(json('PUT', { charte: 'classique' }));
+    expect(ok.status).toBe(200);
+    expect((await ok.json()).charte).toBe('classique');
+    expect((await (await profileRoute.GET()).json()).charte).toBe('classique');
   });
 });

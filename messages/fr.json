@@ -654,6 +654,7 @@
     "waypointsInvalid": "Points de la trace invalides.",
     "geometryTooShort": "Trace trop courte (100 m minimum).",
     "visibilityInvalid": "Visibilité invalide.",
+    "charteInvalid": "Charte inconnue.",
     "parentGone": "La trace d’origine n’existe plus.",
     "title": "Donne un titre (120 caractères max).",
     "date": "Choisis une date et une heure.",

@@ -7,6 +7,10 @@ import tokens from '../../design/tokens.json';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
 import { SwRegister } from '@/components/sw-register';
+import { getCurrentUser } from '@/lib/current-user';
+import { getDb } from '@/db';
+import { getCharte } from '@/lib/user-profile';
+import { CHARTES } from '@/lib/design/themes';
 
 const bg = (t: 'light' | 'dark') => tokens.color.find((c) => c.name === 'background')!.value[t];
 const light = () => bg('light');
@@ -32,9 +36,12 @@ export const viewport: Viewport = { width: 'device-width', initialScale: 1, view
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // Langue de la requête (#1400) : cookie NEXT_LOCALE, sinon navigateur, sinon français.
   const locale = await getLocale();
+  // Charte du compte (#1625), posée côté serveur : pas de flash. Sans session : Classique.
+  const me = await getCurrentUser();
+  const charte = me ? getCharte(getDb().db, me.id) : CHARTES[0].id;
   return (
     // suppressHydrationWarning : next-themes pose data-theme avant l'hydratation.
-    <html lang={locale} suppressHydrationWarning>
+    <html lang={locale} data-charte={charte} suppressHydrationWarning>
       <body suppressHydrationWarning>
         {/* Messages client par zone (#1405) : ici le strict minimum, chaque segment pose les siens. */}
         <ClientMessages zone="root">

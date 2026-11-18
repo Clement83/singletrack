@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { ActionSheet } from '@/components/ui/action-sheet';
 import { Field, Input } from '@/components/ui/field';
 import { ThemeSwitcher } from '@/components/theme-switcher';
+import { CharteSwitcher } from '@/components/charte-switcher';
 import { LocaleSwitcher } from '@/components/locale-switcher';
 import { DefaultOutingVisibility } from '@/components/default-outing-visibility';
 import type { OutingVisibilityValue } from '@/components/outing-visibility-switcher';
@@ -20,7 +21,7 @@ import { FederatedAddress } from '@/components/federated-address';
 import { DefaultTrackVisibility, type TrackVisibilityValue } from '@/components/tracks/track-visibility';
 import { VisibilitySwitcher } from '@/components/visibility-switcher';
 
-type User = { id: string; name: string; email: string; profileVisibility: 'private' | 'public'; outingVisibility: OutingVisibilityValue; drawnTrackVisibility: TrackVisibilityValue; importedTrackVisibility: TrackVisibilityValue; fed?: { handle: string; address: string; canChange: boolean } | null };
+type User = { id: string; name: string; email: string; profileVisibility: 'private' | 'public'; outingVisibility: OutingVisibilityValue; drawnTrackVisibility: TrackVisibilityValue; importedTrackVisibility: TrackVisibilityValue; charte: string; fed?: { handle: string; address: string; canChange: boolean } | null };
 
 /** Initiale du prénom (avatar). */
 export function initialOf(name: string): string {
@@ -43,6 +44,7 @@ function Avatar({ name, className }: { name: string; className?: string }) {
 function MenuBody({ user, onDone, sourceUrl, version }: { user: User; onDone: () => void; sourceUrl: string; version: string }) {
   const t = useTranslations('userMenu');
   const tTheme = useTranslations('theme');
+  const tCharte = useTranslations('charte');
   const tProfile = useTranslations('userProfile');
   const tOutingVis = useTranslations('outingVisibility');
   const tTrackVis = useTranslations('trackVisibility');
@@ -70,6 +72,10 @@ function MenuBody({ user, onDone, sourceUrl, version }: { user: User; onDone: ()
       <section className="flex flex-col gap-2">
         <h3 className="text-label uppercase text-muted-foreground">{tTheme('label')}</h3>
         <ThemeSwitcher />
+      </section>
+      <section className="flex flex-col gap-2">
+        <h3 className="text-label uppercase text-muted-foreground">{tCharte('label')}</h3>
+        <CharteSwitcher account={user.charte} />
       </section>
       <section className="flex flex-col gap-2">
         <h3 className="text-label uppercase text-muted-foreground">{t('language')}</h3>

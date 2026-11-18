@@ -35,7 +35,7 @@ export function useMapColors(): MapColors | null {
     const update = () => setColors(read());
     update();
     const mo = new MutationObserver(update);
-    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme', 'style'] });
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme', 'data-charte', 'style'] });
     const mql = window.matchMedia('(prefers-color-scheme: dark)');
     mql.addEventListener('change', update);
     return () => {

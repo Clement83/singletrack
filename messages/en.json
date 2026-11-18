@@ -654,6 +654,7 @@
     "waypointsInvalid": "Invalid route points.",
     "geometryTooShort": "Route too short (100 m minimum).",
     "visibilityInvalid": "Invalid visibility.",
+    "charteInvalid": "Unknown theme style.",
     "parentGone": "The original route no longer exists.",
     "title": "Add a title (120 characters max).",
     "date": "Pick a date and a time.",
