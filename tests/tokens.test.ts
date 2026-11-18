@@ -14,10 +14,10 @@ describe('tokens : contrastes WCAG', () => {
     expect(contrastRatio('#777777', '#ffffff')).toBeCloseTo(4.48, 1);
   });
 
-  for (const theme of tokens.themes) {
-    it(`thème ${theme.id} : tous les couples déclarés passent (AA texte 4.5, UI 3)`, () => {
+  for (const charte of tokens.chartes) for (const theme of tokens.themes) {
+    it(`charte ${charte.id} × thème ${theme.id} : tous les couples déclarés passent (AA texte 4.5, UI 3), dont le texte sur verre (repli opaque)`, () => {
       const failures = checkContrasts(tokens)
-        .filter((r) => r.theme === theme.id && !r.ok)
+        .filter((r) => r.charte === charte.id && r.theme === theme.id && !r.ok)
         .map((r) => `${r.fg} sur ${r.bg} = ${r.ratio.toFixed(2)} < ${r.min}`);
       expect(failures).toEqual([]);
     });
@@ -28,7 +28,7 @@ describe('tokens : contrastes WCAG', () => {
   });
 
   it('chaque token a une note d’usage', () => {
-    const all = [tokens.color, tokens.text, tokens.radius, tokens.shadow, tokens.size, tokens.motion, tokens.map, tokens.font].flat();
+    const all = [tokens.color, tokens.text, tokens.radius, tokens.shadow, tokens.surface, tokens.chartes, tokens.size, tokens.motion, tokens.map, tokens.font].flat();
     expect(all.filter((t) => !t.usage).map((t) => t.name)).toEqual([]);
   });
 });
@@ -49,6 +49,53 @@ describe('tokens : génération', () => {
     // light + essai (extends light)
     expect(css.match(/--primary: #123456;/g)).toHaveLength(2);
     expect(css).toContain('--color-primary: var(--primary);');
+  });
+
+  describe('chartes (#1624)', () => {
+    // Charte d'essai : copie de Classique, rayons à 0, polices et verre propres, clair et sombre.
+    const edited = structuredClone(tokens);
+    edited.chartes.push({ id: 'essai', name: 'Essai', usage: 'test' });
+    for (const r of edited.radius) r.chartes = { essai: '0px' };
+    edited.font.find((f) => f.name === 'display')!.chartes = { essai: 'Georgia, serif' };
+    edited.surface.find((x) => x.name === 'glass-blur')!.chartes = { essai: 'blur(16px)' };
+    edited.shadow.find((x) => x.name === 'md')!.chartes = { essai: { light: 'none', dark: 'none' } };
+    edited.text.find((t) => t.name === 'body')!.chartes = { essai: { size: '17px' } };
+    const css = generateCss(edited);
+
+    it('Classique reste sur :root et n’émet aucune variable de charte', () => {
+      const classic = generateCss(tokens);
+      expect(classic).not.toContain('data-charte');
+      expect(css.startsWith(classic.split('/* Valeurs indépendantes')[0])).toBe(true);
+    });
+
+    it('une charte d’essai change rayons, polices, ombres, verre et texte sans toucher aux composants', () => {
+      expect(css).toContain("[data-charte='essai'][data-theme='light']");
+      expect(css).toContain("[data-charte='essai'][data-theme='dark']");
+      expect(css).toContain(":root[data-charte='essai']:not([data-theme])");
+      expect(css).toMatch(/@media \(prefers-color-scheme: dark\) \{\n  :root\[data-charte='essai'\]:not\(\[data-theme\]\)/);
+      for (const v of ['--radius-xl: 0px;', '--radius-2xl: 0px;', '--font-display: Georgia, serif;', '--glass-blur: blur(16px);', '--elevation-md: none;', '--text-body: 17px;']) {
+        expect(css).toContain(`  ${v}`);
+      }
+      // Seulement les différences : la couleur de fond n'est pas redéclarée.
+      const block = css.split("[data-charte='essai'][data-theme='light']")[1].split('}')[0];
+      expect(block).not.toContain('--background');
+    });
+
+    it('les contrastes sont aussi vérifiés pour la charte d’essai', () => {
+      expect(checkContrasts(edited).filter((r) => r.charte === 'essai')).toHaveLength(checkContrasts(tokens).length);
+    });
+
+    it('une charte hérite d’une autre (extends)', () => {
+      const e2 = structuredClone(edited);
+      e2.chartes.push({ id: 'fille', name: 'Fille', extends: 'essai' });
+      expect(generateCss(e2)).toContain("[data-charte='fille'][data-theme='light']");
+      expect(generateCss(e2).split("[data-charte='fille'][data-theme='light']")[1].split('}')[0]).toContain('--radius-xl: 0px;');
+    });
+
+    it('le verre de Classique est opaque (aucun changement visible)', () => {
+      expect(css).toContain('--glass-opacity: 100%;');
+      expect(css).toContain('--glass-blur: none;');
+    });
   });
 
   it('deux thèmes seulement : clair et sombre (#1396)', () => {

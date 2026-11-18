@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import tokens from '../../../../design/tokens.json';
 import { ThemeSwitcher } from '@/components/theme-switcher';
+import { CharteSwitcher } from '@/components/charte-switcher';
 import { ComponentDemos } from './demos';
 
 export const metadata: Metadata = { title: 'Styleguide · Singletrack', robots: { index: false, follow: false } };
@@ -27,6 +28,7 @@ export default function StyleguidePage() {
           Source unique : <code className="text-small">design/tokens.json</code>, puis <code className="text-small">npm run tokens</code>.
         </p>
         <ThemeSwitcher />
+        <CharteSwitcher />
       </header>
 
       <Section id="couleurs" title="Couleurs">

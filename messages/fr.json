@@ -46,6 +46,9 @@
     "light": "Clair",
     "dark": "Sombre"
   },
+  "charte": {
+    "label": "Charte"
+  },
   "userMenu": {
     "signIn": "Se connecter",
     "open": "Mon compte",

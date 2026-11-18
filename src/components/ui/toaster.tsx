@@ -13,7 +13,7 @@ export function Toaster() {
         unstyled: true,
         classNames: {
           toast:
-            'flex w-full items-center gap-3 rounded-2xl border border-border bg-popover px-4 py-3 text-body text-popover-foreground shadow-md',
+            'flex w-full items-center gap-3 rounded-2xl border border-border glass px-4 py-3 text-body text-popover-foreground shadow-md',
           title: 'font-semibold',
           description: 'text-small text-muted-foreground',
           success: '[&_[data-icon]]:text-success',

@@ -4,28 +4,31 @@
 
 export type Theme = { id: string; name: string; scheme: 'light' | 'dark'; extends?: string; usage?: string };
 type Named = { name: string; usage: string };
-export type ColorToken = Named & { value: Record<string, string> };
+/** Valeur d'un token : une chaîne (tous thèmes) ou une valeur par thème / schéma (`light`, `dark`). */
+export type Value = string | Record<string, string>;
+/** Charte graphique (#1624) : axe indépendant du clair/sombre. `extends` : hérite d'une autre charte (défaut : la première). */
+export type Charte = { id: string; name: string; extends?: string; usage?: string };
+/** Surcharges par charte : `{ "<charte>": <valeur> }` ; absent = hérite (Classique en dernier recours). */
+type ByCharte<T> = { chartes?: Record<string, T> };
+export type ColorToken = Named & ByCharte<Value> & { value: Record<string, string> };
 export type ContrastRule = { fg: string; bg: string[]; min: number; usage: string };
-export type TextToken = Named & {
-  size: string;
-  lineHeight: string;
-  weight: number;
-  letterSpacing?: string;
-  sample: string;
-};
-export type ValueToken = Named & { value: string };
-export type ThemedToken = Named & { value: Record<string, string> };
+type TextFields = { size: string; lineHeight: string; weight: number; letterSpacing?: string };
+export type TextToken = Named & TextFields & ByCharte<Partial<TextFields>> & { sample: string };
+export type ValueToken = Named & ByCharte<Value> & { value: Value };
+export type ThemedToken = Named & ByCharte<Value> & { value: Record<string, string> };
 
 export type Tokens = {
   name: string;
   version: number;
   themes: Theme[];
+  chartes: Charte[];
   color: ColorToken[];
   contrast: ContrastRule[];
   font: ValueToken[];
   text: TextToken[];
   radius: ValueToken[];
   shadow: ThemedToken[];
+  surface: ValueToken[];
   size: ValueToken[];
   motion: ValueToken[];
   map: ValueToken[];
@@ -52,11 +55,84 @@ export function themeColors(tokens: Tokens, themeId: string): Record<string, str
   return Object.fromEntries(tokens.color.map((c) => [c.name, resolveThemed(tokens, c.value, themeId)]));
 }
 
+/** Chaîne d'héritage d'une charte : elle-même, ses parents, puis la charte de base (Classique). */
+function charteChain(tokens: Tokens, charteId: string): string[] {
+  const chain: string[] = [];
+  let id: string | undefined = charteId;
+  while (id && !chain.includes(id)) {
+    chain.push(id);
+    id = tokens.chartes.find((c) => c.id === id)?.extends;
+  }
+  const base = tokens.chartes[0].id;
+  if (!chain.includes(base)) chain.push(base);
+  return chain;
+}
+
+/** Valeur effective d'un token pour une charte × un thème : surcharge de charte la plus proche, sinon valeur de base. */
+export function resolveValue(tokens: Tokens, token: { value: Value; chartes?: Record<string, Value> }, themeId: string, charteId: string): string {
+  for (const c of charteChain(tokens, charteId)) {
+    const o = token.chartes?.[c];
+    if (o !== undefined) return typeof o === 'string' ? o : resolveThemed(tokens, o, themeId);
+  }
+  return typeof token.value === 'string' ? token.value : resolveThemed(tokens, token.value, themeId);
+}
+
+function resolveText(tokens: Tokens, t: TextToken, charteId: string): TextFields {
+  const out: TextFields = { size: t.size, lineHeight: t.lineHeight, weight: t.weight, letterSpacing: t.letterSpacing };
+  for (const c of charteChain(tokens, charteId).reverse()) Object.assign(out, t.chartes?.[c]);
+  return out;
+}
+
+/** Toutes les variables CSS qui dépendent de la charte et/ou du thème, pour un couple donné. */
+export function charteThemeVars(tokens: Tokens, charteId: string, themeId: string): Record<string, string> {
+  const v: Record<string, string> = {};
+  for (const c of tokens.color) v[`--${c.name}`] = resolveValue(tokens, c, themeId, charteId);
+  for (const s of tokens.shadow) v[`--elevation-${s.name}`] = resolveValue(tokens, s, themeId, charteId);
+  for (const s of tokens.surface) v[`--${s.name}`] = resolveValue(tokens, s, themeId, charteId);
+  for (const f of tokens.font) v[`--font-${f.name}`] = resolveValue(tokens, f, themeId, charteId);
+  for (const r of tokens.radius) v[`--radius-${r.name}`] = resolveValue(tokens, r, themeId, charteId);
+  for (const t of tokens.text) {
+    const f = resolveText(tokens, t, charteId);
+    v[`--text-${t.name}`] = f.size;
+    v[`--text-${t.name}--line-height`] = f.lineHeight;
+    v[`--text-${t.name}--font-weight`] = String(f.weight);
+    if (f.letterSpacing) v[`--text-${t.name}--letter-spacing`] = f.letterSpacing;
+  }
+  return v;
+}
+
+/** Variables du thème d'une charte, hors celles déclarées ailleurs (@theme static) pour la charte de base. */
+const THEME_VAR = /^--(?!font-|radius-|text-)/;
+
 function themeBlock(tokens: Tokens, theme: Theme): string[] {
-  const lines = [`  color-scheme: ${theme.scheme};`];
-  for (const c of tokens.color) lines.push(`  --${c.name}: ${resolveThemed(tokens, c.value, theme.id)};`);
-  for (const s of tokens.shadow) lines.push(`  --elevation-${s.name}: ${resolveThemed(tokens, s.value, theme.id)};`);
-  return lines;
+  const vars = charteThemeVars(tokens, tokens.chartes[0].id, theme.id);
+  return [`  color-scheme: ${theme.scheme};`, ...Object.entries(vars).filter(([k]) => THEME_VAR.test(k)).map(([k, x]) => `  ${k}: ${x};`)];
+}
+
+/** Blocs d'une charte non-base : par thème, seules les variables qui diffèrent de la charte de base. */
+function charteBlocks(tokens: Tokens, charte: Charte): string[] {
+  const out: string[] = [];
+  const base = tokens.chartes[0].id;
+  const diff = (theme: Theme) => {
+    const b = charteThemeVars(tokens, base, theme.id);
+    const c = charteThemeVars(tokens, charte.id, theme.id);
+    return Object.entries(c).filter(([k, x]) => b[k] !== x).map(([k, x]) => `  ${k}: ${x};`);
+  };
+  const dark = tokens.themes.find((t) => t.scheme === 'dark');
+  tokens.themes.forEach((t, i) => {
+    const lines = diff(t);
+    if (!lines.length) return;
+    const sel = [`[data-charte='${charte.id}'][data-theme='${t.id}']`];
+    if (i === 0) sel.push(`:root[data-charte='${charte.id}']:not([data-theme])`);
+    out.push(`${sel.join(',\n')} {`, ...lines, '}', '');
+  });
+  if (dark) {
+    const lines = diff(dark);
+    if (lines.length) {
+      out.push('@media (prefers-color-scheme: dark) {', `  :root[data-charte='${charte.id}']:not([data-theme]) {`, ...lines.map((l) => `  ${l}`), '  }', '}', '');
+    }
+  }
+  return out;
 }
 
 /** Feuille CSS complète : variables par thème + branchement Tailwind 4 (@theme). */
@@ -83,6 +159,11 @@ export function generateCss(tokens: Tokens): string {
     out.push(`@custom-variant dark (&:where(${darkIds.join(', ')}, ${darkIds.map((d) => `${d} *`).join(', ')}));`, '');
   }
 
+  for (const c of tokens.chartes.slice(1)) {
+    const blocks = charteBlocks(tokens, c);
+    if (blocks.length) out.push(`/* Charte ${c.name} (#1624) : seulement ce qui change par rapport à ${tokens.chartes[0].name}. */`, ...blocks);
+  }
+
   out.push('/* Valeurs indépendantes du thème. */', ':root {');
   for (const m of tokens.motion) out.push(`  --duration-${m.name}: ${m.value};`);
   for (const m of tokens.map) out.push(`  --map-${m.name}: ${m.value};`);
@@ -97,7 +178,7 @@ export function generateCss(tokens: Tokens): string {
 
   // static : toutes les variables sont émises, même inutilisées (lues par /styleguide et MapLibre).
   out.push('@theme static {');
-  for (const f of tokens.font) out.push(`  --font-${f.name}: ${f.value};`);
+  for (const f of tokens.font) out.push(`  --font-${f.name}: ${resolveValue(tokens, f, tokens.themes[0].id, tokens.chartes[0].id)};`);
   out.push('  --text-*: initial;');
   for (const t of tokens.text) {
     out.push(`  --text-${t.name}: ${t.size};`, `  --text-${t.name}--line-height: ${t.lineHeight};`);
@@ -105,7 +186,7 @@ export function generateCss(tokens: Tokens): string {
     if (t.letterSpacing) out.push(`  --text-${t.name}--letter-spacing: ${t.letterSpacing};`);
   }
   out.push('  --radius-*: initial;');
-  for (const r of tokens.radius) out.push(`  --radius-${r.name}: ${r.value};`);
+  for (const r of tokens.radius) out.push(`  --radius-${r.name}: ${resolveValue(tokens, r, tokens.themes[0].id, tokens.chartes[0].id)};`);
   for (const s of tokens.size) out.push(`  --spacing-${s.name}: ${s.value};`);
   out.push('  --default-transition-duration: var(--duration-fast);');
   out.push('}', '');
@@ -134,17 +215,20 @@ export function contrastRatio(a: string, b: string): number {
   return (hi + 0.05) / (lo + 0.05);
 }
 
-export type ContrastResult = { theme: string; fg: string; bg: string; ratio: number; min: number; ok: boolean };
+export type ContrastResult = { charte: string; theme: string; fg: string; bg: string; ratio: number; min: number; ok: boolean };
 
 export function checkContrasts(tokens: Tokens): ContrastResult[] {
   const results: ContrastResult[] = [];
-  for (const theme of tokens.themes) {
-    const colors = themeColors(tokens, theme.id);
-    for (const rule of tokens.contrast) {
-      for (const bg of rule.bg) {
-        if (!(rule.fg in colors) || !(bg in colors)) throw new Error(`Token inconnu dans contrast : ${rule.fg} / ${bg}`);
-        const ratio = contrastRatio(colors[rule.fg], colors[bg]);
-        results.push({ theme: theme.id, fg: rule.fg, bg, ratio, min: rule.min, ok: ratio >= rule.min });
+  for (const charte of tokens.chartes) {
+    for (const theme of tokens.themes) {
+      const vars = charteThemeVars(tokens, charte.id, theme.id);
+      const colors = Object.fromEntries(tokens.color.map((c) => [c.name, vars[`--${c.name}`]]));
+      for (const rule of tokens.contrast) {
+        for (const bg of rule.bg) {
+          if (!(rule.fg in colors) || !(bg in colors)) throw new Error(`Token inconnu dans contrast : ${rule.fg} / ${bg}`);
+          const ratio = contrastRatio(colors[rule.fg], colors[bg]);
+          results.push({ charte: charte.id, theme: theme.id, fg: rule.fg, bg, ratio, min: rule.min, ok: ratio >= rule.min });
+        }
       }
     }
   }

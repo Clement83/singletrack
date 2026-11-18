@@ -55,7 +55,7 @@ export function BottomNavBar({ active, className }: BarProps) {
   return (
     <nav
       aria-label={t('main')}
-      className={cn('flex h-nav items-stretch gap-1 border-t border-border bg-card px-2 shadow-md', className)}
+      className={cn('flex h-nav items-stretch gap-1 border-t border-border glass px-2 shadow-md', className)}
     >
       <Items active={active ?? pathname} />
     </nav>
@@ -69,7 +69,7 @@ export function SideNavBar({ active, className }: BarProps) {
   return (
     <nav
       aria-label={t('main')}
-      className={cn('flex w-rail flex-col items-center gap-2 border-r border-border bg-card py-4 shadow-md', className)}
+      className={cn('flex w-rail flex-col items-center gap-2 border-r border-border glass py-4 shadow-md', className)}
     >
       {/* Icône de l'app (ticket 1395, générée par scripts/make-icons.mjs) : ramène à la carte. */}
       <Link href="/" aria-label={t('home')} className="mb-4 rounded-xl transition-opacity duration-150 hover:opacity-90 active:opacity-80">

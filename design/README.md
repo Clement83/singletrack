@@ -25,6 +25,16 @@ design/tokens.json  ──npm run tokens──▶  src/app/styles/tokens.css  �
 - **Deux thèmes seulement** (#1396) : **clair** (sable chaud hérité de l'ancien thème « garrigue », texte ardoise de l'icône, action principale bleu nuit, accent abricot) et **sombre** (couleurs de l'icône : fond bleu nuit, panneaux ardoise, texte crème, action principale abricot du couchant). Le thème « garrigue » a été retiré ; le mécanisme `extends` reste disponible pour un futur thème.
 - Thème clair / sombre / système : `next-themes` (attribut `data-theme`), choix mémorisé dans le navigateur.
 
+### Chartes (#1624)
+
+Un second axe, **indépendant du clair/sombre** : la *charte* (`chartes` dans `tokens.json`) porte rayons, polices, ombres, couleurs et surfaces verre. Classique = la charte actuelle, sur `:root`. Une autre charte ne déclare que ce qui change : `"chartes": { "<id>": valeur }` sur un token (valeur simple, ou `{light, dark}` pour couleurs et ombres ; texte : champs partiels), `extends` pour hériter d'une autre charte.
+
+- Génération : `[data-charte='x'][data-theme='light|dark']` (et repli `prefers-color-scheme` sans JS), uniquement les variables qui diffèrent de Classique. Tailwind lit déjà `--radius-*`, `--font-*`, `--text-*`, `--elevation-*` : aucun composant ne connaît la charte.
+- Nouveaux tokens : `surface-glass` (+ `-foreground`), `glass-opacity`, `glass-blur` (valeur de `backdrop-filter` : `none` ou `blur(16px)`), `border-width` (variable seule), polices `display` et `mono`.
+- Utilitaire **`glass`** (`globals.css`) : fond `surface-glass` à `glass-opacity` + `glass-blur`, repli opaque sans `backdrop-filter` ou sous `prefers-reduced-transparency`. Posé sur la barre de navigation, le `BottomSheet`, les boutons de carte et les toasts. Classique = 100 % / `none` : surfaces pleines.
+- Contrastes vérifiés pour chaque charte × thème (texte sur verre contre le repli opaque).
+- `/styleguide` : `CharteSwitcher` (attribut `data-charte`, sans compte). Le choix de charte par compte viendra avec l'epic #1623.
+
 ### Garde-fous (verts dans le conteneur, `npm test` et `npm run lint`)
 
 - **Contrastes WCAG** (`tests/tokens.test.ts`) : chaque couple de `contrast` est vérifié dans **chaque** thème — 4,5:1 pour le texte, 3:1 pour contours de champs, focus et pastilles. `fire-2` (jaune officiel) est exempté : pastille toujours cerclée + libellé.

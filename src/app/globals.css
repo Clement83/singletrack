@@ -73,7 +73,7 @@
 /* Carte tactile (ticket 1343) : boutons MapLibre ≥ 44 px (--spacing-touch), gestes tactiles gérés
    par MapLibre (touch-action posé par la lib ; `cooperativeGestures` pour les cartes intégrées). */
 .map-touch .maplibregl-ctrl-group {
-  border-radius: 1rem;
+  border-radius: var(--radius-2xl);
   overflow: hidden;
 }
 .map-touch .maplibregl-ctrl-group button {
@@ -96,4 +96,35 @@
 .avatar-in {
   animation: avatar-in 180ms ease-out both;
   animation-delay: calc(var(--i, 0) * 40ms);
+}
+
+/* Verre (ticket 1624) : couches flottantes (nav, sheet, boutons de carte, toasts). Fond `surface-glass` à
+   l'opacité `--glass-opacity` + `--glass-blur` (`none` ou `blur(…)`) selon la charte. Classique : 100 % /
+   none = surface pleine, aucun changement visible. Repli opaque sans backdrop-filter ou si l'utilisateur
+   demande moins de transparence. */
+@utility glass {
+  background-color: var(--surface-glass);
+  @supports (backdrop-filter: blur(1px)) {
+    background-color: color-mix(in srgb, var(--surface-glass) var(--glass-opacity), transparent);
+    backdrop-filter: var(--glass-blur);
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    background-color: var(--surface-glass);
+    backdrop-filter: none;
+  }
+}
+.map-touch .maplibregl-ctrl-group {
+  background-color: var(--surface-glass);
+}
+@supports (backdrop-filter: blur(1px)) {
+  .map-touch .maplibregl-ctrl-group {
+    background-color: color-mix(in srgb, var(--surface-glass) var(--glass-opacity), transparent);
+    backdrop-filter: var(--glass-blur);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .map-touch .maplibregl-ctrl-group {
+    background-color: var(--surface-glass);
+    backdrop-filter: none;
+  }
 }

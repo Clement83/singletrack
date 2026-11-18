@@ -46,6 +46,9 @@
     "light": "Light",
     "dark": "Dark"
   },
+  "charte": {
+    "label": "Style"
+  },
   "userMenu": {
     "signIn": "Sign in",
     "open": "My account",
