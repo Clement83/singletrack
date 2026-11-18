@@ -106,6 +106,19 @@ describe('tokens : génération', () => {
       }
     });
 
+    it('Affiche de trail (#1627) : Anton, rayons 0–4 px, ombre pleine décalée, contours 2 px, verre opaque', () => {
+      const real = generateCss(tokens);
+      const dark = real.split("[data-charte='affiche'][data-theme='dark']")[1].split('}')[0];
+      expect(dark).toContain('--font-display: Anton');
+      expect(dark).toContain('--elevation-md: 4px 4px 0 rgba(245, 239, 227, 0.5);');
+      expect(dark).toContain('--border-width: 2px;');
+      for (const r of tokens.radius) {
+        const px = parseInt(String(r.chartes?.affiche), 10);
+        expect(px).toBeGreaterThanOrEqual(0);
+        expect(px).toBeLessThanOrEqual(4);
+      }
+    });
+
     it('le verre de Classique est opaque (aucun changement visible)', () => {
       expect(css).toContain('--glass-opacity: 100%;');
       expect(css).toContain('--glass-blur: none;');

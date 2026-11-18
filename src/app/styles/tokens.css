@@ -306,6 +306,109 @@
   }
 }
 
+/* Charte Affiche de trail (#1624) : seulement ce qui change par rapport à Classique. */
+[data-charte='affiche'][data-theme='light'],
+:root[data-charte='affiche']:not([data-theme]) {
+  --background: #f2ede4;
+  --foreground: #111111;
+  --card: #fbf8f1;
+  --card-foreground: #111111;
+  --popover: #fbf8f1;
+  --popover-foreground: #111111;
+  --muted: #e6dfd1;
+  --muted-foreground: #4a463f;
+  --secondary: #e6dfd1;
+  --secondary-foreground: #111111;
+  --primary: #c23600;
+  --primary-foreground: #ffffff;
+  --accent: #ff4f1a;
+  --accent-foreground: #111111;
+  --border: #111111;
+  --input: #111111;
+  --ring: #111111;
+  --surface-glass: #fbf8f1;
+  --surface-glass-foreground: #111111;
+  --elevation-sm: 2px 2px 0 #111111;
+  --elevation-md: 4px 4px 0 #111111;
+  --elevation-sheet: 0 -4px 0 #111111;
+  --border-width: 2px;
+  --font-display: Anton, Impact, "Arial Narrow Bold", "Inter Variable", Inter, system-ui, sans-serif;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 2px;
+  --radius-xl: 2px;
+  --radius-2xl: 4px;
+  --radius-3xl: 4px;
+}
+
+[data-charte='affiche'][data-theme='dark'] {
+  --background: #14120f;
+  --foreground: #f5efe3;
+  --card: #1f1b16;
+  --card-foreground: #f5efe3;
+  --popover: #26211b;
+  --popover-foreground: #f5efe3;
+  --muted: #2b261f;
+  --muted-foreground: #b9b0a0;
+  --secondary: #2b261f;
+  --secondary-foreground: #f5efe3;
+  --primary: #ff5a24;
+  --primary-foreground: #111111;
+  --accent: #4a1d0e;
+  --accent-foreground: #ffc2a8;
+  --border: #f5efe3;
+  --input: #9a917f;
+  --ring: #ff5a24;
+  --surface-glass: #1f1b16;
+  --surface-glass-foreground: #f5efe3;
+  --elevation-sm: 2px 2px 0 rgba(245, 239, 227, 0.5);
+  --elevation-md: 4px 4px 0 rgba(245, 239, 227, 0.5);
+  --elevation-sheet: 0 -4px 0 rgba(245, 239, 227, 0.8);
+  --border-width: 2px;
+  --font-display: Anton, Impact, "Arial Narrow Bold", "Inter Variable", Inter, system-ui, sans-serif;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 2px;
+  --radius-xl: 2px;
+  --radius-2xl: 4px;
+  --radius-3xl: 4px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-charte='affiche']:not([data-theme]) {
+    --background: #14120f;
+    --foreground: #f5efe3;
+    --card: #1f1b16;
+    --card-foreground: #f5efe3;
+    --popover: #26211b;
+    --popover-foreground: #f5efe3;
+    --muted: #2b261f;
+    --muted-foreground: #b9b0a0;
+    --secondary: #2b261f;
+    --secondary-foreground: #f5efe3;
+    --primary: #ff5a24;
+    --primary-foreground: #111111;
+    --accent: #4a1d0e;
+    --accent-foreground: #ffc2a8;
+    --border: #f5efe3;
+    --input: #9a917f;
+    --ring: #ff5a24;
+    --surface-glass: #1f1b16;
+    --surface-glass-foreground: #f5efe3;
+    --elevation-sm: 2px 2px 0 rgba(245, 239, 227, 0.5);
+    --elevation-md: 4px 4px 0 rgba(245, 239, 227, 0.5);
+    --elevation-sheet: 0 -4px 0 rgba(245, 239, 227, 0.8);
+    --border-width: 2px;
+    --font-display: Anton, Impact, "Arial Narrow Bold", "Inter Variable", Inter, system-ui, sans-serif;
+    --radius-sm: 0px;
+    --radius-md: 0px;
+    --radius-lg: 2px;
+    --radius-xl: 2px;
+    --radius-2xl: 4px;
+    --radius-3xl: 4px;
+  }
+}
+
 /* Valeurs indépendantes du thème. */
 :root {
   --duration-fast: 150ms;
