@@ -31,6 +31,8 @@ type Props = {
    * Carte plein écran (accueil) : laisser à `false`.
    */
   embedded?: boolean;
+  /** `false` : carte figée (aperçu dans une page qui défile, #1621) — ni geste ni bouton, le doigt fait défiler la page. */
+  interactive?: boolean;
   className?: string;
   /** Calques / marqueurs react-map-gl posés sur la carte. */
   children?: React.ReactNode;
@@ -46,7 +48,7 @@ type Props = {
  * La géolocalisation exige HTTPS (ou localhost) : sur le LAN en HTTP le navigateur la refuse, le
  * bouton affiche alors une erreur sobre — voir AGENTS.md.
  */
-export default function BaseMap({ lat, lon, zoom = 11, embedded = false, className, children, mapRef, bounds, boundsPadding = 40, ...events }: Props) {
+export default function BaseMap({ lat, lon, zoom = 11, embedded = false, interactive = true, className, children, mapRef, bounds, boundsPadding = 40, ...events }: Props) {
   return (
     <div className={cn('map-touch size-full', className)}>
     <Map
@@ -56,17 +58,18 @@ export default function BaseMap({ lat, lon, zoom = 11, embedded = false, classNa
         bounds ? { bounds, fitBoundsOptions: { padding: boundsPadding } } : { latitude: lat, longitude: lon, zoom }
       }
       mapStyle={style}
+      interactive={interactive}
       cooperativeGestures={embedded}
       style={{ width: '100%', height: '100%' }}
     >
-      <NavigationControl position="top-right" showCompass visualizePitch={false} />
-      <GeolocateControl
+      {interactive && <NavigationControl position="top-right" showCompass visualizePitch={false} />}
+      {interactive && <GeolocateControl
         position="top-right"
         trackUserLocation
         showUserLocation
         showAccuracyCircle
         positionOptions={{ enableHighAccuracy: true }}
-      />
+      />}
       {children}
     </Map>
     </div>

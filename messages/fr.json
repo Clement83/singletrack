@@ -1269,7 +1269,9 @@
     "conditions": "Conditions",
     "activity": "Roulées et photos",
     "back": "Carte",
-    "openConditions": "Conditions : voir le détail"
+    "openConditions": "Conditions : voir le détail",
+    "expandMap": "Agrandir la carte",
+    "closeMap": "Fermer la carte"
   },
   "nextStep": {
     "label": "Prochaine étape",

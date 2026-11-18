@@ -6,6 +6,7 @@ import { OpenSection } from '@/components/outings/section-toggle';
 import { useLocale, useTranslations } from 'next-intl';
 import { OutingBadges } from '@/components/outings/outing-badges';
 import { TrackDetail } from '@/components/tracks/track-detail';
+import { OutingRoute } from '@/components/outings/outing-route';
 import { Button } from '@/components/ui/button';
 import { formatElevation, formatKm, formatOutingDate } from '@/lib/format';
 import { directionsUrl } from '@/lib/outings/labels';
@@ -176,7 +177,7 @@ function PageView({ role, outing: o, snap, end, topLink, headerAction, headerMen
       {snap && end && <section aria-label={tg('trackRegion')} className="flex flex-col gap-3">
         <h2 className="text-heading">{snap.name}</h2>
         {trackNote}
-        <TrackDetail geometry={snap.geometry} bbox={snap.bbox} start={snap.start} end={[end[0], end[1]]} profile={profileFor(snap.geometry)} />
+        <OutingRoute name={snap.name} geometry={snap.geometry} bbox={snap.bbox} start={snap.start} end={[end[0], end[1]]} distanceM={snap.distanceM} elevationGainM={snap.elevationGainM} profile={profileFor(snap.geometry)} />
         {(snap.attribution || snap.license) && (
           <p className="text-caption text-muted-foreground">{[snap.attribution, snap.license && tg('license', { license: snap.license })].filter(Boolean).join(' · ')}</p>
         )}

@@ -1269,7 +1269,9 @@
     "conditions": "Conditions",
     "activity": "Rides and photos",
     "back": "Map",
-    "openConditions": "Conditions: see details"
+    "openConditions": "Conditions: see details",
+    "expandMap": "Expand the map",
+    "closeMap": "Close the map"
   },
   "nextStep": {
     "label": "Next step",

@@ -25,13 +25,17 @@ type Props = {
   mapRef: RefObject<MapRef | null>;
   marked: LocatedProfilePoint | null;
   setHover: (i: number | null) => void;
+  /** `false` : aperçu figé (#1621) ; l'agrandissement plein écran reste interactif. */
+  interactive?: boolean;
+  /** Carte intégrée à une page qui défile (deux doigts). `false` en plein écran. */
+  embedded?: boolean;
 };
 
 /**
  * Carte de la fiche (#1391), isolée dans son propre module (#1371) : react-map-gl et MapLibre ne sont
  * téléchargés qu'à l'approche de la carte, jamais à l'hydratation de la page.
  */
-export default function TrackDetailMap({ geometry, bbox, start, end, profile, data, colors, mapRef, marked, setHover }: Props) {
+export default function TrackDetailMap({ geometry, bbox, start, end, profile, data, colors, mapRef, marked, setHover, interactive = true, embedded = true }: Props) {
   const t = useTranslations('track');
   // Infobulle « km depuis le départ » (#1535) : survol à la souris, tap au doigt ; altitude du profil.
   const { tip, onMove, onTap, clear } = useTrackTip((e) =>
@@ -41,7 +45,8 @@ export default function TrackDetailMap({ geometry, bbox, start, end, profile, da
     <BaseMap
       lat={start[1]}
       lon={start[0]}
-      embedded
+      embedded={embedded}
+      interactive={interactive}
       mapRef={mapRef}
       bounds={bbox}
       boundsPadding={40}

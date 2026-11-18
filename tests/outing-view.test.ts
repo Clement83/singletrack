@@ -10,6 +10,7 @@ import type { TrackSnapshot } from '@/lib/outings/snapshot';
 
 // La carte embarquée (MapLibre) n'a pas sa place dans un rendu serveur de test.
 vi.mock('@/components/tracks/track-detail', () => ({ TrackDetail: () => h('div', { 'data-testid': 'track-detail' }) }));
+vi.mock('@/components/outings/outing-route', () => ({ OutingRoute: () => h('div', { 'data-testid': 'outing-route' }) }));
 
 const snap = {
   slug: 'abc', name: 'Lac de la Verne', geometry: { type: 'LineString', coordinates: [[6.1, 43.2], [6.2, 43.3]] }, bbox: [6.1, 43.2, 6.2, 43.3],
@@ -50,7 +51,7 @@ describe('OutingView', () => {
       const at = order.map((x) => html.indexOf(x));
       expect(at.every((i) => i >= 0), role).toBe(true);
       expect([...at].sort((a, b) => a - b), role).toEqual(at);
-      expect(html).toContain('data-testid="track-detail"');
+      expect(html).toContain('data-testid="outing-route"');
       expect(html).toContain(`data-role="${role}"`);
     }
   });
