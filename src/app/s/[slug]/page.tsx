@@ -9,7 +9,7 @@ import { getDb } from '@/db';
 import { track, user as userTable } from '@/db/schema';
 import { canViewTrack } from '@/lib/tracks/query';
 import { getLocale, getTranslations } from 'next-intl/server';
-import { ConditionsBlock, ConditionsLine } from '@/components/conditions-block';
+import { ConditionsBlock, ConditionsLine, ConditionsSummary } from '@/components/conditions-block';
 import { PhotoSection } from '@/components/outings/photo-section';
 import { RideSection } from '@/components/outings/ride-section';
 import { BarAction, OutingBar } from '@/components/outings/outing-bar';
@@ -136,6 +136,7 @@ export default async function Page({ params, searchParams }: { params: Promise<{
             })}
           </p>
         }
+        conditionsSummary={<ConditionsSummary weather={weather} fireInfo={fireInfoValue} />}
         conditions={
       <ConditionsBlock
         weather={weather}

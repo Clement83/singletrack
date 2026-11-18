@@ -53,6 +53,8 @@ type Props = {
   /** Phrase sous le titre du parcours (trace d'origine, attribution). */
   trackNote?: React.ReactNode;
   conditions?: React.ReactNode;
+  /** Verdict affiché à droite du titre de la section Conditions, section fermée comme ouverte (#1638). */
+  conditionsSummary?: React.ReactNode;
   participants?: React.ReactNode;
   /** Partage, inviter des copains, gestion. */
   secondaryActions?: React.ReactNode;
@@ -68,13 +70,13 @@ type Props = {
  * Ordre (`panel`) : en-tête → action principale → RDV + itinéraire → description → parcours → qui vient. La présentation
  * `page` (#1619) est dans `PageView`.
  */
-export function OutingView({ role, presentation, outing: o, track: snap, topLink, headerAction, headerMenu, organizerName, conditionsLine, notices, nextStep, primaryAction, trackNote, conditions, participants, secondaryActions, activity, bar }: Props) {
+export function OutingView({ role, presentation, outing: o, track: snap, topLink, headerAction, headerMenu, organizerName, conditionsLine, notices, nextStep, primaryAction, trackNote, conditions, conditionsSummary, participants, secondaryActions, activity, bar }: Props) {
   const locale = useLocale();
   const t = useTranslations('share');
   const tg = useTranslations('guest');
   const panel = presentation === 'panel';
   const end = snap && (snap.geometry.type === 'LineString' ? snap.geometry.coordinates : snap.geometry.coordinates.flat()).at(-1);
-  if (!panel) return <PageView {...{ role, outing: o, snap, end, topLink, headerAction, headerMenu, organizerName, conditionsLine, notices, nextStep, primaryAction, trackNote, conditions, participants, secondaryActions, activity, bar }} />;
+  if (!panel) return <PageView {...{ role, outing: o, snap, end, topLink, headerAction, headerMenu, organizerName, conditionsLine, notices, nextStep, primaryAction, trackNote, conditions, conditionsSummary, participants, secondaryActions, activity, bar }} />;
   return (
     <div data-outing-view={presentation} data-role={role} className={cn('flex flex-col gap-5', bar && 'pb-[calc(6rem+env(safe-area-inset-bottom))]')}>
       {topLink}
@@ -120,7 +122,7 @@ export function OutingView({ role, presentation, outing: o, track: snap, topLink
   );
 }
 
-type PageProps = Pick<Props, 'role' | 'topLink' | 'headerAction' | 'headerMenu' | 'organizerName' | 'conditionsLine' | 'notices' | 'nextStep' | 'primaryAction' | 'trackNote' | 'conditions' | 'participants' | 'secondaryActions' | 'activity' | 'bar'> & {
+type PageProps = Pick<Props, 'role' | 'topLink' | 'headerAction' | 'headerMenu' | 'organizerName' | 'conditionsLine' | 'notices' | 'nextStep' | 'primaryAction' | 'trackNote' | 'conditions' | 'conditionsSummary' | 'participants' | 'secondaryActions' | 'activity' | 'bar'> & {
   outing: OutingViewOuting;
   snap: OutingViewTrack | null;
   end: number[] | null | undefined | false;
@@ -130,7 +132,7 @@ type PageProps = Pick<Props, 'role' | 'topLink' | 'headerAction' | 'headerMenu' 
  * Présentation page (#1619) : en-tête → carte d'identité → action principale (emplacement « Prochaine étape », P2) →
  * parcours (P3) → sections repliées (Conditions, Roulées et photos) → actions des invités → barre fixe du bas (#1622 : action principale + bulle ; les commentaires sont dans le sheet).
  */
-function PageView({ role, outing: o, snap, end, topLink, headerAction, headerMenu, organizerName, conditionsLine, notices, nextStep, primaryAction, trackNote, conditions, participants, secondaryActions, activity, bar }: PageProps) {
+function PageView({ role, outing: o, snap, end, topLink, headerAction, headerMenu, organizerName, conditionsLine, notices, nextStep, primaryAction, trackNote, conditions, conditionsSummary, participants, secondaryActions, activity, bar }: PageProps) {
   const locale = useLocale();
   const t = useTranslations('share');
   const tg = useTranslations('guest');
@@ -184,7 +186,7 @@ function PageView({ role, outing: o, snap, end, topLink, headerAction, headerMen
         )}
       </section>}
 
-      {conditions && <OutingSection id="conditions-section" title={tv('conditions')}>{conditions}</OutingSection>}
+      {conditions && <OutingSection id="conditions-section" title={tv('conditions')} summary={conditionsSummary}>{conditions}</OutingSection>}
       {activity && <OutingSection id="activity-section" title={tv('activity')}>{activity}</OutingSection>}
       {secondaryActions}
       {bar}

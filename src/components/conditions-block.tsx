@@ -125,9 +125,29 @@ function HuntingCaution() {
 }
 
 /**
- * Bloc « Conditions » d'une sortie, compact (#1454) : titre + verdict, puis trois icônes de niveau (météo, incendie,
- * chasse) qui ouvrent chacune leur fiche détaillée. Chaque rubrique est un fournisseur indépendant : sans donnée,
- * elle est grise et ne casse pas le bloc. La chasse ne change pas le verdict.
+ * Verdict des conditions (météo + incendie), affiché à droite du titre de la section repliée « Conditions » (#1638).
+ * La chasse ne change pas le verdict (sinon « À surveiller » sept mois par an).
+ */
+export function ConditionsSummary({ weather, fire, fireInfo }: Pick<Props, 'weather' | 'fire' | 'fireInfo'>) {
+  const t = useTranslations('conditions');
+  const tf = useTranslations('fire');
+  const locale = useLocale();
+  const msg = fireInfo ? fireMessage(fireInfo, tf, locale) : undefined;
+  const fireTone = msg?.tone ?? (fire === undefined ? undefined : fire <= 2 ? 'ok' : fire === 3 ? 'warn' : 'danger');
+  const tone = overallTone({ fire: fireTone, weather });
+  const verdict = OVERALL[tone];
+  return (
+    <span className={cn('flex items-center gap-2 font-semibold', verdict.className)}>
+      <verdict.icon aria-hidden className="size-5 shrink-0" />
+      {t(`overall.${tone}`)}
+    </span>
+  );
+}
+
+/**
+ * Contenu de la section « Conditions » d'une sortie (#1454, #1638) : trois icônes de niveau (météo, incendie, chasse)
+ * qui ouvrent chacune leur fiche détaillée. Le titre et le verdict sont portés par la section (`OutingSection`).
+ * Chaque rubrique est un fournisseur indépendant : sans donnée, elle est grise et ne casse pas le bloc.
  */
 export function ConditionsBlock({ weather, fire, fireInfo, hunting, outsideVar, className }: Props) {
   const t = useTranslations('conditions');
@@ -138,11 +158,6 @@ export function ConditionsBlock({ weather, fire, fireInfo, hunting, outsideVar, 
   const locale = useLocale();
   const msg = fireInfo ? fireMessage(fireInfo, tf, locale) : undefined;
   const level = fireInfo ? (fireInfo.kind === 'ok' ? fireInfo.worst : undefined) : fire;
-  const fireTone = msg?.tone ?? (fire === undefined ? undefined : fire <= 2 ? 'ok' : fire === 3 ? 'warn' : 'danger');
-  const tone = overallTone({ fire: fireTone, weather });
-  const verdict = OVERALL[tone];
-  // La chasse ne change pas le verdict (sinon « À surveiller » sept mois par an) : elle retire seulement le fond vert.
-  const allGood = tone === 'ok' && hunting?.tone !== 'caution';
   const w = weather?.kind === 'ok' ? weather : undefined;
   const WeatherIcon = w?.sky ? SKY_ICON[w.sky] : CloudSun;
   const tileIcon = (Icon: LucideIcon) => <Icon aria-hidden className="size-6" strokeWidth={1.75} />;
@@ -215,21 +230,9 @@ export function ConditionsBlock({ weather, fire, fireInfo, hunting, outsideVar, 
   ];
 
   return (
-    <section
-      aria-labelledby="conditions-title"
-      className={cn('rounded-2xl border border-border p-4', allGood ? 'bg-success-soft' : 'bg-card', className)}
-    >
-      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <h3 id="conditions-title" className="text-heading">
-          {t('title')}
-        </h3>
-        <p className={cn('flex items-center gap-2 font-semibold', verdict.className)}>
-          <verdict.icon aria-hidden className="size-5 shrink-0 self-center" />
-          {t(`overall.${tone}`)}
-        </p>
-      </div>
+    <div className={className}>
       <ConditionsTiles tiles={tiles} />
-    </section>
+    </div>
   );
 }
 

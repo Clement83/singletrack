@@ -65,6 +65,14 @@ describe('OutingView', () => {
     expect(bare).not.toContain('activity-section');
   });
 
+  it('page : le verdict des conditions est dans l’en-tête de la section, avant son contenu (#1638)', () => {
+    const html = render({ ...slots, conditionsSummary: h('i', null, 'VERDICT') });
+    const at = html.indexOf('VERDICT');
+    expect(at).toBeGreaterThan(html.indexOf('<summary', html.indexOf('id="conditions-section"')));
+    expect(at).toBeLessThan(html.indexOf('</summary>', at + 1) === -1 ? -1 : html.indexOf('</summary>', at + 1));
+    expect(html.indexOf('CONDITIONS')).toBeGreaterThan(html.indexOf('</summary>'));
+  });
+
   it('panneau : jusqu’à « Qui vient », sans conditions, roulées, photos, commentaires ni carte', () => {
     const html = render({ ...slots, presentation: 'panel', role: 'visitor' });
     expect(html).toContain('PRIMARY');

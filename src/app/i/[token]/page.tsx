@@ -6,7 +6,7 @@ import { ChevronLeft } from 'lucide-react';
 import { eq } from 'drizzle-orm';
 import { user as userTable } from '@/db/schema';
 import { BackToMap } from '@/components/tracks/back-to-map';
-import { ConditionsBlock, ConditionsLine } from '@/components/conditions-block';
+import { ConditionsBlock, ConditionsLine, ConditionsSummary } from '@/components/conditions-block';
 import { GuestClaim } from '@/components/outings/guest-claim';
 import { InviteFriends } from '@/components/outings/invite-friends';
 import { GuestAnswerBar, GuestProfile } from '@/components/outings/guest-response';
@@ -83,6 +83,7 @@ export default async function Page({ params }: { params: Promise<{ token: string
           </>
         }
         nextStep={o.status === 'cancelled' ? undefined : <NextStepCard step={step} directionsHref={directionsUrl(o.meetingLat, o.meetingLon)} />}
+        conditionsSummary={<ConditionsSummary weather={weather} fireInfo={fireInfoValue} />}
         conditions={
           <ConditionsBlock
             weather={weather}

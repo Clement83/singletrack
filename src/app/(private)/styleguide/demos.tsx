@@ -13,7 +13,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { BottomNavBar, SideNavBar } from '@/components/app-nav';
 import { RsvpPanel, type RsvpAnswer } from '@/components/rsvp-panel';
-import { ConditionsBlock, ConditionsLine } from '@/components/conditions-block';
+import { ConditionsBlock, ConditionsLine, ConditionsSummary } from '@/components/conditions-block';
 import { OutingView, type OutingViewRole } from '@/components/outings/outing-view';
 import type { TrackSnapshot } from '@/lib/outings/snapshot';
 import { OutingParticipants } from '@/components/outings/outing-participants';
@@ -183,6 +183,7 @@ export function ComponentDemos() {
               headerMenu={role === 'organizer' ? <Button variant="outline" size="icon" aria-label="Menu de la sortie"><MoreHorizontal aria-hidden /></Button> : undefined}
               conditionsLine={<ConditionsLine weather={SUNNY} />}
               conditions={<ConditionsBlock weather={SUNNY} outsideVar />}
+              conditionsSummary={<ConditionsSummary weather={SUNNY} />}
               activity={<p className="text-small text-muted-foreground">Après la sortie</p>}
               primaryAction={<Button>{ROLE_ACTION[role]}</Button>}
               participants={<OutingParticipants inline countOnly={role === 'anonymous'} participants={people(role === 'anonymous' ? 9 : 4)} max={10} />}

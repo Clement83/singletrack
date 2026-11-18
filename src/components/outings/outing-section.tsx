@@ -1,7 +1,7 @@
 import { ChevronDown } from 'lucide-react';
 
 /** Section repliée de la vue de sortie (#1619) : `<details>` natif, clavier et lecteurs d'écran gratuits, ≥ 44 px. */
-export function OutingSection({ id, title, summary, children }: { id: string; title: string; summary?: string; children: React.ReactNode }) {
+export function OutingSection({ id, title, summary, children }: { id: string; title: string; summary?: React.ReactNode; children: React.ReactNode }) {
   return (
     <details id={id} className="group rounded-2xl border border-border bg-card text-card-foreground">
       <summary className="flex min-h-touch cursor-pointer list-none items-center justify-between gap-3 px-4 py-2 [&::-webkit-details-marker]:hidden">
