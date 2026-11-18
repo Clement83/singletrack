@@ -106,7 +106,7 @@ export function BottomSheet({ open, onOpenChange, title, description, children, 
         {/* Le contenu du sheet est translaté selon le cran : l'action principale est donc posée
             à part, collée en bas de l'écran, pour rester visible à tous les crans. */}
         {open && footer && (
-          <div data-sheet-footer className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))]">
+          <div data-sheet-footer className="pointer-events-auto fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))]">
             {footer}
           </div>
         )}
