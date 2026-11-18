@@ -48,6 +48,19 @@
   [role='button'] {
     touch-action: manipulation;
   }
+  /* Polices de charte (ticket 1626) : titres en `display`, chiffres en `figures`. Classique : mêmes familles que `sans`, aucun changement. */
+  h1,
+  h2,
+  h3,
+  .text-display,
+  .text-title,
+  .text-heading {
+    font-family: var(--font-display);
+  }
+  .text-stat,
+  .tabular-nums {
+    font-family: var(--font-figures);
+  }
   :focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 2px;

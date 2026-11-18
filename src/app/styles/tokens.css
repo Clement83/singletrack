@@ -194,6 +194,118 @@
 
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
 
+/* Charte Technique nuit (#1624) : seulement ce qui change par rapport à Classique. */
+[data-charte='nuit'][data-theme='light'],
+:root[data-charte='nuit']:not([data-theme]) {
+  --background: #e9eef3;
+  --foreground: #0d141c;
+  --card: #f7f9fb;
+  --card-foreground: #0d141c;
+  --popover: #f7f9fb;
+  --popover-foreground: #0d141c;
+  --muted: #dce3ea;
+  --muted-foreground: #4a5563;
+  --secondary: #d5dde5;
+  --secondary-foreground: #0d141c;
+  --primary: #3d6b00;
+  --primary-foreground: #f7fbe8;
+  --accent: #e0f5a0;
+  --accent-foreground: #263d00;
+  --border: #c5cfd9;
+  --input: #6b7787;
+  --ring: #3d6b00;
+  --surface-glass: #f7f9fb;
+  --surface-glass-foreground: #0d141c;
+  --elevation-sm: 0 1px 2px rgba(13, 20, 28, 0.10);
+  --elevation-md: 0 4px 14px rgba(13, 20, 28, 0.16);
+  --elevation-sheet: 0 -6px 24px rgba(13, 20, 28, 0.18);
+  --glass-opacity: 78%;
+  --glass-blur: blur(16px);
+  --font-display: "Space Grotesk Variable", "Inter Variable", Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-figures: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+  --radius-xl: 4px;
+  --radius-2xl: 6px;
+  --radius-3xl: 8px;
+}
+
+[data-charte='nuit'][data-theme='dark'] {
+  --background: #0b0f14;
+  --foreground: #e8edf2;
+  --card: #121821;
+  --card-foreground: #e8edf2;
+  --popover: #161d28;
+  --popover-foreground: #e8edf2;
+  --muted: #1a2230;
+  --muted-foreground: #a3adba;
+  --secondary: #1c2533;
+  --secondary-foreground: #e8edf2;
+  --primary: #c6f432;
+  --primary-foreground: #0b0f14;
+  --accent: #1f2a12;
+  --accent-foreground: #d9f77a;
+  --border: #263041;
+  --input: #6b7a8d;
+  --ring: #c6f432;
+  --surface-glass: #121821;
+  --surface-glass-foreground: #e8edf2;
+  --elevation-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --elevation-md: 0 4px 16px rgba(0, 0, 0, 0.55);
+  --elevation-sheet: 0 -6px 24px rgba(0, 0, 0, 0.65);
+  --glass-opacity: 72%;
+  --glass-blur: blur(16px);
+  --font-display: "Space Grotesk Variable", "Inter Variable", Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-figures: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+  --radius-xl: 4px;
+  --radius-2xl: 6px;
+  --radius-3xl: 8px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-charte='nuit']:not([data-theme]) {
+    --background: #0b0f14;
+    --foreground: #e8edf2;
+    --card: #121821;
+    --card-foreground: #e8edf2;
+    --popover: #161d28;
+    --popover-foreground: #e8edf2;
+    --muted: #1a2230;
+    --muted-foreground: #a3adba;
+    --secondary: #1c2533;
+    --secondary-foreground: #e8edf2;
+    --primary: #c6f432;
+    --primary-foreground: #0b0f14;
+    --accent: #1f2a12;
+    --accent-foreground: #d9f77a;
+    --border: #263041;
+    --input: #6b7a8d;
+    --ring: #c6f432;
+    --surface-glass: #121821;
+    --surface-glass-foreground: #e8edf2;
+    --elevation-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --elevation-md: 0 4px 16px rgba(0, 0, 0, 0.55);
+    --elevation-sheet: 0 -6px 24px rgba(0, 0, 0, 0.65);
+    --glass-opacity: 72%;
+    --glass-blur: blur(16px);
+    --font-display: "Space Grotesk Variable", "Inter Variable", Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --font-figures: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --radius-sm: 2px;
+    --radius-md: 3px;
+    --radius-lg: 4px;
+    --radius-xl: 4px;
+    --radius-2xl: 6px;
+    --radius-3xl: 8px;
+  }
+}
+
 /* Valeurs indépendantes du thème. */
 :root {
   --duration-fast: 150ms;
@@ -267,6 +379,7 @@
   --font-sans: "Inter Variable", Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-display: "Inter Variable", Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-figures: "Inter Variable", Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --text-*: initial;
   --text-display: 28px;
   --text-display--line-height: 34px;

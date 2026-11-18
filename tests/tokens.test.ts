@@ -63,7 +63,7 @@ describe('tokens : génération', () => {
     const css = generateCss(edited);
 
     it('Classique reste sur :root et n’émet aucune variable de charte', () => {
-      const classic = generateCss(tokens);
+      const classic = generateCss({ ...tokens, chartes: [tokens.chartes[0]] });
       expect(classic).not.toContain('data-charte');
       expect(css.startsWith(classic.split('/* Valeurs indépendantes')[0])).toBe(true);
     });
@@ -82,7 +82,7 @@ describe('tokens : génération', () => {
     });
 
     it('les contrastes sont aussi vérifiés pour la charte d’essai', () => {
-      expect(checkContrasts(edited).filter((r) => r.charte === 'essai')).toHaveLength(checkContrasts(tokens).length);
+      expect(checkContrasts(edited).filter((r) => r.charte === 'essai')).toHaveLength(checkContrasts({ ...tokens, chartes: [tokens.chartes[0]] }).length);
     });
 
     it('une charte hérite d’une autre (extends)', () => {
@@ -90,6 +90,20 @@ describe('tokens : génération', () => {
       e2.chartes.push({ id: 'fille', name: 'Fille', extends: 'essai' });
       expect(generateCss(e2)).toContain("[data-charte='fille'][data-theme='light']");
       expect(generateCss(e2).split("[data-charte='fille'][data-theme='light']")[1].split('}')[0]).toContain('--radius-xl: 0px;');
+    });
+
+    it('Technique nuit (#1626) : verre sombre flouté, rayons 2–8 px, Space Grotesk + JetBrains Mono, vert fluo en sombre', () => {
+      const real = generateCss(tokens);
+      const dark = real.split("[data-charte='nuit'][data-theme='dark']")[1].split('}')[0];
+      expect(dark).toContain('--primary: #c6f432;');
+      expect(dark).toContain('--glass-blur: blur(16px);');
+      expect(dark).toContain('--font-display: "Space Grotesk Variable"');
+      expect(dark).toContain('--font-figures: "JetBrains Mono Variable"');
+      for (const r of tokens.radius) {
+        const px = parseInt(String(r.chartes?.nuit), 10);
+        expect(px).toBeGreaterThanOrEqual(2);
+        expect(px).toBeLessThanOrEqual(8);
+      }
     });
 
     it('le verre de Classique est opaque (aucun changement visible)', () => {
