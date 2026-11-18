@@ -6,6 +6,8 @@ import '@fontsource-variable/space-grotesk/wght.css';
 import '@fontsource-variable/jetbrains-mono/wght.css';
 // Charte « Affiche de trail » (#1627) : Anton, sous-ensemble latin seul, `font-display: swap` ; téléchargée seulement si la charte l'utilise.
 import '@fontsource/anton/latin-400.css';
+// Charte « Alpin verre » (#1628) : Manrope variable, téléchargée seulement si la charte l'utilise.
+import '@fontsource-variable/manrope/wght.css';
 import './globals.css';
 import { getLocale, getTranslations } from 'next-intl/server';
 import tokens from '../../design/tokens.json';

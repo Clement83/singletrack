@@ -119,6 +119,18 @@ describe('tokens : génération', () => {
       }
     });
 
+    it('Alpin verre (#1628) : Manrope, rayons 6–12 px, verre givré flouté', () => {
+      const real = generateCss(tokens);
+      const light = real.split("[data-charte='alpin'][data-theme='dark']")[1].split('}')[0];
+      expect(light).toContain('--font-display: "Manrope Variable"');
+      expect(light).toContain('--glass-blur: blur(20px);');
+      for (const r of tokens.radius) {
+        const px = parseInt(String(r.chartes?.alpin), 10);
+        expect(px).toBeGreaterThanOrEqual(6);
+        expect(px).toBeLessThanOrEqual(12);
+      }
+    });
+
     it('le verre de Classique est opaque (aucun changement visible)', () => {
       expect(css).toContain('--glass-opacity: 100%;');
       expect(css).toContain('--glass-blur: none;');

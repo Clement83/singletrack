@@ -409,6 +409,112 @@
   }
 }
 
+/* Charte Alpin verre (#1624) : seulement ce qui change par rapport à Classique. */
+[data-charte='alpin'][data-theme='light'],
+:root[data-charte='alpin']:not([data-theme]) {
+  --background: #eaf1fb;
+  --foreground: #0d1b2a;
+  --card: #f6f9ff;
+  --card-foreground: #0d1b2a;
+  --popover: #f6f9ff;
+  --popover-foreground: #0d1b2a;
+  --muted: #dbe5f3;
+  --muted-foreground: #44546a;
+  --secondary: #dbe8ff;
+  --secondary-foreground: #0d1b2a;
+  --primary: #1f5bff;
+  --primary-foreground: #ffffff;
+  --accent: #dbe8ff;
+  --accent-foreground: #0f3a9e;
+  --border: #c3d2e8;
+  --input: #6b7f9c;
+  --ring: #1f5bff;
+  --surface-glass: #ffffff;
+  --surface-glass-foreground: #0d1b2a;
+  --elevation-sm: 0 1px 2px rgba(13, 27, 42, 0.08);
+  --elevation-md: 0 6px 20px rgba(31, 91, 255, 0.14);
+  --elevation-sheet: 0 -8px 28px rgba(31, 91, 255, 0.16);
+  --glass-opacity: 60%;
+  --glass-blur: blur(20px);
+  --font-sans: "Manrope Variable", "Inter Variable", Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Manrope Variable", "Inter Variable", Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-figures: "Manrope Variable", "Inter Variable", Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-2xl: 12px;
+  --radius-3xl: 12px;
+}
+
+[data-charte='alpin'][data-theme='dark'] {
+  --background: #0a1220;
+  --foreground: #e6eefc;
+  --card: #111c30;
+  --card-foreground: #e6eefc;
+  --popover: #15213a;
+  --popover-foreground: #e6eefc;
+  --muted: #1b2944;
+  --muted-foreground: #a5b4cc;
+  --secondary: #1b2944;
+  --secondary-foreground: #e6eefc;
+  --primary: #7aa2ff;
+  --primary-foreground: #07122b;
+  --accent: #1a2c52;
+  --accent-foreground: #cfe0ff;
+  --border: #26385a;
+  --input: #6f84a6;
+  --ring: #7aa2ff;
+  --surface-glass: #111c30;
+  --surface-glass-foreground: #e6eefc;
+  --elevation-sm: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --elevation-md: 0 6px 20px rgba(0, 0, 0, 0.55);
+  --elevation-sheet: 0 -8px 28px rgba(0, 0, 0, 0.65);
+  --glass-opacity: 55%;
+  --glass-blur: blur(20px);
+  --font-sans: "Manrope Variable", "Inter Variable", Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Manrope Variable", "Inter Variable", Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-figures: "Manrope Variable", "Inter Variable", Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-2xl: 12px;
+  --radius-3xl: 12px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-charte='alpin']:not([data-theme]) {
+    --background: #0a1220;
+    --foreground: #e6eefc;
+    --card: #111c30;
+    --card-foreground: #e6eefc;
+    --popover: #15213a;
+    --popover-foreground: #e6eefc;
+    --muted: #1b2944;
+    --muted-foreground: #a5b4cc;
+    --secondary: #1b2944;
+    --secondary-foreground: #e6eefc;
+    --primary: #7aa2ff;
+    --primary-foreground: #07122b;
+    --accent: #1a2c52;
+    --accent-foreground: #cfe0ff;
+    --border: #26385a;
+    --input: #6f84a6;
+    --ring: #7aa2ff;
+    --surface-glass: #111c30;
+    --surface-glass-foreground: #e6eefc;
+    --elevation-sm: 0 1px 2px rgba(0, 0, 0, 0.45);
+    --elevation-md: 0 6px 20px rgba(0, 0, 0, 0.55);
+    --elevation-sheet: 0 -8px 28px rgba(0, 0, 0, 0.65);
+    --glass-opacity: 55%;
+    --glass-blur: blur(20px);
+    --font-sans: "Manrope Variable", "Inter Variable", Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-display: "Manrope Variable", "Inter Variable", Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-figures: "Manrope Variable", "Inter Variable", Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --radius-lg: 8px;
+    --radius-xl: 10px;
+    --radius-2xl: 12px;
+    --radius-3xl: 12px;
+  }
+}
+
 /* Valeurs indépendantes du thème. */
 :root {
   --duration-fast: 150ms;
