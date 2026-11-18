@@ -125,3 +125,25 @@ test('liste : une ligne ouvre la fiche, Retour revient à la liste, ancien ?sel=
   await panel.getByRole('button', { name: 'Toutes les traces' }).click();
   await expect(page.getByRole('heading', { name: 'Traces sur la carte' })).toBeVisible();
 });
+
+// #1607 : aucune erreur MapLibre « Cannot add layer … before non-existing layer » ; départs au-dessus de l'aperçu et de la trace ouverte.
+test('carte : pas d’erreur « non-existing layer » et départs au-dessus de la trace ouverte', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('console', (m) => { if (/non-existing layer/.test(m.text())) errors.push(m.text()); });
+  page.on('pageerror', (e) => { if (/non-existing layer/.test(e.message)) errors.push(e.message); });
+  await load(page, '/');
+  const c = await page.evaluate(() => (window as unknown as Win).__explorerMap!.getCenter());
+  const starts = [mk('e2e-a', c.lng, c.lat)];
+  await page.route(/\/api\/tracks\?.*starts=1/, (r) => r.fulfill({ json: { tracks: starts, total: 1 } }));
+  await page.route(/\/api\/tracks\/e2e-a$/, (r) => r.fulfill({ json: sheetOf(starts[0]) }));
+  await load(page, '/?q=e2e');
+  const box = (await page.locator('.maplibregl-canvas').boundingBox())!;
+  const p = await page.evaluate((ll) => (window as unknown as Win).__explorerMap!.project(ll), starts[0].start);
+  await expect(page.getByRole('button', { name: /traces?$/ }).first()).toBeVisible();
+  await page.mouse.click(box.x + p.x, box.y + p.y);
+  await page.waitForFunction(() => (window as unknown as Win).__explorerMap!.querySourceFeatures('open').length > 0);
+  const order = await page.evaluate(() => (window as unknown as { __explorerMap: { getStyle(): { layers: { id: string }[] } } }).__explorerMap.getStyle().layers.map((l) => l.id));
+  expect(order.indexOf('open-line')).toBeLessThan(order.indexOf('clusters'));
+  expect(order.indexOf('preview-line')).toBeLessThan(order.indexOf('clusters'));
+  expect(errors).toEqual([]);
+});

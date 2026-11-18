@@ -357,6 +357,13 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
         interactiveLayerIds={['clusters', 'start-hit', 'open-casing']}
         cursor={hover === 'pointer' ? 'pointer' : undefined}
       >
+        {/* Déclarée en premier : les calques ci-dessous ont beforeId="clusters", qui doit exister à leur ajout (#1607). */}
+        <Source id="starts" type="geojson" data={starts} cluster clusterRadius={50} clusterMaxZoom={CLUSTER_MAX_ZOOM}>
+          <Layer id="clusters" type="circle" filter={['has', 'point_count']} paint={{ 'circle-color': colors.primary, 'circle-opacity': 0.85, 'circle-stroke-color': colors.card, 'circle-stroke-width': 3, 'circle-radius': ['step', ['get', 'point_count'], 16, 10, 22, 50, 28] }} />
+          <Layer id="start-points" type="circle" filter={['!', ['has', 'point_count']]} paint={{ 'circle-color': diffColor as string, 'circle-stroke-color': colors.card, 'circle-stroke-width': 2.5, 'circle-radius': ['case', ['==', ['get', 'slug'], hl], 12, 9] }} />
+          {/* Zone tactile ≥ 44 px (rayon 22), invisible. */}
+          <Layer id="start-hit" type="circle" filter={['!', ['has', 'point_count']]} paint={{ 'circle-color': colors.foreground, 'circle-opacity': 0, 'circle-radius': 22 }} />
+        </Source>
         <TrackTip tip={lineTip.tip} />
         <SinglesLayer state={singles} colors={colors} beforeId="clusters" />
         {outingsOn && (
@@ -372,12 +379,6 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
           <Layer id="preview-line" beforeId="clusters" type="line" layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': colors.preview, 'line-width': 3.5, 'line-opacity': 0.5 }} />
         </Source>
         {openLine && <OpenTrackLayers sheet={openLine} colors={colors} mapRef={mapRef} marked={profileCursor ?? lineCursor} beforeId="clusters" />}
-        <Source id="starts" type="geojson" data={starts} cluster clusterRadius={50} clusterMaxZoom={CLUSTER_MAX_ZOOM}>
-          <Layer id="clusters" type="circle" filter={['has', 'point_count']} paint={{ 'circle-color': colors.primary, 'circle-opacity': 0.85, 'circle-stroke-color': colors.card, 'circle-stroke-width': 3, 'circle-radius': ['step', ['get', 'point_count'], 16, 10, 22, 50, 28] }} />
-          <Layer id="start-points" type="circle" filter={['!', ['has', 'point_count']]} paint={{ 'circle-color': diffColor as string, 'circle-stroke-color': colors.card, 'circle-stroke-width': 2.5, 'circle-radius': ['case', ['==', ['get', 'slug'], hl], 12, 9] }} />
-          {/* Zone tactile ≥ 44 px (rayon 22), invisible. */}
-          <Layer id="start-hit" type="circle" filter={['!', ['has', 'point_count']]} paint={{ 'circle-color': colors.foreground, 'circle-opacity': 0, 'circle-radius': 22 }} />
-        </Source>
       </BaseMap>
 
       {/* Barre flottante : recherche + filtres. Décalée à droite du panneau en desktop. */}
