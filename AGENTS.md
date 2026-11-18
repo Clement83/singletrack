@@ -12,7 +12,7 @@ Next.js 16 (App Router, TypeScript strict), Tailwind 4 + conventions shadcn/ui, 
 
 ```bash
 cp .env.example .env                              # puis renseigner les secrets (BETTER_AUTH_SECRET, INVITE_LINK_KEY…)
-docker compose up -d --build                      # mode dev, rechargement à chaud
+docker compose up -d --build                      # mode dev, rechargement à chaud (badge/menu Next.js masqués, `devIndicators: false` #1640 ; l'overlay d'erreur reste actif)
 docker compose exec app npm test                  # Vitest
 docker compose exec app npm run test:coverage     # couverture + seuils (vitest.config.ts)
 docker compose -f docker-compose.yml --profile e2e run --rm e2e   # e2e Playwright (#1523, Chromium en conteneur, desktop souris ; -f car compose.yml est celui de distribution)

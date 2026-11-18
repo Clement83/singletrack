@@ -11,6 +11,8 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 const nextConfig = {
   output: 'standalone',
   env: { APP_VERSION: version },
+  // Pas de badge ni de menu Next.js en dev (#1640) : l'overlay d'erreur reste actif.
+  devIndicators: false,
   // Dossier de build distinct pour lancer plusieurs `next dev` (test d'intégration de la fédération, scripts/federation-two-instances.ts).
   distDir: process.env.NEXT_DIST_DIR || '.next',
   // Fedify : une seule copie des paquets (sinon `instanceof CryptographicKey` échoue, spike #1471).
