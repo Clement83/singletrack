@@ -9,8 +9,8 @@ import { BackToMap } from '@/components/tracks/back-to-map';
 import { ConditionsBlock, ConditionsLine } from '@/components/conditions-block';
 import { GuestClaim } from '@/components/outings/guest-claim';
 import { InviteFriends } from '@/components/outings/invite-friends';
-import { GuestResponse } from '@/components/outings/guest-response';
-import { OutingComments } from '@/components/outings/outing-comments';
+import { GuestAnswerBar, GuestProfile } from '@/components/outings/guest-response';
+import { BarAction, OutingBar } from '@/components/outings/outing-bar';
 import { PhotoSection } from '@/components/outings/photo-section';
 import { RideSection } from '@/components/outings/ride-section';
 import { OutingParticipants } from '@/components/outings/outing-participants';
@@ -83,7 +83,6 @@ export default async function Page({ params }: { params: Promise<{ token: string
           </>
         }
         nextStep={o.status === 'cancelled' ? undefined : <NextStepCard step={step} directionsHref={directionsUrl(o.meetingLat, o.meetingLon)} />}
-        primaryAction={<GuestResponse token={token} name={inv.name} status={inv.status} comment={inv.comment ?? ''} locked={closed} />}
         conditions={
           <ConditionsBlock
             weather={weather}
@@ -111,6 +110,7 @@ export default async function Page({ params }: { params: Promise<{ token: string
             {viewer && !closed && outingPermissions(db, { userId: viewer.id }, o).canInviteFriends && (
               <InviteFriends endpoint={`/api/i/${token}/friends`} friends={listInvitableFriends(db, viewer.id, o)} />
             )}
+            <GuestProfile token={token} name={inv.name} comment={inv.comment ?? ''} locked={closed} />
             {claimState && <GuestClaim token={token} state={claimState} />}
           </>
         }
@@ -132,7 +132,15 @@ export default async function Page({ params }: { params: Promise<{ token: string
             </>
           ) : undefined
         }
-        comments={<OutingComments base={`/api/i/${token}/comments`} closed={closed} />}
+        bar={
+          <OutingBar discussion={{ id: o.id, base: `/api/i/${token}/comments`, closed }}>
+            {o.status === 'cancelled' ? null : closed ? (
+              <BarAction kind={inv.status === 'yes' ? 'addRide' : 'seePhotos'} />
+            ) : (
+              <GuestAnswerBar token={token} status={inv.status} />
+            )}
+          </OutingBar>
+        }
       />
     </main>
   );

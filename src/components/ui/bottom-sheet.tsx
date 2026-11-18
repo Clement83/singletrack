@@ -24,6 +24,8 @@ type Props = {
   initialSnap?: Snap;
   /** Pied haut (ex. profil + actions, #1582) : réserve plus de place sous le contenu sur mobile. */
   tallFooter?: boolean;
+  /** Modal (#1622) : voile derrière le sheet, un tap dessus le ferme ; la page derrière n'est plus utilisable. */
+  modal?: boolean;
 };
 
 /**
@@ -31,7 +33,7 @@ type Props = {
  * en desktop. Non modal : la carte reste utilisable derrière. Clavier : Échap ferme, le bouton
  * « Agrandir / Réduire » fait passer d'un cran à l'autre.
  */
-export function BottomSheet({ open, onOpenChange, title, description, children, footer, initialSnap = 0.5, tallFooter = false }: Props) {
+export function BottomSheet({ open, onOpenChange, title, description, children, footer, initialSnap = 0.5, tallFooter = false, modal = false }: Props) {
   const tSheet = useTranslations('sheet');
   const desktop = useMediaQuery(DESKTOP);
   const [snap, setSnap] = useState<Snap | string | number | null>(initialSnap);
@@ -70,9 +72,10 @@ export function BottomSheet({ open, onOpenChange, title, description, children, 
       snapPoints={[...SNAP_POINTS]}
       activeSnapPoint={snap}
       setActiveSnapPoint={setSnap}
-      modal={false}
+      modal={modal}
     >
       <Drawer.Portal>
+        {modal && <Drawer.Overlay className="fixed inset-0 z-40 bg-foreground/40" />}
         <Drawer.Content
           onInteractOutside={(e) => {
             // Le pied d'action est hors du Content (portail à part) : le toucher ne doit pas

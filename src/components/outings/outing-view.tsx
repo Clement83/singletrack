@@ -8,6 +8,7 @@ import { OutingBadges } from '@/components/outings/outing-badges';
 import { TrackDetail } from '@/components/tracks/track-detail';
 import { OutingRoute } from '@/components/outings/outing-route';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { formatElevation, formatKm, formatOutingDate } from '@/lib/format';
 import { directionsUrl } from '@/lib/outings/labels';
 import { profileFor } from '@/lib/outings/profile';
@@ -57,7 +58,8 @@ type Props = {
   secondaryActions?: React.ReactNode;
   /** Sorties roulées et photos. */
   activity?: React.ReactNode;
-  comments?: React.ReactNode;
+  /** Barre fixe du bas (#1622, page seulement) : action principale + bulle de discussion. */
+  bar?: React.ReactNode;
 };
 
 /**
@@ -66,15 +68,15 @@ type Props = {
  * Ordre (`panel`) : en-tête → action principale → RDV + itinéraire → description → parcours → qui vient. La présentation
  * `page` (#1619) est dans `PageView`.
  */
-export function OutingView({ role, presentation, outing: o, track: snap, topLink, headerAction, headerMenu, organizerName, conditionsLine, notices, nextStep, primaryAction, trackNote, conditions, participants, secondaryActions, activity, comments }: Props) {
+export function OutingView({ role, presentation, outing: o, track: snap, topLink, headerAction, headerMenu, organizerName, conditionsLine, notices, nextStep, primaryAction, trackNote, conditions, participants, secondaryActions, activity, bar }: Props) {
   const locale = useLocale();
   const t = useTranslations('share');
   const tg = useTranslations('guest');
   const panel = presentation === 'panel';
   const end = snap && (snap.geometry.type === 'LineString' ? snap.geometry.coordinates : snap.geometry.coordinates.flat()).at(-1);
-  if (!panel) return <PageView {...{ role, outing: o, snap, end, topLink, headerAction, headerMenu, organizerName, conditionsLine, notices, nextStep, primaryAction, trackNote, conditions, participants, secondaryActions, activity, comments }} />;
+  if (!panel) return <PageView {...{ role, outing: o, snap, end, topLink, headerAction, headerMenu, organizerName, conditionsLine, notices, nextStep, primaryAction, trackNote, conditions, participants, secondaryActions, activity, bar }} />;
   return (
-    <div data-outing-view={presentation} data-role={role} className="flex flex-col gap-5">
+    <div data-outing-view={presentation} data-role={role} className={cn('flex flex-col gap-5', bar && 'pb-[calc(6rem+env(safe-area-inset-bottom))]')}>
       {topLink}
       <header className="flex flex-col gap-2">
         <div className="flex items-start justify-between gap-2">
@@ -114,12 +116,11 @@ export function OutingView({ role, presentation, outing: o, track: snap, topLink
       {participants}
       {!panel && secondaryActions}
       {!panel && activity}
-      {!panel && comments}
     </div>
   );
 }
 
-type PageProps = Pick<Props, 'role' | 'topLink' | 'headerAction' | 'headerMenu' | 'organizerName' | 'conditionsLine' | 'notices' | 'nextStep' | 'primaryAction' | 'trackNote' | 'conditions' | 'participants' | 'secondaryActions' | 'activity' | 'comments'> & {
+type PageProps = Pick<Props, 'role' | 'topLink' | 'headerAction' | 'headerMenu' | 'organizerName' | 'conditionsLine' | 'notices' | 'nextStep' | 'primaryAction' | 'trackNote' | 'conditions' | 'participants' | 'secondaryActions' | 'activity' | 'bar'> & {
   outing: OutingViewOuting;
   snap: OutingViewTrack | null;
   end: number[] | null | undefined | false;
@@ -127,9 +128,9 @@ type PageProps = Pick<Props, 'role' | 'topLink' | 'headerAction' | 'headerMenu' 
 
 /**
  * Présentation page (#1619) : en-tête → carte d'identité → action principale (emplacement « Prochaine étape », P2) →
- * parcours (P3) → sections repliées (Conditions, Roulées et photos) → actions des invités → commentaires (P4).
+ * parcours (P3) → sections repliées (Conditions, Roulées et photos) → actions des invités → barre fixe du bas (#1622 : action principale + bulle ; les commentaires sont dans le sheet).
  */
-function PageView({ role, outing: o, snap, end, topLink, headerAction, headerMenu, organizerName, conditionsLine, notices, nextStep, primaryAction, trackNote, conditions, participants, secondaryActions, activity, comments }: PageProps) {
+function PageView({ role, outing: o, snap, end, topLink, headerAction, headerMenu, organizerName, conditionsLine, notices, nextStep, primaryAction, trackNote, conditions, participants, secondaryActions, activity, bar }: PageProps) {
   const locale = useLocale();
   const t = useTranslations('share');
   const tg = useTranslations('guest');
@@ -137,7 +138,7 @@ function PageView({ role, outing: o, snap, end, topLink, headerAction, headerMen
   const tl = useTranslations('outingLabels');
   const tvis = useTranslations('outingVisibility');
   return (
-    <div data-outing-view="page" data-role={role} className="flex flex-col gap-5">
+    <div data-outing-view="page" data-role={role} className={cn('flex flex-col gap-5', bar && 'pb-[calc(6rem+env(safe-area-inset-bottom))]')}>
       <header className="flex items-center justify-between gap-2">
         <div className="min-w-0">{topLink}</div>
         <div className="flex shrink-0 items-center gap-2">{headerAction}{headerMenu}</div>
@@ -186,7 +187,7 @@ function PageView({ role, outing: o, snap, end, topLink, headerAction, headerMen
       {conditions && <OutingSection id="conditions-section" title={tv('conditions')}>{conditions}</OutingSection>}
       {activity && <OutingSection id="activity-section" title={tv('activity')}>{activity}</OutingSection>}
       {secondaryActions}
-      {comments}
+      {bar}
     </div>
   );
 }

@@ -3,8 +3,9 @@
 import { ArrowRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { NextStep } from '@/lib/outings/next-step';
+import { OPEN_INVITE_EVENT, OPEN_RESPOND_EVENT, openActivity } from './bar-events';
 
-export const OPEN_INVITE_EVENT = 'outing:open-invite';
+export { OPEN_INVITE_EVENT };
 
 const cls = 'flex min-h-[72px] w-full items-center justify-between gap-3 rounded-2xl bg-accent px-4 py-3 text-left text-accent-foreground shadow-sm active:opacity-80';
 
@@ -29,14 +30,8 @@ export function NextStepCard({ step, directionsHref }: { step: NextStep; directi
   }
   function go() {
     if (step.kind === 'remind') { window.dispatchEvent(new Event(OPEN_INVITE_EVENT)); return; }
-    if (step.kind === 'answer' || step.kind === 'confirm' || step.kind === 'changeAnswer') {
-      document.getElementById('respond')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      return;
-    }
-    const el = document.getElementById('activity-section');
-    if (!(el instanceof HTMLDetailsElement)) return;
-    el.open = true;
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (step.kind === 'answer' || step.kind === 'confirm' || step.kind === 'changeAnswer') { window.dispatchEvent(new Event(OPEN_RESPOND_EVENT)); return; }
+    openActivity();
   }
   return <button type="button" data-next-step={step.kind} onClick={go} className={cls}>{body}</button>;
 }

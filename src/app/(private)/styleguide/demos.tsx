@@ -186,7 +186,6 @@ export function ComponentDemos() {
               activity={<p className="text-small text-muted-foreground">Après la sortie</p>}
               primaryAction={<Button>{ROLE_ACTION[role]}</Button>}
               participants={<OutingParticipants inline countOnly={role === 'anonymous'} participants={people(role === 'anonymous' ? 9 : 4)} max={10} />}
-              comments={<p className="text-small text-muted-foreground">Commentaires…</p>}
             />
           </div>
         ))}

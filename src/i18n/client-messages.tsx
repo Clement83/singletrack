@@ -18,8 +18,8 @@ export const CLIENT_NAMESPACES = {
   root: ROOT,
   auth: [...ROOT, 'auth', 'welcome'],
   track: [...ROOT, ...TRACK, 'userMenu'],
-  guest: [...ROOT, ...TRACK, 'rsvp', 'share', 'conditions', 'comments', 'ride', 'photos', 'claim', 'inviteFriends', 'userMenu', 'participants', 'outingView', 'nextStep'],
-  outing: [...ROOT, ...TRACK, 'rsvp', 'join', 'share', 'outingManager', 'inviteFriends', 'contacts', 'outingForm', 'outingVisibility', 'duplicate', 'outingLabels', 'conditions', 'comments', 'ride', 'photos', 'userMenu', 'participants', 'outingView', 'nextStep'],
+  guest: [...ROOT, ...TRACK, 'rsvp', 'share', 'conditions', 'comments', 'ride', 'photos', 'claim', 'inviteFriends', 'userMenu', 'participants', 'outingView', 'nextStep', 'outingBar', 'sheet'],
+  outing: [...ROOT, ...TRACK, 'rsvp', 'join', 'share', 'outingManager', 'inviteFriends', 'contacts', 'outingForm', 'outingVisibility', 'duplicate', 'outingLabels', 'conditions', 'comments', 'ride', 'photos', 'userMenu', 'participants', 'outingView', 'nextStep', 'outingBar', 'sheet'],
   editor: [...ROOT, ...TRACK, 'editor', 'singles', 'userMenu', 'userProfile', 'outingVisibility'],
   private: [
     ...ROOT, ...TRACK, 'nav', 'sheet', 'theme', 'share', 'userMenu', 'explorer', 'filters', 'trackCard', 'singles', 'importer', 'editor', 'contacts', 'friends', 'history', 'userProfile',

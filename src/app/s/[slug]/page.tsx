@@ -12,7 +12,7 @@ import { getLocale, getTranslations } from 'next-intl/server';
 import { ConditionsBlock, ConditionsLine } from '@/components/conditions-block';
 import { PhotoSection } from '@/components/outings/photo-section';
 import { RideSection } from '@/components/outings/ride-section';
-import { OutingComments } from '@/components/outings/outing-comments';
+import { BarAction, OutingBar } from '@/components/outings/outing-bar';
 import { OutingParticipants } from '@/components/outings/outing-participants';
 import { OutingManager } from '@/components/outings/outing-manager';
 import { InviteFriends } from '@/components/outings/invite-friends';
@@ -21,6 +21,7 @@ import { requireUser } from '@/lib/current-user';
 import { OutingView } from '@/components/outings/outing-view';
 import { NextStepCard } from '@/components/outings/next-step-card';
 import { nextStep } from '@/lib/outings/next-step';
+import { utcToParisInputs } from '@/lib/outings/time';
 import { directionsUrl } from '@/lib/outings/labels';
 import { formatKm } from '@/lib/format';
 import { fireInfo, massifsForGeometry, parisDate } from '@/lib/fire';
@@ -163,8 +164,16 @@ export default async function Page({ params, searchParams }: { params: Promise<{
         />
           </>
         }
-        comments={
-      <OutingComments base={`/api/outings/${o.slug}/comments`} closed={isClosed(o)} />
+        bar={
+          <OutingBar discussion={{ id: o.id, base: `/api/outings/${o.slug}/comments`, closed: isClosed(o) }}>
+            {o.status === 'cancelled' ? null : isClosed(o) ? (
+              <BarAction kind="addPhotos" />
+            ) : utcToParisInputs(o.startsAt).date === utcToParisInputs(new Date()).date ? (
+              <BarAction kind="directions" href={directionsUrl(o.meetingLat, o.meetingLon)} />
+            ) : (
+              <BarAction kind="invite" />
+            )}
+          </OutingBar>
         }
       />
     </main>

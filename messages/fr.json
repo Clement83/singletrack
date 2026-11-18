@@ -1259,6 +1259,27 @@
       "no": "Ne viennent pas ({count})"
     }
   },
+  "outingBar": {
+    "respond": "Je viens\u00a0?",
+    "yes": "Je viens",
+    "maybe": "Peut-être",
+    "no": "Non",
+    "answered": {
+      "yes": "Je viens",
+      "maybe": "Peut-être",
+      "no": "Je ne viens pas"
+    },
+    "change": "Modifier",
+    "choices": "Ta réponse",
+    "invite": "Inviter des copains",
+    "directions": "Itinéraire",
+    "addRide": "Ajouter ma roulée",
+    "seePhotos": "Voir les photos",
+    "addPhotos": "Ajouter mes photos",
+    "discussion": "Discussion",
+    "discussionUnread": "Discussion, {n, plural, one {# message non lu} other {# messages non lus}}",
+    "restricted": "Réservée aux participants"
+  },
   "outingView": {
     "menu": "Menu de la sortie",
     "invite": "Inviter",

@@ -24,7 +24,7 @@ const base: OutingViewOuting = {
 const render = (props: Partial<Parameters<typeof OutingView>[0]> = {}, locale: 'fr' | 'en' = 'fr') =>
   renderToStaticMarkup(h(NextIntlClientProvider, { locale, messages: locale === 'fr' ? fr : en, timeZone: 'Europe/Paris', children: h(OutingView, { role: 'organizer', presentation: 'page', outing: base, track: snap, ...props }) }));
 
-const slots = { primaryAction: h('i', null, 'PRIMARY'), conditions: h('i', null, 'CONDITIONS'), participants: h('i', null, 'PARTICIPANTS'), secondaryActions: h('i', null, 'SECONDARY'), activity: h('i', null, 'ACTIVITY'), comments: h('i', null, 'COMMENTS') };
+const slots = { primaryAction: h('i', null, 'PRIMARY'), conditions: h('i', null, 'CONDITIONS'), participants: h('i', null, 'PARTICIPANTS'), secondaryActions: h('i', null, 'SECONDARY'), activity: h('i', null, 'ACTIVITY'), bar: h('i', null, 'BAR') };
 
 describe('OutingView', () => {
   it('page : description dans la carte d\u2019identité (retours à la ligne conservés), RDV et itinéraire (#1619)', () => {
@@ -47,7 +47,7 @@ describe('OutingView', () => {
   it('page : en-tête → identité → action principale → parcours → sections repliées → commentaires, pour les 4 rôles', () => {
     for (const role of ['organizer', 'guest', 'visitor', 'anonymous'] as const) {
       const html = render({ ...slots, role, headerMenu: h('i', null, 'MENU'), conditionsLine: h('i', null, 'LINE') });
-      const order = ['MENU', 'Sortie du samedi', 'RDV chez moi', 'Chez moi', 'LINE', 'PARTICIPANTS', 'PRIMARY', 'Lac de la Verne', 'id="conditions-section"', 'CONDITIONS', 'id="activity-section"', 'ACTIVITY', 'SECONDARY', 'COMMENTS'];
+      const order = ['MENU', 'Sortie du samedi', 'RDV chez moi', 'Chez moi', 'LINE', 'PARTICIPANTS', 'PRIMARY', 'Lac de la Verne', 'id="conditions-section"', 'CONDITIONS', 'id="activity-section"', 'ACTIVITY', 'SECONDARY', 'BAR'];
       const at = order.map((x) => html.indexOf(x));
       expect(at.every((i) => i >= 0), role).toBe(true);
       expect([...at].sort((a, b) => a - b), role).toEqual(at);
@@ -69,7 +69,7 @@ describe('OutingView', () => {
     const html = render({ ...slots, presentation: 'panel', role: 'visitor' });
     expect(html).toContain('PRIMARY');
     expect(html).toContain('PARTICIPANTS');
-    for (const s of ['CONDITIONS', 'ACTIVITY', 'COMMENTS', 'SECONDARY', 'track-detail']) expect(html).not.toContain(s);
+    for (const s of ['CONDITIONS', 'ACTIVITY', 'BAR', 'SECONDARY', 'track-detail']) expect(html).not.toContain(s);
     expect(html).toContain('data-role="visitor"');
   });
 

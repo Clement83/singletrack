@@ -34,9 +34,9 @@ function Body({ text }: { text: string }) {
 
 /**
  * Fil de discussion d'une sortie (#1358). `base` = `/api/i/<token>/comments` (invité, identité = lien perso)
- * ou `/api/outings/<slug>/comments` (organisateur). Actualisation par sondage léger + au retour sur l'onglet.
+ * ou `/api/outings/<slug>/comments` (organisateur). Actualisation par sondage léger + au retour sur l'onglet (`live`, coupé dans le sheet de la vue de sortie, #1622).
  */
-export function OutingComments({ base, closed }: { base: string; closed: boolean }) {
+export function OutingComments({ base, closed, live = true, bare = false }: { base: string; closed: boolean; live?: boolean; bare?: boolean }) {
   const t = useTranslations('comments');
   const locale = useLocale();
   const [items, setItems] = useState<Comment[] | null>(null);
@@ -61,12 +61,13 @@ export function OutingComments({ base, closed }: { base: string; closed: boolean
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- chargement initial
     void load();
+    if (!live) return;
     const tick = () => { if (document.visibilityState === 'visible') void load(); };
     const id = setInterval(tick, POLL_MS);
     document.addEventListener('visibilitychange', tick);
     window.addEventListener('focus', tick);
     return () => { clearInterval(id); document.removeEventListener('visibilitychange', tick); window.removeEventListener('focus', tick); };
-  }, [load]);
+  }, [load, live]);
 
   // Un nouveau message que j'ai envoyé ramène le dernier message à l'écran.
   useEffect(() => {
@@ -109,7 +110,7 @@ export function OutingComments({ base, closed }: { base: string; closed: boolean
 
   return (
     <section aria-label={t('title')} className="flex flex-col gap-3">
-      <h2 className="text-heading">{t('title')}</h2>
+      {!bare && <h2 className="text-heading">{t('title')}</h2>}
       {items && items.length === 0 && <p className="text-muted-foreground">{t('empty')}</p>}
       {items === null && <div aria-hidden className="h-16 animate-pulse rounded-2xl bg-muted" />}
       <ul aria-label={t('list')} aria-live="polite" className="flex flex-col gap-2">

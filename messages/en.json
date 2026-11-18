@@ -1259,6 +1259,27 @@
       "no": "Not coming ({count})"
     }
   },
+  "outingBar": {
+    "respond": "Coming?",
+    "yes": "I’m in",
+    "maybe": "Maybe",
+    "no": "No",
+    "answered": {
+      "yes": "I’m in",
+      "maybe": "Maybe",
+      "no": "Not coming"
+    },
+    "change": "Change",
+    "choices": "Your answer",
+    "invite": "Invite friends",
+    "directions": "Directions",
+    "addRide": "Add my ride",
+    "seePhotos": "See the photos",
+    "addPhotos": "Add my photos",
+    "discussion": "Discussion",
+    "discussionUnread": "Discussion, {n, plural, one {# unread message} other {# unread messages}}",
+    "restricted": "Participants only"
+  },
   "outingView": {
     "menu": "Outing menu",
     "invite": "Invite",
