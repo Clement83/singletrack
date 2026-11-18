@@ -31,6 +31,7 @@ import { snapTolerance, hitWidth } from '@/lib/editor/snap';
 import { useSnapPref } from '@/lib/editor/snap-pref';
 import { FINE_POINTER } from '@/lib/use-desktop-autofocus';
 import type { Deviation } from '@/lib/editor/doc';
+import { withoutChoiceAlts } from '@/lib/editor/choice';
 import { docSig, liveAltSets, nextAlt, upsertAlt, type AltSet } from '@/lib/editor/alts';
 import { chooseAltResult, snapPointIn, decideClick, dragPointAction, endLineDrag, moveLineDrag, pointDragExclude, resolveRouted, type HitFeature } from '@/lib/editor/gestures';
 import type { Quality } from '@/lib/routing/alternatives';
@@ -289,7 +290,7 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
   }, [doc, pending.join(), rider]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Un jeu par tronçon recalculé : après un glisser (2 tronçons) on garde les alternatives des deux (#1527).
-  const alts = liveAltSets(altSets, (i) => doc.segments[i]?.coords ?? undefined, rider);
+  const alts = withoutChoiceAlts(liveAltSets(altSets, (i) => doc.segments[i]?.coords ?? undefined, rider), state.choice);
   const chooseAlt = (i: number, seg: number) => {
     const set = alts.find((s) => s.seg === seg);
     const r = chooseAltResult(set, i);

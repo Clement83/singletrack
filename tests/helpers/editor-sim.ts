@@ -3,6 +3,7 @@ import path from 'node:path';
 import type { Position } from '@/lib/geo';
 import { docGeometry, emptyDoc, pendingSegments, type EditorDoc, type LonLat } from '@/lib/editor/doc';
 import { editorReducer, initialState, type EditorAction, type EditorState } from '@/lib/editor/state';
+import { buildWiden, planWiden, withoutChoiceAlts } from '@/lib/editor/choice';
 import { liveAltSets, upsertAlt, type AltSet } from '@/lib/editor/alts';
 import {
   chooseAltResult, decideClick, dragPointAction, endLineDrag, moveLineDrag, pointDragExclude, resolveRouted, snapPointIn, type HitFeature, type LineDrag,
@@ -37,6 +38,8 @@ export class EditorSim {
   altSets: AltSet[] = [];
   snapOn: boolean;
   tolPx: number;
+  /** Élargit chaque glisser aux points posés à la main (#1641), comme le fera l'éditeur. */
+  choice: boolean;
   rider = 'muscle' as const;
   singles: { coordinates: Position[] }[] = [];
   /** Appels de routage effectués (clé `from|to`), pour vérifier le cache. */
@@ -49,10 +52,11 @@ export class EditorSim {
   private extra: Fixture[] = [];
   /** Impose le tracé BRouter d'un couple de points (cas que les fixtures n'ont pas). */
   stub(from: LonLat, to: LonLat, coordinates: Position[], alternatives: Fixture['alternatives'] = []) {
-    this.extra.push({ from, to, coordinates, alternatives });
+    this.extra.unshift({ from, to, coordinates, alternatives });
   }
 
-  constructor(opts: { doc?: EditorDoc; snap?: boolean; tolPx?: number; newMode?: 'route' | 'line' } = {}) {
+  constructor(opts: { doc?: EditorDoc; snap?: boolean; tolPx?: number; newMode?: 'route' | 'line'; choice?: boolean } = {}) {
+    this.choice = opts.choice ?? false;
     this.state = initialState(opts.doc ?? emptyDoc(), opts.newMode ?? 'route');
     this.snapOn = opts.snap ?? false;
     this.tolPx = opts.tolPx ?? 24;
@@ -62,7 +66,7 @@ export class EditorSim {
   get waypoints() { return this.doc.waypoints; }
   get segments() { return this.doc.segments; }
   /** Jeux d'alternatives encore valables, un par tronçon (#1527). */
-  get altList() { return liveAltSets(this.altSets, (i) => this.doc.segments[i]?.coords ?? undefined, this.rider); }
+  get altList() { return withoutChoiceAlts(liveAltSets(this.altSets, (i) => this.doc.segments[i]?.coords ?? undefined, this.rider), this.state.choice); }
   /** Dernier jeu valable (compatibilité des scénarios à un seul tronçon). */
   get alts() { return this.altList.at(-1) ?? null; }
   get geometry() { return docGeometry(this.doc); }
@@ -94,6 +98,7 @@ export class EditorSim {
     this.tick();
     this.lastDrag = this.now;
     this.dispatch(dragPointAction(i, p, this.snap(p, pointDragExclude(i))));
+    this.widen();
   }
   /** Glisser la ligne du tronçon `seg` depuis `from` jusqu'en `to` (`moved` faux = simple clic, rien ne se passe). */
   dragLine(seg: number, from: LonLat, to: LonLat, moved = true) {
@@ -106,7 +111,19 @@ export class EditorSim {
     if (act) {
       this.lastDrag = this.now;
       this.dispatch(act);
+      this.widen();
     }
+  }
+  /** Calcule les ancres lointaines puis ouvre la paire de choix (si le tracé rejoint l'ancien dans les plafonds). */
+  widen() {
+    const pd = this.state.pending;
+    if (!this.choice || !pd) return;
+    const plan = planWiden(pd);
+    if (!plan) return;
+    const up = plan.up === null ? null : this.route(pd.base.waypoints[plan.up], pd.p)?.coords ?? null;
+    const down = plan.down === null ? null : this.route(pd.p, pd.base.waypoints[plan.down])?.coords ?? null;
+    const result = buildWiden(pd, plan, up, down);
+    if (result) this.dispatch({ type: 'widen', result });
   }
   undo() { this.dispatch({ type: 'undo' }); }
   redo() { this.dispatch({ type: 'redo' }); }
