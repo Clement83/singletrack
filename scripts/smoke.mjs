@@ -47,11 +47,21 @@ await check('API privée sans session → 401', async () => {
   ok((await get('/api/tracks')).status === 401, 'pas de 401');
 });
 if (slug) {
-  await check('/t/<slug> publique rendue sans compte', async () => {
+  // Since #1593 /t/<slug> redirects to the map with the track open in the panel (/?t=<slug>).
+  await check('/t/<slug> publique → carte avec la trace ouverte', async () => {
     const r = await get(`/t/${slug}`);
-    const html = await r.text();
+    const to = new URL(r.headers.get('location') ?? '', base);
+    ok([307, 308].includes(r.status), `statut ${r.status}`);
+    ok(to.pathname === '/' && to.searchParams.get('t') === slug, `redirection vers ${to.pathname}${to.search}`);
+  });
+  await check('carte publique / rendue sans compte', async () => {
+    const r = await get(`/?t=${slug}`);
     ok(r.status === 200, `statut ${r.status}`);
-    ok(html.includes('Boucle de fumée'), 'nom de la trace absent');
+  });
+  await check('fiche de la trace (GET /api/tracks/<slug>) lisible sans compte', async () => {
+    const r = await get(`/api/tracks/${slug}`);
+    ok(r.status === 200, `statut ${r.status}`);
+    ok((await r.json()).name === 'Boucle de fumée', 'nom de la trace absent');
   });
   await check('/api/t/<slug>/gpx téléchargeable', async () => {
     const r = await get(`/api/t/${slug}/gpx`);
