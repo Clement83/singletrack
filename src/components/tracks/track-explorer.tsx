@@ -366,7 +366,7 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
           <Layer id="start-hit" type="circle" filter={['!', ['has', 'point_count']]} paint={{ 'circle-color': colors.foreground, 'circle-opacity': 0, 'circle-radius': 22 }} />
         </Source>
         <TrackTip tip={lineTip.tip} />
-        <SinglesLayer state={singles} colors={colors} beforeId="clusters" />
+        <SinglesLayer state={singles} colors={colors} beforeId="clusters" dimmed={!!openLine} />
         {outingsOn && (
           <OutingsLayer
             outings={mapOutings}

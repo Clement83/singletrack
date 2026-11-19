@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 
 const SLOPE_KEYS = ['up-1', 'up-2', 'up-3', 'up-4', 'up-5', 'down-1', 'down-2', 'down-3', 'down-4', 'down-5'] as const;
 type SlopeKey = `slope-${(typeof SLOPE_KEYS)[number]}`;
-export type MapColors = Record<'green' | 'blue' | 'red' | 'black' | 'primary' | 'card' | 'foreground' | 'muted' | 'fire1' | 'fire2' | 'fire3' | 'fire4' | 'fire5' | 'preview' | SlopeKey, string>;
+export type MapColors = Record<'green' | 'blue' | 'red' | 'black' | 'mapGreen' | 'mapBlue' | 'mapRed' | 'mapBlack' | 'unrated' | 'casing' | 'primary' | 'card' | 'foreground' | 'muted' | 'fire1' | 'fire2' | 'fire3' | 'fire4' | 'fire5' | 'preview' | SlopeKey, string>;
 const VARS: Record<keyof MapColors, string> = {
   ...(Object.fromEntries(SLOPE_KEYS.map((k) => [`slope-${k}`, `--slope-${k}`])) as Record<SlopeKey, string>),
   muted: '--muted-foreground',
@@ -13,6 +13,12 @@ const VARS: Record<keyof MapColors, string> = {
   blue: '--diff-blue',
   red: '--diff-red',
   black: '--diff-black',
+  mapGreen: '--map-diff-green',
+  mapBlue: '--map-diff-blue',
+  mapRed: '--map-diff-red',
+  mapBlack: '--map-diff-black',
+  unrated: '--map-unrated',
+  casing: '--map-casing',
   primary: '--primary',
   card: '--card',
   foreground: '--foreground',

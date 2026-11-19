@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
 import { Layer, Source } from 'react-map-gl/maplibre';
 import { cn } from '@/lib/utils';
-import { DIFFICULTY } from '@/lib/design/scales';
 import { OSM_ATTRIBUTION } from '@/lib/osm/relation';
 import { SINGLES_MIN_ZOOM } from '@/lib/osm/singles';
 import type { SegmentFeature } from '@/lib/osm/singles-store';
@@ -102,23 +101,36 @@ export function useSingles(on: boolean, view: View | null, zoom: number): Single
   return (key && cache.get(key)) || state || { status: 'loading' };
 }
 
-/** Lignes fines en pointillés (≠ traces, pleines), couleur de difficulté, sous les traces. */
-export function SinglesLayer({ state, colors, beforeId }: { state: SinglesState | null; colors: MapColors; beforeId?: string }) {
+/** True when the segment has a difficulty (mtb:scale). */
+const RATED = ['has', 'difficulty'];
+
+/**
+ * OSM singletracks (#1372, #1675): solid line coloured by difficulty, width growing with zoom, light casing that
+ * reads on the topo map. Unrated segments are thinner, grey and fainter. `dimmed` (a track or an outing is open,
+ * coloured by slope) fades the singles so the two palettes do not mix. Always under start points and tracks
+ * (`beforeId`). Colours come from the `map-*` tokens: the topo map stays light in dark mode.
+ */
+export function SinglesLayer({ state, colors, beforeId, dimmed = false }: { state: SinglesState | null; colors: MapColors; beforeId?: string; dimmed?: boolean }) {
   if (state?.status !== 'ok') return null;
   const color: unknown = [
     'match', ['get', 'difficulty'],
-    'green', colors.green, 'blue', colors.blue, 'red', colors.red, 'black', colors.black,
-    colors.muted,
+    'green', colors.mapGreen, 'blue', colors.mapBlue, 'red', colors.mapRed, 'black', colors.mapBlack,
+    colors.unrated,
   ];
+  const width: unknown = ['interpolate', ['linear'], ['zoom'], SINGLES_MIN_ZOOM, ['case', RATED, 2.5, 1.5], 14, ['case', RATED, 3.5, 2], 17, ['case', RATED, 5, 2.5]];
+  const casingWidth: unknown = ['interpolate', ['linear'], ['zoom'], SINGLES_MIN_ZOOM, ['case', RATED, 4.5, 3], 14, ['case', RATED, 6, 3.5], 17, ['case', RATED, 8, 4.5]];
+  const opacity: unknown = ['case', RATED, dimmed ? 0.35 : 1, dimmed ? 0.2 : 0.6];
   return (
     <Source id="singles" type="geojson" data={{ type: 'FeatureCollection', features: state.features } as never} attribution={OSM_ATTRIBUTION}>
-      <Layer id="singles-casing" type="line" minzoom={SINGLES_MIN_ZOOM} beforeId={beforeId} layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': colors.card, 'line-width': 3.5, 'line-opacity': 0.35 }} />
-      <Layer id="singles-line" type="line" minzoom={SINGLES_MIN_ZOOM} beforeId={beforeId} layout={{ 'line-join': 'round' }} paint={{ 'line-color': color as string, 'line-width': 1.6, 'line-opacity': 0.75, 'line-dasharray': [2, 1.5] }} />
+      <Layer id="singles-casing" type="line" minzoom={SINGLES_MIN_ZOOM} beforeId={beforeId} layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': colors.casing, 'line-width': casingWidth as number, 'line-opacity': dimmed ? 0.3 : 0.85 }} />
+      <Layer id="singles-line" type="line" minzoom={SINGLES_MIN_ZOOM} beforeId={beforeId} layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': color as string, 'line-width': width as number, 'line-opacity': opacity as number }} />
     </Source>
   );
 }
 
 const LEVELS = ['green', 'blue', 'red', 'black'] as const;
+/** Same colours as the map lines (`map-*` tokens), not the themed UI dots. */
+const MAP_DOT = { green: 'bg-map-diff-green', blue: 'bg-map-diff-blue', red: 'bg-map-diff-red', black: 'bg-map-diff-black' } as const;
 
 /** Légende des difficultés (couleur toujours accompagnée de son libellé), dans le panneau de filtres. */
 export function SinglesLegend({ className }: { className?: string }) {
@@ -129,10 +141,14 @@ export function SinglesLegend({ className }: { className?: string }) {
       <ul className="flex flex-wrap gap-x-3 gap-y-1 text-small">
         {LEVELS.map((l) => (
           <li key={l} className="flex items-center gap-1.5">
-            <span aria-hidden className={cn('h-1 w-4 rounded-full', DIFFICULTY[l].dot)} />
+            <span aria-hidden className={cn('h-1 w-4 rounded-full ring-1 ring-map-casing', MAP_DOT[l])} />
             {t(`levels.${l}`)}
           </li>
         ))}
+        <li className="flex items-center gap-1.5">
+          <span aria-hidden className="h-0.5 w-4 rounded-full bg-map-unrated ring-1 ring-map-casing opacity-60" />
+          {t('levels.none')}
+        </li>
       </ul>
     </div>
   );
