@@ -14,3 +14,12 @@ docs
 *.md
 coverage
 install-test-tmp.*
+# Generated build output and test artefacts (#1673): .next-build alone is 1.5 GB of build context.
+.next-build
+.next-fed*
+*.tsbuildinfo
+dist
+e2e/node_modules
+e2e/test-results
+e2e/.auth
+*.log

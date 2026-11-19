@@ -13,6 +13,8 @@ const nextConfig = {
   env: { APP_VERSION: version },
   // Pas de badge ni de menu Next.js en dev (#1640) : l'overlay d'erreur reste actif.
   devIndicators: false,
+  // Image builds (#1673): types are already checked by CI (`tsc --noEmit`); skipping the second check saves build time.
+  typescript: { ignoreBuildErrors: process.env.SKIP_TYPECHECK === '1' },
   // Dossier de build distinct pour lancer plusieurs `next dev` (test d'intégration de la fédération, scripts/federation-two-instances.ts).
   distDir: process.env.NEXT_DIST_DIR || '.next',
   // Fedify : une seule copie des paquets (sinon `instanceof CryptographicKey` échoue, spike #1471).
