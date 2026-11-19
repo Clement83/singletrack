@@ -7,6 +7,14 @@ Each release ticket writes the `## [X.Y.Z] - YYYY-MM-DD` section from the conven
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-19
+
+### Added
+- **Tourist office circuits (DATAtourisme)**: mountain-bike circuits published by French tourist offices appear on the map with their producer, licence and link (`npm run sync:datatourisme`, free API key in `DATA_TOURISM_API_KEY`). Strict request limits, resumable and incremental sync, duplicates of existing tracks skipped.
+
+### Changed
+- **Singletracks stand out on the map**: solid line coloured by difficulty, thicker as you zoom in, light casing, unrated segments discreet, faded while a track or an outing is open. Colours stay readable on the light topo map in dark mode (black singles no longer turn light grey).
+
 ## [0.1.0] - 2026-11-19
 
 First public release.
