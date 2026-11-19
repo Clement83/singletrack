@@ -112,7 +112,9 @@
     "tipKm": "km {km}",
     "tipEle": "{ele} m",
     "slopes": "Slopes",
-    "slopesHint": "Gentle → steep, in the direction of the arrow."
+    "slopesHint": "Gentle → steep, in the direction of the arrow.",
+    "terrainOn": "Show terrain in 3D",
+    "terrainOff": "Back to the flat map"
   },
   "editor": {
     "title": {

@@ -4,6 +4,8 @@ import Map, { GeolocateControl, NavigationControl, type MapProps, type MapRef } 
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { StyleSpecification } from 'maplibre-gl';
 import { cn } from '@/lib/utils';
+import { DEM_SOURCE, DEM_SOURCE_ID } from '@/lib/map/terrain';
+import { TerrainToggle } from '@/components/map/terrain-toggle';
 
 // Fond topo OpenTopoMap (secours libre). L'IGN Géoplateforme est à évaluer (licence, quotas) : voir AGENTS.md.
 const style: StyleSpecification = {
@@ -20,6 +22,9 @@ const style: StyleSpecification = {
   },
   layers: [{ id: 'topo', type: 'raster', source: 'topo' }],
 };
+
+/** Même fond + source d'altitude (#1667) : chargée seulement quand la 3D est active. */
+const styleWithDem: StyleSpecification = { ...style, sources: { ...style.sources, [DEM_SOURCE_ID]: DEM_SOURCE } };
 
 type Props = {
   lat: number;
@@ -40,6 +45,8 @@ type Props = {
   /** Emprise initiale (prioritaire sur lat/lon/zoom). */
   bounds?: [number, number, number, number];
   boundsPadding?: number | { top: number; bottom: number; left: number; right: number };
+  /** Relief en 3D disponible (#1667) : bouton « 3D » dans les contrôles (carte interactive seulement). */
+  terrain?: boolean;
 } & Pick<MapProps, 'onClick' | 'onMouseMove' | 'onMouseLeave' | 'onMouseDown' | 'onMouseUp' | 'onContextMenu' | 'onMoveEnd' | 'onLoad' | 'interactiveLayerIds' | 'cursor'>;
 
 /**
@@ -48,7 +55,7 @@ type Props = {
  * La géolocalisation exige HTTPS (ou localhost) : sur le LAN en HTTP le navigateur la refuse, le
  * bouton affiche alors une erreur sobre — voir AGENTS.md.
  */
-export default function BaseMap({ lat, lon, zoom = 11, embedded = false, interactive = true, className, children, mapRef, bounds, boundsPadding = 40, ...events }: Props) {
+export default function BaseMap({ lat, lon, zoom = 11, embedded = false, interactive = true, className, children, mapRef, bounds, boundsPadding = 40, terrain = false, ...events }: Props) {
   return (
     <div className={cn('map-touch size-full', className)}>
     <Map
@@ -57,7 +64,7 @@ export default function BaseMap({ lat, lon, zoom = 11, embedded = false, interac
       initialViewState={
         bounds ? { bounds, fitBoundsOptions: { padding: boundsPadding } } : { latitude: lat, longitude: lon, zoom }
       }
-      mapStyle={style}
+      mapStyle={terrain ? styleWithDem : style}
       interactive={interactive}
       cooperativeGestures={embedded}
       style={{ width: '100%', height: '100%' }}
@@ -70,6 +77,7 @@ export default function BaseMap({ lat, lon, zoom = 11, embedded = false, interac
         showAccuracyCircle
         positionOptions={{ enableHighAccuracy: true }}
       />}
+      {interactive && terrain && <TerrainToggle />}
       {children}
     </Map>
     </div>

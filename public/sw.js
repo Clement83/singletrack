@@ -6,7 +6,7 @@ const VERSION = 'v3'; // v3 : nouvelles icônes (#1387), purge l'ancien cache ca
 const STATIC = `st-static-${VERSION}`;
 const PAGES = `st-pages-${VERSION}`;
 const TILES = `st-tiles-${VERSION}`;
-const MAX_TILES = 600;
+const MAX_TILES = 1000; // fond + altitude 3D (#1667)
 // /t/<slug>/edit est l'éditeur (privé, connecté) : jamais en cache, même si /t est une base publique.
 const PUBLIC_PATH = /^\/(s|t)\/[^/]+(?!\/edit)(\/|$)/;
 const PUBLIC_API = /^\/api\/(s|t)\//;
@@ -72,6 +72,8 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
 
   if (url.hostname.endsWith('tile.opentopomap.org')) return void event.respondWith(tile(request));
+  // Tuiles d'altitude du relief 3D (#1667) : même cache que le fond (cf. isDemTileUrl, src/lib/map/terrain.ts).
+  if (url.hostname === 's3.amazonaws.com' && url.pathname.startsWith('/elevation-tiles-prod/terrarium/')) return void event.respondWith(tile(request));
   if (url.origin !== self.location.origin) return;
 
   if (url.pathname.startsWith('/_next/static/') || url.pathname.startsWith('/icons/')) {

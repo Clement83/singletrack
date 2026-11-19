@@ -112,7 +112,9 @@
     "tipKm": "km {km}",
     "tipEle": "{ele} m",
     "slopes": "Pentes",
-    "slopesHint": "Doux → raide, dans le sens de la flèche."
+    "slopesHint": "Doux → raide, dans le sens de la flèche.",
+    "terrainOn": "Afficher le relief en 3D",
+    "terrainOff": "Revenir à la carte à plat"
   },
   "editor": {
     "title": {
