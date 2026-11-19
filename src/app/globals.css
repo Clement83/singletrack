@@ -133,6 +133,22 @@
   animation-delay: calc(var(--i, 0) * 40ms);
 }
 
+/* Entrées courtes (ticket 1649) : panneau latéral desktop et voile du sheet ; coupées par prefers-reduced-motion. */
+@keyframes panel-in {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.panel-in {
+  animation: panel-in var(--duration-base, 200ms) var(--ease-out) both;
+}
+.fade-in {
+  animation: fade-in var(--duration-base, 200ms) var(--ease-out) both;
+}
+
 /* Verre (ticket 1624) : couches flottantes (nav, sheet, boutons de carte, toasts). Fond `surface-glass` à
    l'opacité `--glass-opacity` + `--glass-blur` (`none` ou `blur(…)`) selon la charte. Charte Singletrack (ticket 1645) :
    72 % (sombre 70 %) + saturate(180%) blur(20px) ; jamais sur les cartes de contenu. Repli opaque sans backdrop-filter ou si l'utilisateur

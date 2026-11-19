@@ -1,21 +1,21 @@
 import type { MetadataRoute } from 'next';
 import tokens from '../../design/tokens.json';
 
-// Couleurs lues dans la source unique des tokens (jamais en dur).
+// theme_color = fond de page, comme `viewport.themeColor` du layout (#1649). Couleurs lues dans la source unique des tokens (jamais en dur).
 const light = (name: string) => tokens.color.find((c) => c.name === name)!.value.light;
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'Singletrack',
     short_name: 'Singletrack',
-    description: 'Sorties VTT dans le Var',
+    description: 'Sorties VTT',
     start_url: '/',
     scope: '/',
     display: 'standalone',
     orientation: 'portrait',
     lang: 'fr',
     background_color: light('background'),
-    theme_color: light('primary'),
+    theme_color: light('background'),
     // Icônes générées depuis public/icons/vtt-app-icon-descente-pedales.svg par scripts/make-icons.mjs (#1387).
     icons: [
       { src: '/icons/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },

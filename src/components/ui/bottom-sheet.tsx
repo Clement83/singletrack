@@ -44,7 +44,7 @@ export function BottomSheet({ open, onOpenChange, title, description, children, 
       <aside
         aria-label={title}
         onKeyDown={(e) => e.key === 'Escape' && onOpenChange(false)}
-        className="fixed inset-y-3 left-[calc(var(--spacing-rail)+12px)] z-40 flex w-panel flex-col overflow-hidden rounded-2xl border border-border glass text-card-foreground shadow-md"
+        className="panel-in fixed inset-y-3 left-[calc(var(--spacing-rail)+12px)] z-40 flex w-panel flex-col overflow-hidden rounded-2xl border border-border glass text-card-foreground shadow-md"
       >
         <header className="flex items-start gap-2 p-4 pb-2">
           <div className="min-w-0 flex-1 pt-2">
@@ -75,7 +75,7 @@ export function BottomSheet({ open, onOpenChange, title, description, children, 
       modal={modal}
     >
       <Drawer.Portal>
-        {modal && <Drawer.Overlay className="fixed inset-0 z-40 bg-foreground/40" />}
+        {modal && <Drawer.Overlay className="fade-in fixed inset-0 z-40 bg-foreground/40" />}
         <Drawer.Content
           onInteractOutside={(e) => {
             // Le pied d'action est hors du Content (portail à part) : le toucher ne doit pas
