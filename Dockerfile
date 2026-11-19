@@ -10,15 +10,15 @@ COPY --chown=node:node package.json package-lock.json .npmrc ./
 # `npm ci` (lockfile as is) with a persistent npm cache between builds (#1673).
 RUN --mount=type=cache,target=/home/node/.npm,uid=1000,gid=1000 npm ci --no-audit --no-fund
 
-# Mode développement (#1464, cible utilisée par docker-compose.yml) : `next dev` sur le code monté,
-# rechargement à chaud, aucun build. `node_modules` vient de l'image (volume nommé), pas de l'hôte.
+# Development target (#1464, used by docker-compose.yml app-dev): `next dev` on the mounted code,
+# hot reload, no build. `node_modules` comes from the image (named volume), not from the host.
 FROM deps AS dev
 ENV NODE_ENV=development NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0 MIGRATIONS_DIR=/app/src/db/migrations
 RUN mkdir -p /app/.next
 EXPOSE 3000
 CMD ["npm", "run", "dev"]
 
-# Image de production (non utilisée tant que le projet est en mode dev, #1464).
+# Production build stage (shared by the `runner` and `release` targets).
 FROM deps AS builder
 COPY --chown=node:node . .
 # .next must exist and belong to `node` before the cache mount below (otherwise BuildKit creates it as root).
@@ -30,15 +30,15 @@ RUN --mount=type=cache,target=/app/.next/cache,uid=1000,gid=1000 \
  && cp -r public .next/standalone/public \
  && mkdir -p data
 
-# Image finale : on garde devDependencies pour `docker compose exec app npm test|lint`
-# (projet perso sur LAN, taille d'image non critique). Serveur = build standalone, utilisateur non root.
+# Full image (`singletrack-tools`): keeps devDependencies and sources for one-off scripts (syncs, accounts)
+# and tests. Server = standalone build, non-root user.
 FROM builder AS runner
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0 MIGRATIONS_DIR=/app/src/db/migrations
 EXPOSE 3000
 CMD ["node", ".next/standalone/server.js"]
 
-# Image publiée sur GHCR (#1483) : sans devDependencies, sans sources ni outils de test. Uniquement le build
-# standalone (node_modules tracés, dont better-sqlite3 et sharp), les assets, les migrations ; utilisateur non root.
+# Image published on GHCR (#1483): no devDependencies, no sources or test tools. Only the standalone build
+# (traced node_modules, including better-sqlite3 and sharp), the assets and the migrations; non-root user.
 FROM node:22-slim AS release
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0 MIGRATIONS_DIR=/app/src/db/migrations
 WORKDIR /app

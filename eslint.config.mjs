@@ -1,8 +1,8 @@
 import nextVitals from 'eslint-config-next/core-web-vitals';
 import nextTs from 'eslint-config-next/typescript';
 
-// Règle anti-dérive du design system (#1363) : aucune couleur en dur dans le code.
-// Les couleurs viennent de design/tokens.json → src/app/styles/tokens.css (variables CSS).
+// Design-system drift rule (#1363): no hard-coded colour in the code.
+// Colours come from design/tokens.json → src/app/styles/tokens.css (CSS variables).
 const COLOR_MSG =
   'Couleur en dur interdite : utiliser un token (classe Tailwind bg-primary, text-muted-foreground… ou var(--token)). Voir design/README.md.';
 const HEX = '/#[0-9a-fA-F]{3,8}\\b/';
@@ -15,8 +15,8 @@ const noHardcodedColors = [HEX, FN, TW_ARBITRARY, TW_PALETTE].flatMap((re) => [
   { selector: `TemplateElement[value.raw=${re}]`, message: COLOR_MSG },
 ]);
 
-// Multilingue (#1398, activé par #1402) : aucun texte d'interface en dur dans le JSX, tout passe par
-// messages/fr.json et messages/en.json. Le styleguide (référence interne, contenus d'exemple) est exclu.
+// Multilingual (#1398, enabled by #1402): no hard-coded UI text in JSX, everything goes through
+// messages/fr.json and messages/en.json. The styleguide (internal reference, sample content) is excluded.
 const TEXT_MSG = 'Texte en dur interdit : ajouter une clé dans messages/fr.json et messages/en.json (voir AGENTS.md, « Multilingue »).';
 const LETTERS = '/[A-Za-zÀ-ÿ]{2,}/';
 const noHardcodedText = [
@@ -24,8 +24,8 @@ const noHardcodedText = [
   { selector: `JSXAttribute[name.name=/^(aria-label|placeholder|title|label|hint|alt|description)$/] > Literal[value=${LETTERS}]`, message: TEXT_MSG },
 ];
 
-// Pas d'alerte système (#1448) : confirmations par ConfirmDialog (src/components/ui/confirm-dialog.tsx).
-// Seule exception : `beforeunload` (le navigateur impose son propre texte, aucune API d'app).
+// No system alert (#1448): confirmations go through ConfirmDialog (src/components/ui/confirm-dialog.tsx).
+// Only exception: `beforeunload` (the browser enforces its own text, no app API).
 const DIALOG_MSG = 'Dialogue système interdit : utiliser ConfirmDialog (src/components/ui/confirm-dialog.tsx) ou un toast.';
 const noSystemDialogs = ['alert', 'confirm', 'prompt'].flatMap((n) => [
   { selector: `CallExpression[callee.name='${n}']`, message: DIALOG_MSG },

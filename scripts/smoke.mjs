@@ -1,5 +1,5 @@
-// Test de fumée (#1482) : l'application démarrée répond. Sans dépendance, juste `fetch`.
-//   SMOKE_URL=http://localhost:3000 SMOKE_SLUG=<slug d'une trace publique> node scripts/smoke.mjs
+// Smoke test (#1482): the started application answers. No dependency, just `fetch`.
+//   SMOKE_URL=http://localhost:3000 SMOKE_SLUG=<slug of a public track> node scripts/smoke.mjs
 const base = (process.env.SMOKE_URL ?? 'http://localhost:3000').replace(/\/$/, '');
 const slug = process.env.SMOKE_SLUG;
 let failed = 0;
@@ -16,7 +16,7 @@ async function check(name, fn) {
 const ok = (cond, msg) => { if (!cond) throw new Error(msg); };
 const get = (path, headers = {}) => fetch(base + path, { headers, redirect: 'manual' });
 
-// Attend le démarrage (jusqu'à 60 s).
+// Waits for start-up (up to 60 s).
 for (let i = 0; i < 60; i++) {
   if (await get('/api/health').then((r) => r.ok, () => false)) break;
   await new Promise((r) => setTimeout(r, 1000));
@@ -27,11 +27,11 @@ await check('/api/health → 200 {status: ok}', async () => {
   ok(r.status === 200, `statut ${r.status}`);
   ok((await r.json()).status === 'ok', 'corps inattendu');
 });
-await check('/login en français', async () => {
+await check('/login in French', async () => {
   const r = await get('/login', { 'accept-language': 'fr-FR,fr;q=0.9' });
   const html = await r.text();
   ok(r.status === 200, `statut ${r.status}`);
-  ok(html.includes('Recevoir mon code'), 'texte français absent');
+  ok(html.includes('Recevoir mon code'), 'French text missing');
 });
 await check('/login en anglais', async () => {
   const r = await get('/login', { 'accept-language': 'en-US,en;q=0.9' });
@@ -39,11 +39,11 @@ await check('/login en anglais', async () => {
   ok(r.status === 200, `statut ${r.status}`);
   ok(html.includes('Send me a code'), 'texte anglais absent');
 });
-await check('page privée sans session → redirection /login', async () => {
+await check('private page without a session → redirect to /login', async () => {
   const r = await get('/new');
   ok(r.status === 307 && new URL(r.headers.get('location'), base).pathname === '/login', `statut ${r.status}`);
 });
-await check('API privée sans session → 401', async () => {
+await check('private API without a session → 401', async () => {
   ok((await get('/api/tracks')).status === 401, 'pas de 401');
 });
 if (slug) {
@@ -61,9 +61,9 @@ if (slug) {
   await check('fiche de la trace (GET /api/tracks/<slug>) lisible sans compte', async () => {
     const r = await get(`/api/tracks/${slug}`);
     ok(r.status === 200, `statut ${r.status}`);
-    ok((await r.json()).name === 'Boucle de fumée', 'nom de la trace absent');
+    ok((await r.json()).name === 'Boucle de fumée', 'track name missing');
   });
-  await check('/api/t/<slug>/gpx téléchargeable', async () => {
+  await check('/api/t/<slug>/gpx downloadable', async () => {
     const r = await get(`/api/t/${slug}/gpx`);
     ok(r.status === 200 && (await r.text()).includes('<gpx'), `statut ${r.status}`);
   });
@@ -74,5 +74,5 @@ await check('/t/<inconnu> → 404', async () => {
   ok((await get('/t/00000000-0000-4000-8000-000000000000')).status === 404, 'pas de 404');
 });
 
-if (failed) { console.error(`${failed} vérification(s) en échec`); process.exit(1); }
-console.log('Test de fumée réussi.');
+if (failed) { console.error(`${failed} check(s) failed`); process.exit(1); }
+console.log('Smoke test passed.');

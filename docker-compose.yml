@@ -1,15 +1,15 @@
 name: singletrack
 services:
-  # Production (#1670) : image publiée par la CI (GHCR), aucune construction locale. La version est épinglée par
-  # SINGLETRACK_TAG dans .env (`edge` = dernier push sur main, `X.Y.Z` = release) ; seul un ticket de MEP la change.
+  # Production (#1670): image published by CI (GHCR), nothing built locally. The version is pinned by
+  # SINGLETRACK_TAG in .env (`edge` = latest push to main, `X.Y.Z` = release); only a release ticket changes it.
   #   docker compose -f docker-compose.yml pull app brouter && docker compose -f docker-compose.yml up -d app brouter
   app:
     image: ${SINGLETRACK_REGISTRY:-ghcr.io/clement83}/singletrack:${SINGLETRACK_TAG:-latest}
-    # Même utilisateur que le propriétaire de ./data (base, photos, sauvegardes).
+    # Same user as the owner of ./data (database, photos, backups).
     user: "${APP_UID:-1000}:${APP_GID:-1000}"
     restart: unless-stopped
-    # Réseau bridge par défaut (sur un hôte au pool d'adresses compose saturé, un réseau dédié est impossible).
-    # Sur une installation normale, retirer `network_mode` (et `links`) : compose crée son réseau et le DNS interne.
+    # Default bridge network (on a host whose compose address pool is exhausted, a dedicated network is impossible).
+    # On a normal install, remove `network_mode` (and `links`): compose creates its network and internal DNS.
     network_mode: bridge
     env_file: .env
     environment:
@@ -22,7 +22,7 @@ services:
       - "${APP_PORT:-3700}:3000"
     volumes:
       - ./data:/app/data
-    # Réseau bridge par défaut (pas de DNS) : `links` rend `brouter` résolvable depuis `app`.
+    # Default bridge network (no DNS): `links` makes `brouter` resolvable from `app`.
     links:
       - brouter
     depends_on:
@@ -35,10 +35,10 @@ services:
       retries: 5
       start_period: 30s
 
-  # Serveur de développement ponctuel (#1644) : `next dev`, code monté, rechargement à chaud, LAN seulement.
-  #   docker compose -f docker-compose.yml --profile dev up -d app-dev   → port APP_DEV_PORT (3701) ; puis `docker compose stop app-dev`.
-  # Base jetable `data/dev.db`, recopiée depuis `singletrack.db` à chaque lancement (jamais la base de prod).
-  # Fédération coupée (sinon la file d'envoi partagée `data/federation.db` livrerait depuis la copie).
+  # One-off development server (#1644): `next dev`, mounted code, hot reload, LAN only.
+  #   docker compose -f docker-compose.yml --profile dev up -d app-dev   → port APP_DEV_PORT (3701); then `docker compose stop app-dev`.
+  # Throwaway database `data/dev.db`, copied from `singletrack.db` on every start (never the production database).
+  # Federation off (otherwise the shared delivery queue `data/federation.db` would deliver from the copy).
   app-dev:
     profiles: [dev]
     build:
@@ -59,7 +59,7 @@ services:
       - "${APP_DEV_PORT:-3701}:3000"
     volumes:
       - .:/app
-      # node_modules et cache .next propres au conteneur (binaire better-sqlite3 de l'image, pas de conflit avec l'hôte).
+      # node_modules and .next cache owned by the container (better-sqlite3 binary from the image, no clash with the host).
       - node_modules:/app/node_modules
       - next_cache_dev:/app/.next
     links:
@@ -81,7 +81,7 @@ services:
       retries: 5
       start_period: 90s
 
-  # Moteur de routage VTT (#1340) : appelé uniquement par `app`, aucun port publié. Image publiée (#1670), même tag que `app`.
+  # Mountain-bike routing engine (#1340): only called by `app`, no published port. Published image (#1670), same tag as `app`.
   brouter:
     image: ${SINGLETRACK_REGISTRY:-ghcr.io/clement83}/singletrack-brouter:${SINGLETRACK_TAG:-latest}
     restart: unless-stopped
@@ -89,14 +89,14 @@ services:
     volumes:
       - ./data/brouter/segments:/segments:ro
     healthcheck:
-      # Itinéraire test autour du point maison (HOME_LON/HOME_LAT du .env) : il faut donc que sa tuile soit téléchargée.
+      # Test route around the home point (HOME_LON/HOME_LAT from .env): its tile must therefore be downloaded.
       test: ["CMD-SHELL", "E=$$(awk 'BEGIN{print ${HOME_LON:-2.4}+0.01}'); for p in singletrack singletrack-vae; do curl -sf \"http://localhost:17777/brouter?lonlats=${HOME_LON:-2.4},${HOME_LAT:-46.6}|$$E,${HOME_LAT:-46.6}&profile=$$p&alternativeidx=0&format=geojson\" >/dev/null || exit 1; done"]
       interval: 30s
       timeout: 10s
       retries: 5
       start_period: 20s
 
-  # Outils ponctuels (#1670 : l'image de prod n'a ni sources ni devDependencies) : synchros, comptes, recalculs.
+  # One-off tools (#1670: the production image has no sources or devDependencies): syncs, accounts, recomputations.
   #   docker compose -f docker-compose.yml run --rm tools npm run sync:osm -- 83
   tools:
     profiles: [tools]
@@ -113,8 +113,8 @@ services:
     links:
       - brouter
 
-  # Serveur de l'app pour les tests e2e : build de production (`next dev` recharge la page en boucle sous Playwright, HMR + base SQLite surveillée).
-  # Dossier de build `.next-build` (ignoré par git), même base et même BRouter que `app`.
+  # App server for the e2e tests: production build (`next dev` reloads the page in a loop under Playwright, HMR + watched SQLite database).
+  # Build folder `.next-build` (ignored by git), same database and same BRouter as `app`.
   app-e2e:
     profiles: [e2e]
     image: singletrack-app-dev
@@ -143,12 +143,12 @@ services:
       retries: 60
       start_period: 240s
 
-  # Tests de bout en bout (#1523) : jamais lancés par défaut (profil `e2e`).
+  # End-to-end tests (#1523): never started by default (`e2e` profile).
   #   docker compose -f docker-compose.yml --profile e2e run --rm e2e
-  # Session de test : compte `e2e@singletrack.test` + cookie de session posés en base (aucun vrai mail), écrits dans e2e/.auth/.
+  # Test session: account `e2e@singletrack.test` + session cookie written to the database (no real email), saved in e2e/.auth/.
   e2e-session:
     profiles: [e2e]
-    # Image de dev (devDependencies, tsx) : `docker compose --profile dev build app-dev`.
+    # Development image (devDependencies, tsx): `docker compose --profile dev build app-dev`.
     image: singletrack-app-dev
     network_mode: bridge
     env_file: .env
@@ -162,7 +162,7 @@ services:
       - next_cache_dev:/app/.next
     command: ["npx", "tsx", "scripts/e2e-session.ts"]
 
-  # Playwright (Chromium) dans l'image officielle, version identique à e2e/package.json. Vise l'app du conteneur `app`.
+  # Playwright (Chromium) in the official image, same version as e2e/package.json. Targets the `app-e2e` container.
   e2e:
     profiles: [e2e]
     image: mcr.microsoft.com/playwright:v1.56.1-noble

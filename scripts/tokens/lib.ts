@@ -1,14 +1,14 @@
-// Design system singletrack (#1363) : lecture de design/tokens.json, génération de
-// src/app/styles/tokens.css et vérification des contrastes WCAG. Fonctions pures, testées
-// dans tests/tokens.test.ts.
+// singletrack design system (#1363): reads design/tokens.json, generates
+// src/app/styles/tokens.css and checks the WCAG contrasts. Pure functions, tested
+// in tests/tokens.test.ts.
 
 export type Theme = { id: string; name: string; scheme: 'light' | 'dark'; extends?: string; usage?: string };
 type Named = { name: string; usage: string };
-/** Valeur d'un token : une chaîne (tous thèmes) ou une valeur par thème / schéma (`light`, `dark`). */
+/** Value of a token: a string (every theme) or a value per theme / scheme (`light`, `dark`). */
 export type Value = string | Record<string, string>;
-/** Charte graphique (#1624) : axe indépendant du clair/sombre. `extends` : hérite d'une autre charte (défaut : la première). */
+/** Visual charter (#1624): axis independent of light/dark. `extends`: inherits from another charter (default: the first one). */
 export type Charte = { id: string; name: string; extends?: string; usage?: string };
-/** Surcharges par charte : `{ "<charte>": <valeur> }` ; absent = hérite (Classique en dernier recours). */
+/** Per-charter overrides: `{ "<charter>": <value> }`; absent = inherited (Classique as a last resort). */
 type ByCharte<T> = { chartes?: Record<string, T> };
 export type ColorToken = Named & ByCharte<Value> & { value: Record<string, string> };
 export type ContrastRule = { fg: string; bg: string[]; min: number; usage: string };
@@ -31,7 +31,7 @@ export type Tokens = {
   surface: ValueToken[];
   size: ValueToken[];
   motion: ValueToken[];
-  /** Courbes d'animation (#1645) : `--ease-<nom>` dans @theme (classes `ease-out`, `ease-spring`…). */
+  /** Animation curves (#1645): `--ease-<name>` in @theme (classes `ease-out`, `ease-spring`…). */
   easing?: ValueToken[];
   map: ValueToken[];
 };
@@ -39,7 +39,7 @@ export type Tokens = {
 export const GENERATED_HEADER =
   '/* FICHIER GÉNÉRÉ par `npm run tokens` depuis design/tokens.json : ne pas éditer à la main. */';
 
-/** Valeur d'un token pour un thème, en suivant `extends` (ex. un thème d'essai → light) puis le schéma (dark → dark). */
+/** Value of a token for a theme, following `extends` (e.g. a trial theme → light) then the scheme (dark → dark). */
 export function resolveThemed(tokens: Tokens, value: Record<string, string>, themeId: string): string {
   const seen = new Set<string>();
   let id: string | undefined = themeId;
@@ -57,7 +57,7 @@ export function themeColors(tokens: Tokens, themeId: string): Record<string, str
   return Object.fromEntries(tokens.color.map((c) => [c.name, resolveThemed(tokens, c.value, themeId)]));
 }
 
-/** Chaîne d'héritage d'une charte : elle-même, ses parents, puis la charte de base (Classique). */
+/** Inheritance chain of a charter: itself, its parents, then the base charter (Classique). */
 function charteChain(tokens: Tokens, charteId: string): string[] {
   const chain: string[] = [];
   let id: string | undefined = charteId;
@@ -70,7 +70,7 @@ function charteChain(tokens: Tokens, charteId: string): string[] {
   return chain;
 }
 
-/** Valeur effective d'un token pour une charte × un thème : surcharge de charte la plus proche, sinon valeur de base. */
+/** Effective value of a token for a charter × a theme: closest charter override, otherwise the base value. */
 export function resolveValue(tokens: Tokens, token: { value: Value; chartes?: Record<string, Value> }, themeId: string, charteId: string): string {
   for (const c of charteChain(tokens, charteId)) {
     const o = token.chartes?.[c];
@@ -85,7 +85,7 @@ function resolveText(tokens: Tokens, t: TextToken, charteId: string): TextFields
   return out;
 }
 
-/** Toutes les variables CSS qui dépendent de la charte et/ou du thème, pour un couple donné. */
+/** Every CSS variable that depends on the charter and/or the theme, for a given pair. */
 export function charteThemeVars(tokens: Tokens, charteId: string, themeId: string): Record<string, string> {
   const v: Record<string, string> = {};
   for (const c of tokens.color) v[`--${c.name}`] = resolveValue(tokens, c, themeId, charteId);
@@ -103,7 +103,7 @@ export function charteThemeVars(tokens: Tokens, charteId: string, themeId: strin
   return v;
 }
 
-/** Variables du thème d'une charte, hors celles déclarées ailleurs (@theme static) pour la charte de base. */
+/** Theme variables of a charter, except those declared elsewhere (static @theme) for the base charter. */
 const THEME_VAR = /^--(?!font-|radius-|text-)/;
 
 function themeBlock(tokens: Tokens, theme: Theme): string[] {
@@ -111,7 +111,7 @@ function themeBlock(tokens: Tokens, theme: Theme): string[] {
   return [`  color-scheme: ${theme.scheme};`, ...Object.entries(vars).filter(([k]) => THEME_VAR.test(k)).map(([k, x]) => `  ${k}: ${x};`)];
 }
 
-/** Blocs d'une charte non-base : par thème, seules les variables qui diffèrent de la charte de base. */
+/** Blocks of a non-base charter: per theme, only the variables that differ from the base charter. */
 function charteBlocks(tokens: Tokens, charte: Charte): string[] {
   const out: string[] = [];
   const base = tokens.chartes[0].id;
@@ -137,7 +137,7 @@ function charteBlocks(tokens: Tokens, charte: Charte): string[] {
   return out;
 }
 
-/** Feuille CSS complète : variables par thème + branchement Tailwind 4 (@theme). */
+/** Full stylesheet: variables per theme + Tailwind 4 wiring (@theme). */
 export function generateCss(tokens: Tokens): string {
   const [base, ...others] = tokens.themes;
   const out: string[] = [GENERATED_HEADER, ''];
@@ -171,14 +171,14 @@ export function generateCss(tokens: Tokens): string {
   for (const m of tokens.map) out.push(`  --map-${m.name}: ${m.value};`);
   out.push('}', '');
 
-  // Branchement Tailwind : uniquement nos tokens (palette Tailwind par défaut désactivée).
+  // Tailwind wiring: only our tokens (default Tailwind palette disabled).
   out.push('@theme inline {', '  --color-*: initial;');
   for (const c of tokens.color) out.push(`  --color-${c.name}: var(--${c.name});`);
   out.push('  --shadow-*: initial;');
   for (const s of tokens.shadow) out.push(`  --shadow-${s.name}: var(--elevation-${s.name});`);
   out.push('}', '');
 
-  // static : toutes les variables sont émises, même inutilisées (lues par /styleguide et MapLibre).
+  // static: every variable is emitted, even unused ones (read by /styleguide and MapLibre).
   out.push('@theme static {');
   for (const f of tokens.font) out.push(`  --font-${f.name}: ${resolveValue(tokens, f, tokens.themes[0].id, tokens.chartes[0].id)};`);
   out.push('  --text-*: initial;');

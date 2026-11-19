@@ -1,5 +1,5 @@
-// Base d'exemple du test de fumée (#1482) : une trace publique, affichée sans compte sur /t/<slug>.
-// Usage (dans l'image) : DATABASE_URL=... npx tsx scripts/smoke-seed.ts  → imprime le slug.
+// Sample database of the smoke test (#1482): one public track, reachable without an account through /t/<slug>.
+// Usage (in the image): DATABASE_URL=... npx tsx scripts/smoke-seed.ts  → prints the slug.
 import { getDb } from '../src/db';
 import { upsertTrack } from '../src/lib/tracks';
 

@@ -1,6 +1,6 @@
-// `npm run tokens` : génère src/app/styles/tokens.css depuis design/tokens.json (#1363).
-// `npm run tokens -- --report` : affiche tous les contrastes.
-// `npm run tokens -- --check` : échoue si le fichier généré n'est pas à jour ou si un contraste échoue.
+// `npm run tokens`: generates src/app/styles/tokens.css from design/tokens.json (#1363).
+// `npm run tokens -- --report`: prints every contrast.
+// `npm run tokens -- --check`: fails if the generated file is out of date or a contrast fails.
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { checkContrasts, generateCss, type Tokens } from './lib';

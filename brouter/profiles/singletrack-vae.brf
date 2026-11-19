@@ -1,4 +1,4 @@
-# Profil singletrack VAE, seuil 8 % (#1385), dérivé de mtb.brf (BRouter 1.7.10).
+# singletrack e-bike profile, 8 % threshold (#1385), derived from mtb.brf (BRouter 1.7.10).
   # Poutnik's Trekking profile template for Trekking profile variants
   # Version 2.6.* new max cost system
   #
@@ -51,8 +51,8 @@
   assign   ValleyMode             equal hills 4
   assign   originalisbike         false
 
-  # singletrack (VAE, seuil 8 %) : montées chères au-delà du seuil, descentes sans coût (on préfère descendre par les
-  # singles plutôt que par la piste). Voir #1385 ; la sélection finale entre candidats se fait côté app (score.ts).
+  # singletrack (e-bike, 8 % threshold): climbs above the threshold are expensive, descents are free (we prefer going down
+  # singletracks rather than the track). See #1385; the final choice between candidates is made in the app (score.ts).
   assign   uphillcostvalue        50
   assign   uphillcutoffvalue      8.0
   assign   downhillcutoffvalue    1.5

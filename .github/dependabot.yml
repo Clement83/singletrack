@@ -1,4 +1,4 @@
-# Mises à jour automatiques (#1485). Hebdomadaires, groupées pour limiter le bruit.
+# Automatic updates (#1485). Weekly, grouped to limit the noise.
 version: 2
 updates:
   - package-ecosystem: npm
@@ -10,7 +10,7 @@ updates:
       prefix: chore
       include: scope
     ignore:
-      # Épinglé : les montées de version de next-intl se font à la main (messages, plugin Next).
+      # Pinned: next-intl upgrades are done by hand (messages, Next plugin).
       - dependency-name: next-intl
     groups:
       minor-and-patch:

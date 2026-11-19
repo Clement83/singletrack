@@ -12,8 +12,8 @@ export default defineConfig({
       reporter: ['text-summary', 'text', 'lcov'],
       reportsDirectory: 'coverage',
       include: ['src/lib/**/*.ts', 'src/app/api/**/*.ts', 'src/proxy.ts', 'src/db/**/*.ts'],
-      // Seuils juste sous l'état atteint (#1482) : ils ne font que ne pas régresser. src/lib en priorité ;
-      // les composants React (src/components, pages) sont volontairement hors périmètre.
+      // Thresholds just below the current level (#1482): they only prevent regressions. src/lib first;
+      // React components (src/components, pages) are deliberately out of scope.
       thresholds: {
         lines: 90, functions: 86, branches: 83,
         'src/lib/**': { lines: 91, functions: 91, branches: 85 },

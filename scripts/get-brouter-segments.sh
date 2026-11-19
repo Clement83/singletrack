@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
-# Télécharge les segments BRouter (.rd5) dans ./data/brouter/segments (hors git). Idempotent : un fichier déjà
-# présent n'est pas retéléchargé. Chaque tuile = 5° × 5° (nom = coin sud-ouest, ex. E5_N40 = lon 5–10, lat 40–45).
+# Downloads the BRouter segments (.rd5) into ./data/brouter/segments (outside git). Idempotent: a file already
+# present is not downloaded again. Each tile = 5° × 5° (name = south-west corner, e.g. E5_N40 = lon 5–10, lat 40–45).
 #
-# Usage (depuis la racine du projet) :
-#   ./scripts/get-brouter-segments.sh              # tuiles de la zone du point maison (HOME_LAT/HOME_LON du .env)
-#   ./scripts/get-brouter-segments.sh france       # France métropolitaine entière (≈ 770 Mo)
+# Usage (from the project root):
+#   ./scripts/get-brouter-segments.sh              # tiles around the home point (HOME_LAT/HOME_LON from .env)
+#   ./scripts/get-brouter-segments.sh france       # the whole of metropolitan France (≈ 770 MB)
 #   ./scripts/get-brouter-segments.sh E5_N40 W5_N40  # tuiles explicites
-# Tailles mesurées le 2026-11-13 (France) : W5_N40 88 Mo · E0_N40 115 Mo · E5_N40 66 Mo · W5_N45 62 Mo ·
+# Sizes measured on 2026-11-13 (France): W5_N40 88 MB · E0_N40 115 MB · E5_N40 66 MB · W5_N45 62 MB ·
 #   E0_N45 122 Mo · E5_N45 242 Mo · E0_N50 76 Mo · W10_N45 < 1 Mo.
-# Après un ajout de tuiles : docker compose restart brouter.
+# After adding tiles: docker compose restart brouter.
 set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 dir="$root/data/brouter/segments"
 mkdir -p "$dir"
 
-tile_of() { # lon lat -> nom de tuile 5°
+tile_of() { # lon lat -> name of the 5° tile
   awk -v lon="$1" -v lat="$2" 'BEGIN {
     x = int(lon / 5); if (lon < 0 && x * 5 != lon) x -= 1; x *= 5
     y = int(lat / 5); if (lat < 0 && y * 5 != lat) y -= 1; y *= 5
@@ -39,9 +39,9 @@ fi
 
 for t in "${tiles[@]}"; do
   [[ "$t" =~ ^[EW][0-9]+_[NS][0-9]+$ ]] || { echo "Nom de tuile invalide : $t" >&2; exit 1; }
-  [ -s "$dir/$t.rd5" ] && { echo "$t déjà présent"; continue; }
+  [ -s "$dir/$t.rd5" ] && { echo "$t already present"; continue; }
   curl -fL --retry 3 -o "$dir/$t.rd5.part" "https://brouter.de/brouter/segments4/$t.rd5"
   mv "$dir/$t.rd5.part" "$dir/$t.rd5"
-  echo "$t téléchargé"
+  echo "$t downloaded"
 done
 du -sh "$dir"

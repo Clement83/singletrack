@@ -1,4 +1,4 @@
-// Banc d'essai #1385 : mtb vs singletrack vs singletrack-vae sur des couples réels (départ → point haut des traces).
+// Routing bench #1385: mtb vs singletrack vs singletrack-vae on real pairs (start → highest point of the tracks).
 import Database from 'better-sqlite3';
 const db = new Database('data/singletrack.db', { readonly: true });
 const rows = db.prepare("select name, geometry from track where source in ('osm','geotrek') and max_ele - min_ele > 150 order by distance_m limit 40").all();
@@ -19,7 +19,7 @@ async function route(a, b, profile) {
   return { km: +(p['track-length'] / 1000).toFixed(2), up: +p['filtered ascend'], down: -(+p['plain-ascend'] - +p['filtered ascend']) || null, ms: Date.now() - t0 };
 }
 for (const pr of pairs) {
-  for (const [dir, a, b] of [['montée', pr.lo, pr.hi], ['descente', pr.hi, pr.lo]]) {
+  for (const [dir, a, b] of [['climb', pr.lo, pr.hi], ['descent', pr.hi, pr.lo]]) {
     const out = {};
     for (const prof of ['mtb', 'singletrack', 'singletrack-vae']) out[prof] = await route(a, b, prof);
     console.log(JSON.stringify({ trace: pr.name, dir, from: a.slice(0, 2).map((x) => +x.toFixed(4)), to: b.slice(0, 2).map((x) => +x.toFixed(4)), ...out }));

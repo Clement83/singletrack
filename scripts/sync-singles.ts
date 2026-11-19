@@ -1,7 +1,7 @@
-// Synchro du calque des singles OSM (#1372, France entière #1428) :  npm run sync:singles [-- 83 06 2A]
-// Une requête Overpass par département (ways path/track avec mtb:scale), séquentielle ; sans argument = toute la France.
-// Chaque zone est remplacée en bloc (idempotent) ; une zone en échec garde son ancien calque et n'arrête pas les autres.
-// Pas d'altitude IGN (inutile pour un calque). Jamais appelée depuis une page.
+// Sync of the OSM singletrack layer (#1372, whole of France #1428):  npm run sync:singles [-- 83 06 2A]
+// One Overpass request per department (path/track ways with mtb:scale), sequential; without arguments = all of France.
+// Each area is replaced as a whole (idempotent); a failing area keeps its old layer and does not stop the others.
+// No IGN elevation (useless for a layer). Never called from a page.
 import { getDb } from '../src/db';
 import { config, sourceEnabled } from '../src/lib/config';
 import { fetchSingles, parseZones } from '../src/lib/osm';
@@ -11,12 +11,12 @@ import { eq, sql } from 'drizzle-orm';
 
 async function main() {
   if (!sourceEnabled('osm')) {
-    console.log('Source « osm » désactivée (DATA_SOURCES) : rien à faire.');
+    console.log('Source "osm" disabled (DATA_SOURCES): nothing to do.');
     return;
   }
   const { db, sqlite } = getDb();
   const { zones, invalid } = parseZones(process.argv.slice(2), config.syncZones);
-  if (invalid.length) console.error(`Zones ignorées (pas un département métropolitain) : ${invalid.join(', ')}`);
+  if (invalid.length) console.error(`Areas ignored (not a metropolitan department): ${invalid.join(', ')}`);
   const t0 = Date.now();
   let total = 0;
   let km = 0;
@@ -27,7 +27,7 @@ async function main() {
       const segments = await fetchSingles(code);
       const before = db.select({ n: sql<number>`count(*)` }).from(trailSegment).where(eq(trailSegment.zone, code)).get()?.n ?? 0;
       if (segments.length === 0 && before > 0) {
-        console.warn(`[${i + 1}/${zones.length}] ${code} : réponse vide alors que ${before} segments existent — zone conservée`);
+        console.warn(`[${i + 1}/${zones.length}] ${code}: empty answer while ${before} segments exist — area kept`);
         continue;
       }
       replaceSegments(db, segments, new Date(), code);
@@ -40,8 +40,8 @@ async function main() {
     }
   }
   sqlite.pragma('optimize');
-  console.log(`Terminé en ${Math.round((Date.now() - t0) / 60000)} min : ${total} singles (${Math.round(km)} km).`);
-  if (failed.length) console.error(`Zones en échec (relancer : npm run sync:singles -- ${failed.join(' ')}) : ${failed.join(', ')}`);
+  console.log(`Done in ${Math.round((Date.now() - t0) / 60000)} min: ${total} singletracks (${Math.round(km)} km).`);
+  if (failed.length) console.error(`Failed areas (run again: npm run sync:singles -- ${failed.join(' ')}): ${failed.join(', ')}`);
   if (failed.length === zones.length) process.exit(1);
 }
 

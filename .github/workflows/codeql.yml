@@ -1,6 +1,6 @@
 name: CodeQL
 
-# Analyse statique de sécurité (#1485) : sur les pull requests, sur main et chaque semaine.
+# Static security analysis (#1485): on pull requests, on main and weekly.
 on:
   push:
     branches: [main]

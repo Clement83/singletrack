@@ -1,5 +1,5 @@
-// CLI comptes (#1344, #1377) — connexion sans mot de passe : la personne reçoit un code par mail.
-//   npm run user:create -- --email a@b.fr --name Clément
+// Account CLI (#1344, #1377) — passwordless sign-in: the person receives a code by email.
+//   npm run user:create -- --email a@b.fr --name Firstname
 import { parseArgs } from 'node:util';
 import { getDb } from '../src/db';
 import { createAuth } from '../src/lib/auth';
@@ -14,7 +14,7 @@ async function main() {
   }
   const { db } = getDb();
   const u = await createUser(createAuth(db), { email: values.email, name: values.name });
-  console.log(`Compte créé : ${u.email} (connexion par code reçu par mail)`);
+  console.log(`Account created: ${u.email} (sign-in with a code received by email)`);
 }
 
 main().catch((e) => {

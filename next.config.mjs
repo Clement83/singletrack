@@ -1,25 +1,25 @@
 import createNextIntlPlugin from 'next-intl/plugin';
 import { readFileSync } from 'node:fs';
 
-// Version publiée (#1485) : source unique = package.json, injectée au build (config.version, /api/health, menu).
+// Published version (#1485): single source = package.json, injected at build time (config.version, /api/health, menu).
 const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
 
-// i18n (#1400) : langue résolue par requête dans src/i18n/request.ts (sans préfixe d'URL).
+// i18n (#1400): language resolved per request in src/i18n/request.ts (no URL prefix).
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
   env: { APP_VERSION: version },
-  // Pas de badge ni de menu Next.js en dev (#1640) : l'overlay d'erreur reste actif.
+  // No Next.js badge or menu in development (#1640): the error overlay stays on.
   devIndicators: false,
   // Image builds (#1673): types are already checked by CI (`tsc --noEmit`); skipping the second check saves build time.
   typescript: { ignoreBuildErrors: process.env.SKIP_TYPECHECK === '1' },
-  // Dossier de build distinct pour lancer plusieurs `next dev` (test d'intégration de la fédération, scripts/federation-two-instances.ts).
+  // Separate build folder to run several `next dev` (federation integration test, scripts/federation-two-instances.ts).
   distDir: process.env.NEXT_DIST_DIR || '.next',
-  // Fedify : une seule copie des paquets (sinon `instanceof CryptographicKey` échoue, spike #1471).
+  // Fedify: a single copy of the packages (otherwise `instanceof CryptographicKey` fails, spike #1471).
   serverExternalPackages: ['better-sqlite3', '@fedify/fedify', '@fedify/vocab', '@fedify/vocab-runtime', '@fedify/webfinger', '@fedify/sqlite', '@fedify/next'],
-  // Mode dev servi via un reverse proxy ou le LAN, origines dans ALLOWED_DEV_ORIGINS (#1464) : sinon `next dev` bloque HMR et assets venant de ces origines.
+  // Dev server reached through a reverse proxy or the LAN, origins in ALLOWED_DEV_ORIGINS (#1464): otherwise `next dev` blocks HMR and assets from those origins.
   allowedDevOrigins: (process.env.ALLOWED_DEV_ORIGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean),
 };
 export default withNextIntl(nextConfig);

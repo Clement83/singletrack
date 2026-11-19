@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
-# Prépare une installation (#1484) : crée .env depuis .env.example, génère les secrets, crée ./data.
-#   ./scripts/init-env.sh [URL_PUBLIQUE]     ex. https://vtt.example.org ou http://<IP_LAN>:3700
-# Idempotent : un .env existant est conservé, seuls les secrets encore à « change-me » ou vides sont générés.
-# Sans URL, BETTER_AUTH_URL reste à modifier à la main dans .env.
+# Prepares an install (#1484): creates .env from .env.example, generates the secrets, creates ./data.
+#   ./scripts/init-env.sh [PUBLIC_URL]     e.g. https://mtb.example.org or http://<LAN_IP>:3700
+# Idempotent: an existing .env is kept, only secrets still set to "change-me" or empty are generated.
+# Without a URL, BETTER_AUTH_URL has to be edited by hand in .env.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-[ -f .env.example ] || { echo ".env.example introuvable (à télécharger à côté de ce script)." >&2; exit 1; }
-if [ -f .env ]; then echo ".env existe : conservé."; else cp .env.example .env; echo ".env créé."; fi
+[ -f .env.example ] || { echo ".env.example not found (download it next to this script)." >&2; exit 1; }
+if [ -f .env ]; then echo ".env exists: kept."; else cp .env.example .env; echo ".env created."; fi
 
 secret() {
   if command -v openssl >/dev/null 2>&1; then openssl rand -base64 32
   else head -c 32 /dev/urandom | base64; fi
 }
-# set_var CLE VALEUR : remplace la ligne CLE=… (ou l'ajoute).
+# set_var KEY VALUE: replaces the KEY=… line (or adds it).
 set_var() {
   local k="$1" v="$2" tmp; tmp="$(mktemp)"
   if grep -qE "^$k=" .env; then
@@ -26,12 +26,12 @@ set_var() {
 needs_secret() { local cur; cur="$(grep -E "^$1=" .env | tail -1 | cut -d= -f2- || true)"; [ -z "$cur" ] || [ "$cur" = "change-me" ]; }
 
 for k in BETTER_AUTH_SECRET INVITE_LINK_KEY; do
-  if needs_secret "$k"; then set_var "$k" "$(secret)"; echo "$k généré."; fi
+  if needs_secret "$k"; then set_var "$k" "$(secret)"; echo "$k generated."; fi
 done
-# FEDERATION_KEY_ENC : active la fédération (par défaut `on` dès que la clé existe, #1477) ; à ne jamais changer ensuite.
-if needs_secret FEDERATION_KEY_ENC; then set_var FEDERATION_KEY_ENC "$(secret)"; echo "FEDERATION_KEY_ENC généré."; fi
+# FEDERATION_KEY_ENC: turns federation on (on by default as soon as the key exists, #1477); never change it afterwards.
+if needs_secret FEDERATION_KEY_ENC; then set_var FEDERATION_KEY_ENC "$(secret)"; echo "FEDERATION_KEY_ENC generated."; fi
 
-# Les fichiers de ./data appartiennent à l'utilisateur qui lance ce script (le conteneur tourne sous cet identifiant).
+# The files in ./data belong to the user running this script (the container runs under that id).
 grep -qE '^APP_UID=' .env || set_var APP_UID "$(id -u)"
 grep -qE '^APP_GID=' .env || set_var APP_GID "$(id -g)"
 mkdir -p data/brouter/segments

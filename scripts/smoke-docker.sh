@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Test de fumée de l'image de production (#1482) : construit la cible `runner`, la démarre sur une base
-# d'exemple et lance scripts/smoke.mjs. Utilisé par la CI ; relançable en local (a besoin de Docker).
+# Smoke test of the production image (#1482): builds the `runner` target, starts it on a sample
+# database and runs scripts/smoke.mjs. Used by CI; can be run locally (needs Docker).
 #   ./scripts/smoke-docker.sh            # construit l'image
-#   SMOKE_IMAGE=singletrack:ci ./scripts/smoke-docker.sh   # image déjà construite
+#   SMOKE_IMAGE=singletrack:ci ./scripts/smoke-docker.sh   # image already built
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -17,7 +17,7 @@ trap cleanup EXIT
 ENVS=(-e BETTER_AUTH_SECRET=smoke-secret-smoke-secret-smoke-secret -e INVITE_LINK_KEY="$(head -c 32 /dev/zero | base64)"
   -e BETTER_AUTH_URL="http://localhost:$PORT" -e AUTH_TRUSTED_ORIGINS="http://localhost:$PORT" -e DATABASE_URL=/tmp/smoke/singletrack.db)
 
-# Base d'exemple : migrations appliquées + une trace publique, dans l'image elle-même.
+# Sample database: migrations applied + one public track, inside the image itself.
 SLUG="$(docker run --rm --name "$NAME-seed" "${ENVS[@]}" -v "$NAME-data:/tmp/smoke" --user root "$IMAGE" \
   sh -c 'chown node /tmp/smoke && su node -s /bin/sh -c "npx tsx scripts/smoke-seed.ts"' | tail -1)"
 echo "Trace d'exemple : $SLUG"

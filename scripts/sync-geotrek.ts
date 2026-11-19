@@ -1,7 +1,7 @@
-// Synchro des circuits VTT officiels Geotrek (#1347, plusieurs instances #1428) :  npm run sync:geotrek [-- var ecrins]
-// Une instance après l'autre (liste dans src/lib/geotrek/instances.ts) ; sans argument = toutes.
-// Idempotent : upsert sur (geotrek, <instance>/<id>), slugs conservés. Une instance en échec n'arrête pas les autres.
-// L'altitude vient de Geotrek (géométrie 3D) ; pas de complément IGN en masse (#1428).
+// Sync of the official Geotrek mountain-bike routes (#1347, several instances #1428):  npm run sync:geotrek [-- var ecrins]
+// One instance after another (list in src/lib/geotrek/instances.ts); without arguments = all of them.
+// Idempotent: upsert on (geotrek, <instance>/<id>), slugs kept. A failing instance does not stop the others.
+// Elevation comes from Geotrek (3D geometry); no bulk IGN completion (#1428).
 import { getDb } from '../src/db';
 import { sourceEnabled } from '../src/lib/config';
 import { geotrekSource, parseInstances } from '../src/lib/geotrek';
@@ -9,7 +9,7 @@ import { regionFromConfig, syncSource } from '../src/lib/tracks';
 
 async function main() {
   if (!sourceEnabled('geotrek')) {
-    console.log('Source « geotrek » désactivée (DATA_SOURCES) : rien à faire.');
+    console.log('Source "geotrek" disabled (DATA_SOURCES): nothing to do.');
     return;
   }
   const { db } = getDb();
@@ -23,13 +23,13 @@ async function main() {
       const r = await syncSource(db, geotrekSource({ instance }), region, { enrich: false }, (e, t) =>
         console.error(`  ✗ ${t.externalId} « ${t.name} » : ${e instanceof Error ? e.message : e}`),
       );
-      console.log(`  ${instance.id} : ${r.created} créées, ${r.updated} mises à jour, ${r.failed} en erreur.`);
+      console.log(`  ${instance.id}: ${r.created} created, ${r.updated} updated, ${r.failed} failed.`);
     } catch (e) {
       failed.push(instance.id);
       console.error(`  ${instance.id} : ÉCHEC — ${e instanceof Error ? e.message : e}`);
     }
   }
-  if (failed.length) console.error(`Instances en échec : ${failed.join(', ')}`);
+  if (failed.length) console.error(`Failed instances: ${failed.join(', ')}`);
   if (instances.length === 0 || failed.length === instances.length) process.exit(1);
 }
 

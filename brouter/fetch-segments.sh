@@ -1,10 +1,10 @@
 #!/bin/sh
-# Télécharge les tuiles BRouter (.rd5) dans /segments au premier lancement (#1484). Idempotent : une tuile déjà
-# présente n'est pas retéléchargée. Ne fait jamais échouer le démarrage (sans tuile, l'éditeur passe en ligne droite).
-#   BROUTER_TILES=france                 France métropolitaine (≈ 770 Mo, défaut)
-#   BROUTER_TILES=home                   seulement la tuile 5° de HOME_LAT/HOME_LON
-#   BROUTER_TILES=E5_N40,W5_N40          tuiles explicites (nom = coin sud-ouest d'une tuile de 5°)
-#   BROUTER_TILES=none                   ne rien télécharger
+# Downloads the BRouter tiles (.rd5) into /segments on first start (#1484). Idempotent: a tile already
+# present is not downloaded again. Never fails the start-up (without tiles, the editor falls back to straight lines).
+#   BROUTER_TILES=france                 metropolitan France (≈ 770 MB, default)
+#   BROUTER_TILES=home                   only the 5° tile of HOME_LAT/HOME_LON
+#   BROUTER_TILES=E5_N40,W5_N40          explicit tiles (name = south-west corner of a 5° tile)
+#   BROUTER_TILES=none                   download nothing
 dir=/segments
 spec="${BROUTER_TILES:-france}"
 mkdir -p "$dir" 2>/dev/null || true
@@ -23,7 +23,7 @@ esac
 for t in $tiles; do
   case "$t" in
     [EW][0-9]*_[NS][0-9]*) ;;
-    *) echo "Tuile invalide ignorée : $t" >&2; continue ;;
+    *) echo "Invalid tile ignored: $t" >&2; continue ;;
   esac
   if [ -s "$dir/$t.rd5" ]; then echo "$t déjà présent"; continue; fi
   echo "Téléchargement de $t…"

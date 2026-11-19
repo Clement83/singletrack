@@ -1,7 +1,7 @@
-// Session de test des tests de bout en bout (#1523) : crée (ou réutilise) le compte `e2e@singletrack.test`, une session
-// valide et écrit le `storageState` Playwright (`e2e/.auth/state.json`). Aucun vrai mail : la session est posée en base.
-// Les traces de ce compte sont supprimées à chaque lancement (jeu de test propre).
-// Usage (conteneur app, via le service compose `e2e-session`) : npx tsx scripts/e2e-session.ts
+// Session for the end-to-end tests (#1523): creates (or reuses) the `e2e@singletrack.test` account, a valid
+// session, and writes the Playwright `storageState` (`e2e/.auth/state.json`). No real email: the session is written to the database.
+// This account's tracks are deleted on every run (clean test data).
+// Usage (app container, through the `e2e-session` compose service): npx tsx scripts/e2e-session.ts
 import { createHmac } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -26,7 +26,7 @@ async function main() {
   db.delete(schema.session).where(eq(schema.session.userId, user.id)).run();
 
   const session = await ctx.internalAdapter.createSession(user.id);
-  // Cookie signé comme Better Auth : `<jeton>.<HMAC-SHA256 base64>`, encodé pour l'en-tête Cookie.
+  // Cookie signed like Better Auth: `<token>.<HMAC-SHA256 base64>`, encoded for the Cookie header.
   const sig = createHmac('sha256', ctx.secret).update(session.token).digest('base64');
   const value = encodeURIComponent(`${session.token}.${sig}`);
   const cookie = (name: string, v: string) => ({
@@ -37,7 +37,7 @@ async function main() {
   const out = path.join(process.cwd(), 'e2e', '.auth', 'state.json');
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, JSON.stringify(state, null, 2));
-  console.log(`Session de test écrite : ${out}`);
+  console.log(`Test session written: ${out}`);
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

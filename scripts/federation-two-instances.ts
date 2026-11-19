@@ -1,6 +1,6 @@
-// Test d'intégration de la fédération (#1474) : DEUX instances `next dev` dans ce conteneur (ports 3101 et 3102,
-// bases et dossiers de build séparés). L'instance 1 résout par WebFinger puis envoie un `Follow` signé à
-// l'instance 2, qui vérifie la signature, récupère l'acteur distant et le met en cache.
+// Federation integration test (#1474): TWO `next dev` instances in this container (ports 3101 and 3102,
+// separate databases and build folders). Instance 1 resolves through WebFinger then sends a signed `Follow` to
+// instance 2, which checks the signature, fetches the remote actor and caches it.
 //   docker compose exec app npx tsx scripts/federation-two-instances.ts
 import { spawn, type ChildProcess } from 'node:child_process';
 import fs from 'node:fs';
@@ -8,7 +8,7 @@ import os from 'node:os';
 import path from 'node:path';
 import Database from 'better-sqlite3';
 
-// Next réécrit tsconfig.json (include des dossiers de build) : on le restaure à la fin.
+// Next rewrites tsconfig.json (includes the build folders): it is restored at the end.
 const tsconfigBackup = fs.readFileSync('tsconfig.json', 'utf8');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'fed2-'));
 const KEY = Buffer.alloc(32, 5).toString('base64');
@@ -34,7 +34,7 @@ function fail(msg: string): never {
   process.exit(1);
 }
 function cleanup() {
-  // `next dev` lance un serveur fils : on tue tout le groupe de processus, sinon il reste à écouter sur le port.
+  // `next dev` starts a child server: kill the whole process group, otherwise it keeps listening on the port.
   for (const p of procs) { try { process.kill(-p.pid!, 'SIGTERM'); } catch { p.kill('SIGTERM'); } }
   for (const i of [1, 2]) fs.rmSync(`.next-fed${i}`, { recursive: true, force: true });
   fs.rmSync(tmp, { recursive: true, force: true });
@@ -51,7 +51,7 @@ async function waitUp(port: number) {
 }
 
 async function main() {
-  // Comptes : alice sur l'instance 1, paul sur l'instance 2 (créés avant le démarrage, dans leur base).
+  // Accounts: alice on instance 1, paul on instance 2 (created before start-up, in their database).
   for (const [i, name] of [[0, 'Alice'], [1, 'Paul']] as const) {
     const env = baseEnv(i);
     await new Promise<void>((res, rej) => {
@@ -67,8 +67,8 @@ async function main() {
 
   const jrd = { accept: 'application/jrd+json' };
   const ap = { accept: 'application/activity+json' };
-  // 1. WebFinger de paul@instance2, interrogé comme le ferait l'instance 1.
-  // Premier appel : Next compile le proxy et la fédération à la volée, un 404 transitoire est possible.
+  // 1. WebFinger of paul@instance2, queried as instance 1 would.
+  // First call: Next compiles the proxy and the federation on the fly, a transient 404 is possible.
   let wf = await fetch(`http://127.0.0.1:3102/.well-known/webfinger?resource=${encodeURIComponent('acct:paul@127.0.0.1:3102')}`, { headers: jrd });
   for (let i = 0; i < 20 && wf.status !== 200; i++) {
     await sleep(1500);
@@ -78,17 +78,17 @@ async function main() {
   const self = ((await wf.json()) as { links: { rel: string; href: string }[] }).links.find((l) => l.rel === 'self')!.href;
   if (self !== 'http://127.0.0.1:3102/ap/users/paul') fail(`lien self inattendu ${self}`);
   const actor = (await (await fetch(self, { headers: ap })).json()) as Record<string, unknown>;
-  if (actor.preferredUsername !== 'paul' || JSON.stringify(actor).includes('@x.test')) fail('acteur invalide ou email exposé');
+  if (actor.preferredUsername !== 'paul' || JSON.stringify(actor).includes('@x.test')) fail('invalid actor or email exposed');
   console.log('OK WebFinger + acteur');
 
-  // 2. L'instance 1 demande paul en copain (Follow signé, clés de alice chiffrées en base 1) ; la file SQLite l'achemine.
+  // 2. Instance 1 sends paul a friend request (signed Follow, alice's keys encrypted in database 1); the SQLite queue delivers it.
   process.env.DATABASE_URL = baseEnv(0).DATABASE_URL;
   process.env.FEDERATION_DB = baseEnv(0).FEDERATION_DB;
   process.env.FEDERATION_KEY_ENC = KEY;
   process.env.FEDERATION_DEV_HTTP = '1';
   process.env.FEDERATION = 'on';
   process.env.BETTER_AUTH_URL = 'http://127.0.0.1:3101';
-  // 2 bis (#1475). Vraie résolution WebFinger + Follow signé par la file : alice demande `paul@127.0.0.1:3102` (copains entre serveurs).
+  // 2 bis (#1475). Real WebFinger resolution + Follow signed through the queue: alice asks `paul@127.0.0.1:3102` (friends across servers).
   const { getDb } = await import('../src/db');
   const { getFederation } = await import('../src/lib/federation');
   const { requestByAddress } = await import('../src/lib/federation/friends');
@@ -99,11 +99,11 @@ async function main() {
   if (!asked.ok) fail(`requestByAddress : ${asked.error}`);
   const { resolveWithFedify } = await import('../src/lib/federation/friends');
   const r = await resolveWithFedify({ handle: 'paul', domain: '127.0.0.1:3102' });
-  if (!r) fail('résolution de paul@127.0.0.1:3102 impossible');
+  if (!r) fail('cannot resolve paul@127.0.0.1:3102');
   const known = await requestByAddress(db1, aliceId, 'zorro@127.0.0.1:3102');
-  if (!known.ok) fail('adresse introuvable : réponse neutre attendue');
+  if (!known.ok) fail('address not found: neutral answer expected');
 
-  // 3. L'instance 2 a vérifié la signature (acteur 1 récupéré par HTTP) et mis alice en cache.
+  // 3. Instance 2 checked the signature (actor 1 fetched over HTTP) and cached alice.
   const db2 = new Database(baseEnv(1).DATABASE_URL, { readonly: true });
   for (let i = 0; i < 40; i++) {
     const row = db2.prepare('select handle, domain, display_name, public_key_pem from remote_actor').get() as { handle: string; domain: string; display_name: string; public_key_pem: string } | undefined;
@@ -111,13 +111,13 @@ async function main() {
     if (row) {
       if (row.handle !== 'alice' || row.domain !== '127.0.0.1:3101' || !row.public_key_pem?.includes('PUBLIC KEY')) fail(`cache inattendu ${JSON.stringify(row)}`);
       if (fr.length !== 1 || fr[0].status !== 'pending' || fr[0].requester_id !== null || !fr[0].addressee_id || !fr[0].remote_actor_id) { await sleep(500); continue; }
-      console.log('OK Follow signé reçu et vérifié ; remote_actor :', row.handle, row.domain, '; demande de copain en attente chez paul');
+      console.log('OK signed Follow received and verified; remote_actor:', row.handle, row.domain, '; friend request pending on paul\'s side');
       db2.close();
       cleanup();
       process.exit(0);
     }
     await sleep(500);
   }
-  fail('aucun acteur distant en cache côté instance 2 (Follow non reçu ou signature refusée)');
+  fail('no remote actor cached on instance 2 (Follow not received or signature rejected)');
 }
 main().catch((e) => fail(String(e)));
