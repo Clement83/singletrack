@@ -348,6 +348,7 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
         lat={initialView?.lat ?? home.lat}
         lon={initialView?.lng ?? home.lon}
         zoom={initialView?.z ?? 10}
+        terrain
         mapRef={mapRef}
         onLoad={() => { syncView(); onMapLoad(); }}
         onMoveEnd={syncView}

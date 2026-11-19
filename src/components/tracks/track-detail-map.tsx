@@ -47,6 +47,7 @@ export default function TrackDetailMap({ geometry, bbox, start, end, profile, da
       lon={start[0]}
       embedded={embedded}
       interactive={interactive}
+      terrain
       mapRef={mapRef}
       bounds={bbox}
       boundsPadding={40}
