@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 import type { EditorCtl } from './track-editor';
 import { AutosaveStatus, SaveForm, useEditorStats } from './editor-shared';
 
-// Préférence « profil replié », mémorisée dans le navigateur (peut être indisponible : navigation privée…).
+// "Collapsed profile" preference, remembered in the browser (may be unavailable: private browsing…).
 const PROFILE_KEY = 'singletrack.editor.profileCollapsed';
 const PROFILE_EVENT = 'singletrack:editor-profile';
 const readCollapsed = () => {
@@ -32,7 +32,7 @@ const writeCollapsed = (v: boolean) => {
   try {
     localStorage.setItem(PROFILE_KEY, v ? '1' : '0');
   } catch {
-    /* préférence non mémorisée, sans conséquence */
+    /* preference not remembered, no consequence */
   }
   window.dispatchEvent(new Event(PROFILE_EVENT));
 };
@@ -42,9 +42,9 @@ const subscribe = (cb: () => void) => {
 };
 
 /**
- * Haut de l'éditeur mobile (#1392) : bouton quitter, stats en direct (distance, D+, D−) et profil compact
- * pleine largeur, toujours visible (repliable d'un tap, préférence mémorisée). Glisser sur le profil = curseur +
- * point sur la carte (#1391). Moins de deux points : état vide de même hauteur, pas de saut de mise en page.
+ * Top of the mobile editor (#1392): quit button, live stats (distance, gain, loss) and compact full-width
+ * profile, always visible (collapsible with a tap, preference remembered). Dragging on the profile = cursor +
+ * point on the map (#1391). Fewer than two points: empty state of the same height, no layout shift.
  */
 export function EditorMobileProfile({ ctl }: { ctl: EditorCtl }) {
   const t = useTranslations('editor');
@@ -85,7 +85,7 @@ export function EditorMobileProfile({ ctl }: { ctl: EditorCtl }) {
         ) : (
           <div>
             {doc.waypoints.length < 2 ? (
-              // Profil vide (#1406) : une simple silhouette, sans consigne ; le texte reste pour les lecteurs d'écran.
+              // Empty profile (#1406): a simple silhouette, no instructions; the text stays for screen readers.
               <div className="flex h-16 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
                 <Mountain aria-hidden className="size-6 opacity-60" strokeWidth={1.5} />
                 <span className="sr-only">{t('profileEmpty')}</span>
@@ -100,7 +100,7 @@ export function EditorMobileProfile({ ctl }: { ctl: EditorCtl }) {
   );
 }
 
-/** Gros bouton de barre d'outils (≥ 56 px, icône + libellé court), à portée de pouce. */
+/** Big toolbar button (≥ 56 px, icon + short label), within thumb reach. */
 function BarButton({ label, icon: Icon, className, ...p }: React.ComponentProps<typeof Button> & { label: string; icon: typeof Route }) {
   return (
     <Button
@@ -115,9 +115,9 @@ function BarButton({ label, icon: Icon, className, ...p }: React.ComponentProps<
 }
 
 /**
- * Bas de l'éditeur mobile (#1392) : barre d'outils (Annuler · Rétablir · Chemins/Droite · Plus · Enregistrer) ou,
- * quand un point est sélectionné, sa barre d'actions (Supprimer, Couper avant/après, Tronçon droit/Chemins,
- * Fermer). Actions secondaires et enregistrement dans des tiroirs.
+ * Bottom of the mobile editor (#1392): toolbar (Undo · Redo · Paths/Straight · More · Save) or,
+ * when a point is selected, its action bar (Delete, Cut before/after, Straight segment/Paths,
+ * Close). Secondary actions and saving in drawers.
  */
 export function EditorMobileBottom({ ctl }: { ctl: EditorCtl }) {
   const t = useTranslations('editor');
@@ -127,7 +127,7 @@ export function EditorMobileBottom({ ctl }: { ctl: EditorCtl }) {
   const sel = state.selected;
   const selSegNext = sel !== null ? doc.segments[sel] : undefined;
 
-  // Retour haptique court à la sélection d'un point (si le téléphone le permet).
+  // Short haptic feedback when a point is selected (if the phone allows it).
   useEffect(() => {
     if (sel !== null) navigator.vibrate?.(10);
   }, [sel]);
@@ -206,7 +206,7 @@ export function EditorMobileBottom({ ctl }: { ctl: EditorCtl }) {
             <Route /> {t('snapAll')}
           </Button>
         </div>
-        {/* Aimant (#1437) : actif par défaut, mémorisé. */}
+        {/* Magnet (#1437): on by default, remembered. */}
         <div className="mt-4 flex flex-col gap-2">
           <Button variant="outline" role="switch" aria-checked={ctl.snapOn} className="justify-between" onClick={() => setSnapPref(!ctl.snapOn)}>
             <span className="flex items-center gap-2"><Magnet aria-hidden /> {t('snap.label')}</span>
@@ -216,7 +216,7 @@ export function EditorMobileBottom({ ctl }: { ctl: EditorCtl }) {
           </Button>
           <p className="text-small text-muted-foreground">{t('snap.hint')}</p>
         </div>
-        {/* Cycliste du routage (#1385) : s'applique aux prochains tronçons calculés. */}
+        {/* Routing rider (#1385): applies to the next computed segments. */}
         <div className="mt-4 flex flex-col gap-2">
           <p className="text-body font-semibold">{t('rider.label')}</p>
           <ChoiceChips

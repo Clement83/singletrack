@@ -17,7 +17,7 @@ import { SHORTCUTS, ariaShortcut, isTypingTarget, shortcutFor, type ShortcutActi
 import type { EditorCtl } from './track-editor';
 import { AutosaveStatus, SaveForm, useEditorStats } from './editor-shared';
 
-// Taille du profil flottant, mémorisée dans le navigateur (peut être indisponible : navigation privée…).
+// Size of the floating profile, remembered in the browser (may be unavailable: private browsing…).
 type ProfileSize = 'collapsed' | 'normal' | 'large';
 const SIZE_KEY = 'singletrack.editor.desktopProfile';
 const SIZE_EVENT = 'singletrack:editor-desktop-profile';
@@ -33,7 +33,7 @@ const writeSize = (v: ProfileSize) => {
   try {
     localStorage.setItem(SIZE_KEY, v);
   } catch {
-    /* préférence non mémorisée, sans conséquence */
+    /* preference not remembered, no consequence */
   }
   window.dispatchEvent(new Event(SIZE_EVENT));
 };
@@ -44,7 +44,7 @@ const subscribeSize = (cb: () => void) => {
 
 const isMac = () => typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 
-/** Touches d'un raccourci, affichées en `<kbd>` (Ctrl/Maj, ou ⌘/⇧ sur Mac). */
+/** Keys of a shortcut, shown as `<kbd>` (Ctrl/Shift, or ⌘/⇧ on Mac). */
 function Keys({ action, className }: { action: ShortcutAction; className?: string }) {
   const t = useTranslations('editor.keys');
   const mac = isMac();
@@ -64,7 +64,7 @@ function Keys({ action, className }: { action: ShortcutAction; className?: strin
 
 const panel = 'glass rounded-2xl border border-border text-card-foreground shadow-md';
 
-/** Bouton de la boîte à outils : icône 44 px, libellé accessible, info-bulle (libellé + raccourci) au survol et au focus. */
+/** Toolbox button: 44 px icon, accessible label, tooltip (label + shortcut) on hover and focus. */
 function ToolButton({
   icon: Icon, label, shortcut, pressed, ...p
 }: React.ComponentProps<typeof Button> & { icon: LucideIcon; label: string; shortcut?: ShortcutAction; pressed?: boolean }) {
@@ -81,7 +81,7 @@ function ToolButton({
       >
         <Icon aria-hidden />
       </Button>
-      {/* Info-bulle décorative : le libellé est déjà porté par aria-label. */}
+      {/* Decorative tooltip: the label is already carried by aria-label. */}
       <span
         aria-hidden
         className="pointer-events-none absolute top-1/2 left-full z-30 ml-2 flex -translate-y-1/2 items-center gap-2 rounded-lg bg-popover px-2.5 py-1.5 text-small whitespace-nowrap text-popover-foreground opacity-0 shadow-md transition-opacity duration-150 group-focus-within:opacity-100 group-hover:opacity-100"
@@ -94,10 +94,10 @@ function ToolButton({
 }
 
 /**
- * Éditeur desktop (≥ 1024 px, #1393) : carte plein écran, l'interface flotte par-dessus.
- * Haut gauche : retour + titre ; colonne gauche : boîte à outils (info-bulles + raccourcis) ; haut droite :
+ * Desktop editor (≥ 1024 px, #1393): full-screen map, the interface floats on top.
+ * Top left: back + title; left column: toolbox (tooltips + shortcuts); top right:
  * profil flottant toujours visible (repliable en pastille, agrandissable) ; bas droite : « Enregistrer » →
- * panneau latéral. Raccourcis : Ctrl/Cmd+Z, Ctrl/Cmd+Maj+Z, Suppr, Échap, R / D, Ctrl/Cmd+S, « ? ».
+ * side panel. Shortcuts: Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z, Delete, Escape, R / D, Ctrl/Cmd+S, "?".
  */
 export function EditorDesktop({ ctl }: { ctl: EditorCtl }) {
   const t = useTranslations('editor');
@@ -109,7 +109,7 @@ export function EditorDesktop({ ctl }: { ctl: EditorCtl }) {
   const helpClose = useRef<HTMLButtonElement>(null);
   const sel = state.selected;
 
-  // Raccourcis clavier : le gestionnaire est remis à jour après chaque rendu (ref), l'écouteur n'est posé qu'une fois.
+  // Keyboard shortcuts: the handler is refreshed after every render (ref), the listener is only added once.
   const handler = useRef<(e: KeyboardEvent) => void>(() => {});
   useEffect(() => {
     handler.current = (e: KeyboardEvent) => {
@@ -180,7 +180,7 @@ export function EditorDesktop({ ctl }: { ctl: EditorCtl }) {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  // Aide : le focus va sur « Fermer » à l'ouverture et revient où il était à la fermeture.
+  // Help: focus goes to "Close" on opening and back where it was on closing.
   useEffect(() => {
     if (!help) return;
     const prev = document.activeElement as HTMLElement | null;
@@ -208,7 +208,7 @@ export function EditorDesktop({ ctl }: { ctl: EditorCtl }) {
         <span className="ml-2"><AutosaveStatus ctl={ctl} /></span>
       </div>
 
-      {/* Colonne gauche : boîte à outils */}
+      {/* Left column: toolbox */}
       <div role="toolbar" aria-orientation="vertical" aria-label={t('toolbox')} className={cn(panel, 'absolute top-20 left-3 z-10 flex flex-col gap-1 p-1')}>
         <ToolButton icon={Route} label={t('shortcutLabels.modeRoute')} shortcut="modeRoute" pressed={state.newMode === 'route'} onClick={() => dispatch({ type: 'newMode', mode: 'route' })} />
         <ToolButton icon={Spline} label={t('shortcutLabels.modeLine')} shortcut="modeLine" pressed={state.newMode === 'line'} onClick={() => dispatch({ type: 'newMode', mode: 'line' })} />
@@ -229,7 +229,7 @@ export function EditorDesktop({ ctl }: { ctl: EditorCtl }) {
         <ToolButton icon={CircleHelp} label={t('help')} shortcut="help" aria-haspopup="dialog" onClick={() => setHelp(true)} />
       </div>
 
-      {/* Haut droite : profil flottant (à gauche des boutons de la carte), masqué derrière le panneau d'enregistrement. */}
+      {/* Top right: floating profile (left of the map buttons), hidden behind the save panel. */}
       {!saveOpen &&
         (size === 'collapsed' ? (
           <button
@@ -271,7 +271,7 @@ export function EditorDesktop({ ctl }: { ctl: EditorCtl }) {
           </section>
         ))}
 
-      {/* Bas centre : valider la paire de chemins (#1642) */}
+      {/* Bottom centre: validate the path pair (#1642) */}
       {state.choice && !saveOpen && (
         <div role="group" aria-label={t('choice.group')} className="absolute bottom-10 left-1/2 z-10 -translate-x-1/2">
           <Button className="shadow-md" aria-keyshortcuts={ariaShortcut('keepChoice')} onClick={ctl.keepChoice}>
@@ -293,7 +293,7 @@ export function EditorDesktop({ ctl }: { ctl: EditorCtl }) {
         </Button>
       )}
 
-      {/* Panneau latéral d'enregistrement */}
+      {/* Save side panel */}
       {saveOpen && (
         <aside aria-label={t('savePanel')} className={cn(panel, 'absolute inset-y-3 right-3 z-20 flex w-panel flex-col overflow-hidden')}>
           <header className="flex items-start gap-2 p-4 pb-2">
@@ -344,8 +344,8 @@ export function EditorDesktop({ ctl }: { ctl: EditorCtl }) {
 }
 
 /**
- * Popover ancré au point sélectionné (desktop, #1393) : Supprimer, Couper avant/après, mode du tronçon suivant.
- * À poser dans la carte (`Marker`). Les clics ne traversent pas jusqu'à la carte ; Échap ferme (raccourci global).
+ * Popover anchored to the selected point (desktop, #1393): Delete, Cut before/after, mode of the next segment.
+ * To place inside the map (`Marker`). Clicks do not go through to the map; Escape closes it (global shortcut).
  */
 export function DesktopPointPopover({ ctl }: { ctl: EditorCtl }) {
   const t = useTranslations('editor');

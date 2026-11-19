@@ -40,7 +40,7 @@ import { EditorMobileBottom, EditorMobileProfile } from './editor-mobile';
 
 export type EditorMode = 'create' | 'update' | 'copy';
 export type AutosaveState = 'idle' | 'saving' | 'saved' | 'error';
-/** Délai avant l'enregistrement automatique d'une modification (#1450). */
+/** Delay before a change is saved automatically (#1450). */
 const AUTOSAVE_DELAY_MS = 2000;
 
 type Props = {
@@ -48,19 +48,19 @@ type Props = {
   initialDoc: EditorDoc;
   initialName?: string;
   initialDescription?: string;
-  /** Slug de la trace éditée (update) ou d'origine (copy). */
+  /** Slug of the edited track (update) or of the original (copy). */
   slug?: string;
-  /** Statut de la trace éditée en place (#1450). */
+  /** Status of the track edited in place (#1450). */
   initialStatus?: 'draft' | 'published';
-  /** Visibilité présélectionnée (#1590) : préférence du compte à la création / copie, valeur actuelle en modification. */
+  /** Preselected visibility (#1590): account preference on creation / copy, current value when editing. */
   initialVisibility?: TrackVisibilityValue;
   home: LonLat;
-  /** Zoom initial (vue transmise par la carte, #1577) ; 13 par défaut. */
+  /** Initial zoom (view passed by the map, #1577); 13 by default. */
   initialZoom?: number;
   bounds?: [number, number, number, number];
 };
 
-/** Tout ce dont les mises en page (mobile #1392, desktop #1393) ont besoin : état, actions, enregistrement. */
+/** Everything the layouts (mobile #1392, desktop #1393) need: state, actions, saving. */
 export type EditorCtl = {
   mode: EditorMode;
   state: EditorState;
@@ -70,48 +70,48 @@ export type EditorCtl = {
   pending: number[];
   canSave: boolean;
   home: LonLat;
-  /** Lien « quitter » (carte ou fiche de la trace). */
+  /** "Quit" link (map or track sheet). */
   quitHref: string;
-  /** Slug de la trace éditée (absent à la création). */
+  /** Slug of the edited track (absent on creation). */
   slug?: string;
-  /** Vrai si des modifications ne sont pas encore enregistrées (enregistrement automatique en attente ou en cours). */
+  /** True if changes are not saved yet (automatic save pending or in progress). */
   dirty: boolean;
-  /** Enregistrement automatique (#1450) : état de l'indicateur. */
+  /** Automatic save (#1450): indicator state. */
   autosave: AutosaveState;
-  /** Libellé de l'action principale du panneau : `publish` (brouillon / nouvelle trace) ou `update` (trace déjà publiée). */
+  /** Label of the panel's main action: `publish` (draft / new track) or `update` (already published track). */
   saveKey: 'publish' | 'update';
-  /** Une trace de l'utilisateur existe déjà en base (brouillon ou publiée) : on peut la supprimer. */
+  /** A track of the user already exists in the database (draft or published): it can be deleted. */
   canDelete: boolean;
-  /** Avant de quitter : enregistre d'abord, puis navigue ; popin seulement si l'enregistrement échoue. */
+  /** Before quitting: saves first, then navigates; dialog only if saving fails. */
   requestLeave: (e: { preventDefault: () => void }) => void;
   name: string;
   setName: (v: string) => void;
   description: string;
   setDescription: (v: string) => void;
-  /** Visibilité de la trace (#1590), envoyée à chaque enregistrement. */
+  /** Track visibility (#1590), sent on every save. */
   visibility: TrackVisibilityValue;
   setVisibility: (v: TrackVisibilityValue) => void;
   errors: Record<string, string>;
   saving: boolean;
   save: () => Promise<void>;
-  /** Curseur du profil (indice dans `stats.profile`, qui suit point par point la géométrie du doc), #1391. */
+  /** Profile cursor (index in `stats.profile`, which follows the doc's geometry point by point), #1391. */
   setProfileCursor: (i: number | null) => void;
-  /** Cycliste du routage (#1385) : musculaire ou VAE (seuils de pente différents). */
+  /** Routing rider (#1385): muscle bike or e-bike (different slope thresholds). */
   rider: Rider;
-  /** Survol de la trace à la souris (desktop) → curseur imposé au profil (#1383), sans déplacer la carte. */
+  /** Mouse hover on the track (desktop) → cursor forced on the profile (#1383), without moving the map. */
   mapHoverIndex: number | null;
-  /** Itinéraires alternatifs (#1386) de chaque tronçon de la portion modifiée (#1527), vides dès le prochain geste sur ces tronçons. */
+  /** Alternative routes (#1386) of each segment of the modified portion (#1527), emptied at the next gesture on those segments. */
   alts: AltSet[];
-  /** Choisit l'itinéraire `i` du tronçon `seg` (entre dans l'historique ; 0 = recommandé). */
+  /** Chooses route `i` of segment `seg` (enters the history; 0 = recommended). */
   chooseAlt: (i: number, seg: number) => void;
-  /** Passe à l'itinéraire suivant (raccourci A). */
+  /** Moves to the next route (shortcut A). */
   cycleAlt: () => void;
-  /** Valide la paire de chemins : l'option sélectionnée reste, l'autre disparaît (#1642). */
+  /** Validates the path pair: the selected option stays, the other disappears (#1642). */
   keepChoice: () => void;
-  /** Parcours d'origine de la dernière déviation (#1451), rétablissable d'un tap ; `null` dès le geste suivant. */
+  /** Original route of the last detour (#1451), restorable with a tap; `null` from the next gesture. */
   deviation: Deviation | null;
   restoreDeviation: () => void;
-  /** Aimant (#1437) : actif ou non (réglage mémorisé). */
+  /** Magnet (#1437): on or off (remembered setting). */
   snapOn: boolean;
 };
 
@@ -119,11 +119,11 @@ type AltAnswer = { coordinates: Position[]; deltaKm: number; quality: Quality };
 const key = (a: LonLat, b: LonLat) => `${a[0]},${a[1]}|${b[0]},${b[1]}`;
 
 /**
- * Éditeur de traces (#1340) : on tape sur la carte pour poser des points, BRouter relie les points en
- * suivant les chemins VTT (ou ligne droite, segment par segment). Tap sur la ligne = insérer un point,
- * glisser un point = le déplacer, tap sur un point = le sélectionner (supprimer, couper).
- * Mise en page différenciée (#1394) : mobile = profil en haut + grosse barre d'outils en bas (#1392) ;
- * desktop = carte plein écran avec interface flottante, popover du point et raccourcis clavier (#1393).
+ * Track editor (#1340): tap on the map to place points, BRouter joins the points
+ * along the mountain-bike paths (or a straight line, segment by segment). Tap on the line = insert a point,
+ * drag a point = move it, tap on a point = select it (delete, cut).
+ * Distinct layouts (#1394): mobile = profile at the top + big toolbar at the bottom (#1392);
+ * desktop = full-screen map with a floating interface, point popover and keyboard shortcuts (#1393).
  */
 export function TrackEditor({ mode, initialDoc, initialName = '', initialDescription = '', slug, initialStatus, initialVisibility = 'public', home, bounds, initialZoom }: Props) {
   const t = useTranslations('editor');
@@ -131,7 +131,7 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
   const colors = useMapColors();
   const desktop = useMediaQuery(DESKTOP);
   const mapRef = useRef<MapRef>(null);
-  // Singles OSM sous le tracé (#1436) : repères pour tracer, base de l'aimant #1437.
+  // OSM singletracks under the line (#1436): landmarks for drawing, base of the magnet #1437.
   const [singlesOn] = useSinglesPref();
   const [singlesView, setSinglesView] = useState<[number, number, number, number] | null>(null);
   const [singlesZoom, setSinglesZoom] = useState(0);
@@ -143,7 +143,7 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
       setSinglesZoom(m.getZoom());
     }
   }, []);
-  // Tests de bout en bout (#1523) : le test pose `window.__E2E__` avant le chargement, la carte est alors exposée pour projeter/inspecter.
+  // End-to-end tests (#1523): the test sets `window.__E2E__` before loading, the map is then exposed to project/inspect.
   const onMapLoad = useCallback(() => {
     syncSinglesView();
     const w = window as unknown as { __E2E__?: boolean; __editorMap?: unknown };
@@ -151,7 +151,7 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
   }, [syncSinglesView]);
   const singles = useSingles(singlesOn, singlesView, singlesZoom);
   const snapOn = useSnapPref();
-  // Alt (ou Maj) maintenu = pose libre, sans aimant (desktop, #1437).
+  // Alt (or Shift) held = free placement, no magnet (desktop, #1437).
   const freeKey = useRef(false);
   useEffect(() => {
     const set = (e: KeyboardEvent) => {
@@ -173,7 +173,7 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
     () => (singles?.status === 'ok' ? singles.features.flatMap((f) => (f.geometry.type === 'LineString' ? [f.geometry.coordinates] : f.geometry.coordinates)).map((coordinates) => ({ coordinates })) : []),
     [singles],
   );
-  // Zones de clic : étroites à la souris, larges au doigt (#1524).
+  // Click areas: narrow with a mouse, wide with a finger (#1524).
   const hitPx = useSyncExternalStore(
     (cb) => {
       const mq = window.matchMedia(FINE_POINTER);
@@ -187,7 +187,7 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
   useEffect(() => {
     docRef.current = doc;
   }, [doc]);
-  /** Position aimantée de `p` (singles d'abord, puis la trace en cours hors tronçons `exclude`), ou `null` si libre. */
+  /** Snapped position of `p` (singletracks first, then the current track outside segments `exclude`), or `null` if free. */
   const snapPoint = useCallback(
     (p: LonLat, exclude: number[] = []): LonLat | null => {
       const m = mapRef.current;
@@ -197,11 +197,11 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
     },
     [snapOn, singleLines],
   );
-  // Halo de la cible pendant le glisser d'un point, vibration brève à l'accroche (mobile).
+  // Halo of the target while dragging a point, short vibration on snapping (mobile).
   const [snapHalo, setSnapHalo] = useState<LonLat | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  // Brouillons (#1450) : la trace existe en base dès le premier enregistrement automatique (`liveSlug`).
+  // Drafts (#1450): the track exists in the database from the first automatic save (`liveSlug`).
   const [liveSlug, setLiveSlug] = useState<string | undefined>(mode === 'update' ? slug : undefined);
   const [liveStatus, setLiveStatus] = useState<'draft' | 'published' | null>(mode === 'update' ? (initialStatus ?? 'published') : null);
   const [autosave, setAutosave] = useState<AutosaveState>('idle');
@@ -212,26 +212,26 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [profileCursor, setProfileCursor] = useState<number | null>(null);
   const [mapHoverIndex, setMapHoverIndex] = useState<number | null>(null);
-  // Souris (desktop, #1384) : menu du clic droit sur la ligne, glisser la ligne pour insérer un point, infobulle.
+  // Mouse (desktop, #1384): right-click menu on the line, drag the line to insert a point, tooltip.
   const [lineMenu, setLineMenu] = useState<LineMenuState>(null);
   const [dragLine, setDragLine] = useState<{ seg: number; x: number; y: number; p: LonLat; moved: boolean } | null>(null);
   const [tip, setTip] = useState<HoverTipState>(null);
   const closeLineMenu = useCallback(() => setLineMenu(null), []);
   const rider = useRider();
-  // Justification du dernier tronçon recalé (« +0,9 km, −140 m de D+ », #1385), affichée quelques secondes.
+  // Justification of the last re-routed segment (« +0,9 km, −140 m de D+ », #1385), shown for a few seconds.
   const [routeNote, setRouteNote] = useState<{ p: LonLat; extraKm: number; gainSavedM: number | null } | null>(null);
   useEffect(() => {
     if (!routeNote) return;
     const timer = setTimeout(() => setRouteNote(null), 6000);
     return () => clearTimeout(timer);
   }, [routeNote]);
-  // Souris au-dessus de la ligne : curseur « insérer » (copy) au lieu de « ajouter » (crosshair), #1393.
+  // Mouse over the line: "insert" cursor (copy) instead of "add" (crosshair), #1393.
   const [overLine, setOverLine] = useState(false);
   const cache = useRef(new Map<string, { coords: Position[]; alts: AltAnswer[] }>());
   const [altSets, setAltSets] = useState<AltSet[]>([]);
   const inflight = useRef(new Set<string>());
   const lastDrag = useRef(0);
-  // Relâcher hors de la carte : on termine le glisser de ligne au dernier point connu (#1525).
+  // Releasing outside the map: the line drag ends at the last known point (#1525).
   useEffect(() => {
     if (!dragLine) return;
     const up = () => {
@@ -246,10 +246,10 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
     return () => window.removeEventListener('mouseup', up);
   }, [dragLine, snapPoint, dispatch]);
 
-  // Routage : chaque segment « chemins » sans tracé est demandé à BRouter (avec cache par couple de points).
+  // Routing: each "paths" segment without a line is asked from BRouter (with a cache per pair of points).
   const pending = pendingSegments(doc);
-  // Aimant BRouter (#1437) : le tronçon est résolu, puis chaque extrémité est ramenée sur le début/la fin du tracé
-  // calculé si l'écart est sous la tolérance. Hors historique ; la signature des alternatives suit le point déplacé.
+  // BRouter magnet (#1437): the segment is resolved, then each end is brought back onto the start/end of the computed
+  // line if the gap is under the tolerance. Outside history; the alternatives' signature follows the moved point.
   const settle = (i: number, from: LonLat, to: LonLat, coords: Position[], alts: AltAnswer[]) => {
     const m = mapRef.current;
     const r = resolveRouted({
@@ -263,7 +263,7 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
     for (const i of pending) {
       const from = doc.waypoints[i];
       const to = doc.waypoints[i + 1];
-      const k = `${rider}|${key(from, to)}`; // le cache inclut le cycliste (profil BRouter différent)
+      const k = `${rider}|${key(from, to)}`; // the cache includes the rider (different BRouter profile)
       const hit = cache.current.get(k);
       if (hit) {
         settle(i, from, to, hit.coords, hit.alts);
@@ -291,7 +291,7 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
     }
   }, [doc, pending.join(), rider]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Déviation élargie (#1641, desktop) : après un glisser, on route les ancres lointaines puis on ouvre la paire « nouveau / ancien ».
+  // Widened detour (#1641, desktop): after a drag, the far anchors are routed then the "new / old" pair opens.
   const routeCoords = async (from: LonLat, to: LonLat): Promise<Position[] | null> => {
     const k = `${rider}|${key(from, to)}`;
     const hit = cache.current.get(k);
@@ -326,7 +326,7 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
     };
   }, [state.pending, desktop]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Un jeu par tronçon recalculé : après un glisser (2 tronçons) on garde les alternatives des deux (#1527).
+  // One set per re-routed segment: after a drag (2 segments) the alternatives of both are kept (#1527).
   const alts = withoutChoiceAlts(liveAltSets(altSets, (i) => doc.segments[i]?.coords ?? undefined, rider), state.choice);
   const chooseAlt = (i: number, seg: number) => {
     const set = alts.find((s) => s.seg === seg);
@@ -336,7 +336,7 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
     setAltSets((cur) => upsertAlt(cur, seg, r.altSet, r.altSet.gen));
   };
   const restoreDeviation = () => dispatch({ type: 'restoreDeviation' });
-  // A : fait passer ensemble tous les tronçons de la portion à leur itinéraire suivant.
+  // A: moves every segment of the portion to its next route together.
   const cycleAlt = () => (alts.length ? alts.forEach((s) => chooseAlt(nextAlt(s), s.seg)) : state.deviation ? restoreDeviation() : undefined);
   const deviationFeatures = useMemo(
     () => ({
@@ -357,7 +357,7 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
     [alts],
   );
 
-  // Paire de choix (#1642) : tronçons qui diffèrent de chaque option (halo + clic), pentes de l'option non retenue.
+  // Choice pair (#1642): segments that differ in each option (halo + click), slopes of the option not kept.
   const choice = state.choice;
   const choiceFeatures = useMemo(
     () => ({
@@ -396,7 +396,7 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
     [doc],
   );
 
-  // Pentes : recalculées sur la version différée du doc (le glisser reste fluide), mémoïsées.
+  // Slopes: recomputed on the deferred version of the doc (dragging stays smooth), memoised.
   const slowDoc = useDeferredValue(doc);
   const slopeData = useMemo(
     () => slopeFeaturesForRuns(slowDoc.segments.map((s, i) => ({ coords: segmentLine(slowDoc, i), route: s.mode === 'route' }))),
@@ -427,10 +427,10 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
   );
 
   const sel = state.selected;
-  // Mémoïsé : les pastilles km (#1382) ne se recalculent que si la trace change.
+  // Memoised: the km chips (#1382) are only recomputed when the track changes.
   const geometry = useMemo(() => docGeometry(doc), [doc]);
   const located = useMemo(() => geometry?.coordinates.map(([lon, lat]) => ({ lon, lat })) ?? [], [geometry]);
-  // Distance cumulée de chaque sommet (infobulle) et pentes du profil.
+  // Cumulative distance of each vertex (tooltip) and profile slopes.
   const cumKm = useMemo(() => {
     const c = geometry?.coordinates ?? [];
     const out: number[] = [];
@@ -448,11 +448,11 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
   const canSave = !!geometry && doc.waypoints.length >= 2 && pending.length === 0 && stats.distanceM >= 100;
   const cursorPos = profileCursor !== null ? geometry?.coordinates[profileCursor] : undefined;
 
-  // Enregistrement automatique (#1450) : chaque modification est envoyée après un court délai, et à la sortie de la page.
-  // Plus d'alerte « modifications non enregistrées » : seul un échec d'enregistrement ouvre une popin.
+  // Automatic save (#1450): every change is sent after a short delay, and when leaving the page.
+  // No more "unsaved changes" alert: only a failed save opens a dialog.
   const canAutosave = !!geometry && doc.waypoints.length >= 2 && pending.length === 0;
   const autoSig = `${docSig(doc.waypoints, doc.segments.map((s) => s.mode), 'x')}|${name}|${description}|${visibility}|${geometry ? `${geometry.coordinates.length}:${Math.round(stats.distanceM)}` : ''}`;
-  const [savedSig, setSavedSig] = useState(autoSig); // état à l'ouverture = déjà enregistré
+  const [savedSig, setSavedSig] = useState(autoSig); // state on opening = already saved
   const unsaved = autoSig !== savedSig;
   const [leaveOpen, setLeaveOpen] = useState(false);
   const leavingRef = useRef(false);
@@ -463,7 +463,7 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
     latest.current = { doc, name, description, visibility, canAutosave, autoSig, liveSlug, liveStatus };
   });
 
-  /** `ok` enregistré, `skip` rien à faire (ou impossible sans nom), `fail` échec. `publish` : nom exigé, statut publié. */
+  /** `ok` saved, `skip` nothing to do (or impossible without a name), `fail` failure. `publish`: name required, published status. */
   const persist = useCallback(
     async (publish: boolean, keepalive = false): Promise<{ r: 'ok' | 'skip' | 'fail'; slug?: string }> => {
       if (running.current) {
@@ -477,10 +477,10 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
         setErrors({ name: t('nameRequired') });
         return { r: 'fail' };
       }
-      if (asPublished && !c.name.trim()) return { r: 'skip' }; // une trace publiée garde son nom
+      if (asPublished && !c.name.trim()) return { r: 'skip' }; // a published track keeps its name
       running.current = true;
       setAutosave('saving');
-      const g = docGeometry(c.doc, { densifyM: 50 })!; // lignes droites densifiées : l'altitude IGN suit le terrain
+      const g = docGeometry(c.doc, { densifyM: 50 })!; // straight lines densified: the IGN elevation follows the terrain
       const body = JSON.stringify({
         name: c.name, description: c.description, visibility: c.visibility, geometry: g, waypoints: c.doc.waypoints, modes: c.doc.segments.map((s) => s.mode),
         status: asPublished ? 'published' : 'draft',
@@ -523,7 +523,7 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
     [mode, slug, t],
   );
 
-  // Modification → enregistrement après un court délai (le délai repart à chaque geste).
+  // Change → save after a short delay (the delay restarts on every gesture).
   useEffect(() => {
     if (!unsaved || !canAutosave || saving || leavingRef.current) return;
     if (running.current) {
@@ -539,7 +539,7 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
     savedSigRef.current = savedSig;
   }, [savedSig]);
 
-  // Page masquée / fermée : on envoie tout de suite ; retour du réseau : on réessaie.
+  // Page hidden / closed: send right away; network back: retry.
   useEffect(() => {
     const flush = () => {
       if (latest.current.autoSig !== savedSigRef.current && latest.current.canAutosave) void persist(false, true);
@@ -556,7 +556,7 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
     };
   }, [persist]);
 
-  // Seul un échec d'enregistrement garde l'alerte du navigateur : sinon rien ne se perd.
+  // Only a failed save keeps the browser alert: otherwise nothing is lost.
   useEffect(() => {
     if (!(autosave === 'error' && unsaved)) return;
     const warn = (e: BeforeUnloadEvent) => { if (!leavingRef.current) e.preventDefault(); };
@@ -567,7 +567,7 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
   const quitHrefFor = (s: string | undefined) => (s ? (mode === 'create' ? '/?mine=1' : `/t/${s}`) : mode === 'create' ? '/' : `/t/${slug}`);
   const quitHref = quitHrefFor(liveSlug);
   const dirty = unsaved || autosave === 'saving';
-  /** Enregistre ce qui reste, puis quitte ; si ça échoue, la popin propose de réessayer ou de partir. */
+  /** Saves what is left, then quits; if that fails, the dialog offers to retry or leave. */
   const flushAndLeave = async () => {
     const res = await persist(false);
     if (res.r === 'fail') {
@@ -576,7 +576,7 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
     }
     leavingRef.current = true;
     setLeaveOpen(false);
-    router.push(quitHrefFor(res.slug ?? latest.current.liveSlug)); // repli explicite : jamais router.back()
+    router.push(quitHrefFor(res.slug ?? latest.current.liveSlug)); // explicit fallback: never router.back()
   };
   const leaveNow = () => {
     leavingRef.current = true;
@@ -590,7 +590,7 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
     else void flushAndLeave();
   };
 
-  /** « Publier » / « Enregistrer » du panneau : nom exigé, la trace devient (ou reste) publiée. */
+  /** Panel "Publish" / "Save": name required, the track becomes (or stays) published. */
   async function save() {
     if (!canSave) return;
     setSaving(true);
@@ -636,14 +636,14 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
           <BaseMap lat={home[1]} lon={home[0]} zoom={initialZoom ?? 13} mapRef={mapRef} bounds={bounds} onLoad={onMapLoad} onMoveEnd={syncSinglesView} onClick={onMapClick}
             interactiveLayerIds={['choice-hit', 'alt-hit', 'dev-hit', 'edit-hit']}
             onMouseDown={(e) => {
-              // Glisser la ligne = insérer un point et le placer, en un geste (desktop, #1384).
+              // Dragging the line = insert a point and place it, in one gesture (desktop, #1384).
               if (!desktop || e.originalEvent.button !== 0) return;
-              // Un appui sur un point (départ, arrivée…) est son propre glisser : il ne doit pas aussi démarrer
-              // l'insertion d'un point sur la ligne qui passe dessous (#1466).
+              // A press on a point (start, finish…) is its own drag: it must not also start
+              // inserting a point on the line passing under it (#1466).
               if ((e.originalEvent.target as HTMLElement | null)?.closest?.('[data-waypoint]')) return;
               const hit = e.features?.find((f) => f.layer.id === 'edit-hit');
               if (!hit) return;
-              e.preventDefault(); // pas de déplacement de la carte pendant ce geste
+              e.preventDefault(); // no map panning during this gesture
               setDragLine({ seg: Number(hit.properties.seg), x: e.point.x, y: e.point.y, p: [e.lngLat.lng, e.lngLat.lat], moved: false });
             }}
             onMouseUp={(e) => {
@@ -669,7 +669,7 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
               }
               const over = !!e.features?.some((f) => f.layer.id === 'edit-hit');
               setOverLine(over);
-              // Survol de la trace → curseur du profil (#1383) ; le profil suit la géométrie point par point.
+              // Hovering the track → profile cursor (#1383); the profile follows the geometry point by point.
               const near = over && located.length > 1 ? nearestProfileIndex(located, e.lngLat.lng, e.lngLat.lat) : null;
               setMapHoverIndex(near !== null && hasEle ? near : null);
               setTip(desktop && near !== null && !lineMenu ? tipAt(e.point.x, e.point.y, near) : null);
@@ -715,8 +715,8 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
                   longitude={w[0]}
                   latitude={w[1]}
                   draggable
-                  // Les points passent toujours au-dessus des pastilles, notes et repères ; l'arrivée au-dessus du départ
-                  // (boucle fermée), le point sélectionné au-dessus de tout (#1466).
+                  // Points always go above chips, notes and markers; the finish above the start
+                  // (closed loop), the selected point above everything (#1466).
                   style={{ zIndex: isSel ? 30 : last ? 20 : 10 }}
                   onDrag={(e) => {
                     const snapped = snapPoint([e.lngLat.lng, e.lngLat.lat], pointDragExclude(i));
@@ -733,8 +733,8 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
                   }}
                   onClick={(e) => {
                     e.originalEvent.stopPropagation();
-                    // Un tap/clic ne fait plus rien d'office (#1465) : le geste par défaut est le glisser.
-                    // Au clavier (detail 0), Entrée/Espace ouvre les actions du point.
+                    // A tap/click no longer does anything by default (#1465): the default gesture is the drag.
+                    // From the keyboard (detail 0), Enter/Space opens the point's actions.
                     if ((e.originalEvent as MouseEvent).detail === 0) dispatch({ type: 'select', i: isSel ? null : i });
                     else if (isSel) dispatch({ type: 'select', i: null });
                   }}
@@ -744,7 +744,7 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
                     type="button"
                     data-waypoint=""
                     onContextMenu={(e) => {
-                      // Clic droit (desktop, #1384) ou appui long (mobile) = actions du point.
+                      // Right click (desktop, #1384) or long press (mobile) = the point's actions.
                       e.preventDefault();
                       dispatch({ type: 'select', i });
                     }}
@@ -796,8 +796,8 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
           <SlopeLegend className={desktop ? 'bottom-10 left-3' : 'left-3 top-3'} />
         )}
         {doc.waypoints.length === 0 && (
-          // Affordance sans texte (#1406) : un départ « fantôme » au centre de la carte, qui invite au premier tap.
-          // La consigne reste lue par les lecteurs d'écran.
+          // Wordless affordance (#1406): a "ghost" start at the centre of the map, inviting the first tap.
+          // The instruction is still read by screen readers.
           <div aria-live="polite" className="pointer-events-none absolute inset-0 flex items-center justify-center">
             <span className="sr-only">{t('emptyHint')}</span>
             <span

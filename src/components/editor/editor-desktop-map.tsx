@@ -17,9 +17,9 @@ export type LineMenuState = { seg: number; p: LonLat } | null;
 export type HoverTipState = { x: number; y: number; km: number; ele: number | null; grade: number | null } | null;
 
 /**
- * Menu du clic droit sur la ligne (desktop, #1384) : insérer un point ici, passer le tronçon en ligne droite ou
- * sur les chemins. Les mêmes actions existent sans clic droit (clic sur la ligne, popover du point) : rien
- * n'est réservé à la souris. Échap ou un clic sur la carte le ferment.
+ * Right-click menu on the line (desktop, #1384): insert a point here, switch the segment to a straight line or
+ * to the paths. The same actions exist without a right click (click on the line, point popover): nothing
+ * is mouse-only. Escape or a click on the map closes it.
  */
 export function LineMenu({ ctl, menu, onClose }: { ctl: EditorCtl; menu: NonNullable<LineMenuState>; onClose: () => void }) {
   const t = useTranslations('editor');
@@ -71,7 +71,7 @@ export function LineMenu({ ctl, menu, onClose }: { ctl: EditorCtl; menu: NonNull
   );
 }
 
-/** Infobulle au survol de la ligne ou d'un point (desktop, #1384) : km, altitude, pente. Purement informative. */
+/** Tooltip when hovering the line or a point (desktop, #1384): km, elevation, slope. Purely informative. */
 export function HoverTip({ tip }: { tip: NonNullable<HoverTipState> }) {
   const tp = useTranslations('profile');
   const format = useFormatter();
@@ -95,7 +95,7 @@ export function HoverTip({ tip }: { tip: NonNullable<HoverTipState> }) {
 }
 
 /**
- * Pourquoi ce tronçon fait un détour (#1385) : « +0,9 km, −140 m de D+ », posé au milieu du tronçon recalé,
+ * Why this segment makes a detour (#1385): « +0,9 km, −140 m de D+ », placed in the middle of the re-routed segment,
  * quelques secondes, discret et non cliquable (mobile et desktop).
  */
 export function RouteNoteMarker({ note }: { note: { p: LonLat; extraKm: number; gainSavedM: number | null } }) {
@@ -113,7 +113,7 @@ export function RouteNoteMarker({ note }: { note: { p: LonLat; extraKm: number; 
   );
 }
 
-/** Texte court d'un itinéraire de `alts` : « +5 km · plus doux » ou « Recommandé » (#1386). */
+/** Short text of a route of `alts`: "+5 km · gentler" or "Recommended" (#1386). */
 function useAltText(alts: AltSet) {
   const t = useTranslations('editor');
   const format = useFormatter();
@@ -126,8 +126,8 @@ function useAltText(alts: AltSet) {
 }
 
 /**
- * Pastilles des itinéraires non retenus sur la carte (desktop, #1386) : un clic = choisir cet itinéraire pour le
- * tronçon. Le choix reste aussi possible au clavier (touche A fait défiler) : rien n'est réservé au survol.
+ * Chips of the routes not kept, on the map (desktop, #1386): a click = choose this route for the
+ * segment. The choice is also possible from the keyboard (key A cycles): nothing is hover-only.
  */
 export function AltLabels({ alts, onChoose }: { alts: AltSet; onChoose: (i: number) => void }) {
   const text = useAltText(alts);
@@ -152,7 +152,7 @@ export function AltLabels({ alts, onChoose }: { alts: AltSet; onChoose: (i: numb
   });
 }
 
-/** Petite carte flottante au-dessus de la barre du bas (mobile, #1386) : un bouton ≥ 44 px par itinéraire. */
+/** Small floating card above the bottom bar (mobile, #1386): one button ≥ 44 px per route. */
 export function AltCard({ alts, onChoose, raised = false }: { alts: AltSet; onChoose: (i: number) => void; raised?: boolean }) {
   const t = useTranslations('editor');
   const text = useAltText(alts);
@@ -177,7 +177,7 @@ export function AltCard({ alts, onChoose, raised = false }: { alts: AltSet; onCh
   );
 }
 
-/** Parcours d'origine remplacé par une déviation (#1451) : pastille sur la ligne grise (desktop). */
+/** Original route replaced by a detour (#1451): chip on the grey line (desktop). */
 export function DeviationLabel({ deviation, onRestore }: { deviation: Deviation; onRestore: () => void }) {
   const t = useTranslations('editor');
   const mid = deviation.path[Math.floor(deviation.path.length / 2)];
@@ -198,7 +198,7 @@ export function DeviationLabel({ deviation, onRestore }: { deviation: Deviation;
   );
 }
 
-/** Carte flottante mobile : un bouton ≥ 44 px pour rétablir le parcours d'origine (#1451). */
+/** Mobile floating card: one button ≥ 44 px to restore the original route (#1451). */
 export function DeviationCard({ onRestore }: { onRestore: () => void }) {
   const t = useTranslations('editor');
   return (
@@ -211,8 +211,8 @@ export function DeviationCard({ onRestore }: { onRestore: () => void }) {
 }
 
 /**
- * Étiquette de chaque chemin d'une paire de choix (desktop, #1642) : écart de km et de D+ par rapport à l'autre
- * option, posée sur la ligne. Un clic = sélectionner ce chemin ; la sélectionnée est marquée par `aria-pressed`.
+ * Label of each path of a choice pair (desktop, #1642): km and gain difference from the other
+ * option, placed on the line. A click = select this path; the selected one is marked by `aria-pressed`.
  */
 export function ChoiceLabels({ choice, onSelect }: { choice: ChoicePair; onSelect: (w: ChoiceWhich) => void }) {
   const t = useTranslations('editor');

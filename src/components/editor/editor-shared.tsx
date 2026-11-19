@@ -9,7 +9,7 @@ import { Field, Input, Textarea } from '@/components/ui/field';
 import type { EditorCtl } from './track-editor';
 import { useErrorText } from '@/lib/use-error-text';
 
-/** Stats en direct (distance, D+, D−), partagées par les mises en page mobile (#1392) et desktop (#1393). */
+/** Live stats (distance, gain, loss), shared by the mobile (#1392) and desktop (#1393) layouts. */
 export function useEditorStats(ctl: EditorCtl) {
   const t = useTranslations('editor');
   const format = useFormatter();
@@ -23,7 +23,7 @@ export function useEditorStats(ctl: EditorCtl) {
   ];
 }
 
-/** Formulaire d'enregistrement (nom, description), partagé par le panneau desktop et le tiroir mobile. */
+/** Save form (name, description), shared by the desktop panel and the mobile drawer. */
 export function SaveForm({ ctl, autoFocusName = false }: { ctl: EditorCtl; autoFocusName?: boolean }) {
   const t = useTranslations('editor');
   const { errors } = ctl;
@@ -38,7 +38,7 @@ export function SaveForm({ ctl, autoFocusName = false }: { ctl: EditorCtl; autoF
     >
       <Field label={t('nameLabel')} error={errors.name && errText(errors.name)}>
         {(c) => (
-          // autoFocus seulement en desktop (charte : jamais sur mobile, le clavier masquerait l'écran).
+          // autoFocus on desktop only (charter: never on mobile, the keyboard would hide the screen).
           <Input {...c} value={ctl.name} onChange={(e) => ctl.setName(e.target.value)} maxLength={200} autoComplete="off" autoFocus={autoFocusName} />
         )}
       </Field>
@@ -55,7 +55,7 @@ export function SaveForm({ ctl, autoFocusName = false }: { ctl: EditorCtl; autoF
   );
 }
 
-/** Indicateur discret de l'enregistrement automatique (#1450) : icône + texte (texte seulement si `showText`). */
+/** Discreet indicator of the automatic save (#1450): icon + text (text only if `showText`). */
 export function AutosaveStatus({ ctl, showText = true }: { ctl: EditorCtl; showText?: boolean }) {
   const t = useTranslations('editor.autosave');
   if (ctl.autosave === 'idle') return <span aria-live="polite" className="sr-only" />;
