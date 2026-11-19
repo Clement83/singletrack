@@ -6,10 +6,10 @@ import type { Difficulty } from '@/lib/tracks/difficulty';
 import { SINGLES_MAX_FEATURES, SINGLES_MIN_ZOOM, toleranceForZoom, type TrailSegment } from './singles';
 
 /**
- * Remplace les singles d'une **zone** (département, #1428) par le résultat d'une synchro, dans une transaction :
- * idempotent, les ways supprimés d'OSM disparaissent, et une synchro qui échoue avant d'arriver ici laisse l'ancienne
- * zone intacte. Un way en bordure de deux départements est rattaché à la dernière zone synchronisée (pas de doublon :
- * `osm_id` est la clé). Sans `zone`, remplace tout le calque (ancien comportement).
+ * Replaces the singletracks of an **area** (department, #1428) with the result of a sync, in a transaction:
+ * idempotent, ways deleted from OSM disappear, and a sync that fails before reaching this point leaves the old
+ * area untouched. A way on the border of two departments belongs to the last synced area (no duplicate:
+ * `osm_id` is the key). Without `zone`, replaces the whole layer (old behaviour).
  */
 export function replaceSegments(db: Db, segments: TrailSegment[], now = new Date(), zone: string | null = null): { count: number } {
   db.transaction((tx) => {
@@ -54,12 +54,12 @@ export type SegmentFeature = {
 
 export type SegmentsResult =
   | { status: 'ok'; truncated: boolean; features: SegmentFeature[] }
-  /** Zoom trop faible : rien n'est servi, l'interface invite à zoomer. */
+  /** Zoom too low: nothing is served, the interface asks to zoom in. */
   | { status: 'zoom_in'; features: [] };
 
 /**
- * Segments qui croisent `bbox` ([minLon, minLat, maxLon, maxLat]), géométrie simplifiée selon le zoom, au plus
- * `SINGLES_MAX_FEATURES` (les plus longs d'abord : ce sont les plus utiles quand on coupe).
+ * Segments crossing `bbox` ([minLon, minLat, maxLon, maxLat]), geometry simplified by zoom, at most
+ * `SINGLES_MAX_FEATURES` (longest first: they are the most useful when cutting).
  */
 export function querySegments(db: Db, bbox: [number, number, number, number], zoom: number): SegmentsResult {
   if (zoom < SINGLES_MIN_ZOOM) return { status: 'zoom_in', features: [] };
@@ -67,7 +67,7 @@ export function querySegments(db: Db, bbox: [number, number, number, number], zo
   const rows = db
     .select()
     .from(trailSegment)
-    // Index spatial R-tree (#1428) : les segments dont l'emprise croise la vue, sans parcourir la table.
+    // R-tree spatial index (#1428): segments whose extent crosses the view, without scanning the table.
     .where(sql`${trailSegment}.rowid in (select id from trail_segment_rtree where max_lon >= ${minLon} and min_lon <= ${maxLon} and max_lat >= ${minLat} and min_lat <= ${maxLat})`)
     .orderBy(sql`${trailSegment.lengthM} desc`)
     .limit(SINGLES_MAX_FEATURES + 1)
@@ -84,7 +84,7 @@ export function querySegments(db: Db, bbox: [number, number, number, number], zo
   };
 }
 
-/** Lecture des paramètres `bbox` et `zoom` de `GET /api/tracks/segments` ; `null` si invalides. */
+/** Reads the `bbox` and `zoom` parameters of `GET /api/tracks/segments`; `null` if invalid. */
 export function parseSegmentsQuery(sp: URLSearchParams): { bbox: [number, number, number, number]; zoom: number } | null {
   const parts = (sp.get('bbox') ?? '').split(',').map(Number);
   const rawZoom = sp.get('zoom');

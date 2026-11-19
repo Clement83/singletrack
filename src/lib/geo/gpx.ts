@@ -1,8 +1,8 @@
 import type { Position, TrackGeometry } from './types';
 
 /**
- * Lecture minimale d'un GPX : `<trk>`/`<trkseg>`/`<trkpt>` (sinon `<rte>`/`<rtept>`).
- * Pas de dépendance XML : les attributs lat/lon et l'élément <ele> suffisent.
+ * Minimal GPX reading: `<trk>`/`<trkseg>`/`<trkpt>` (otherwise `<rte>`/`<rtept>`).
+ * No XML dependency: the lat/lon attributes and the <ele> element are enough.
  */
 export function parseGpx(xml: string): { name: string | null; geometry: TrackGeometry } {
   const name = /<(?:trk|rte)>\s*(?:[\s\S]*?)<name>([\s\S]*?)<\/name>/.exec(xml)?.[1]?.trim() ?? null;
@@ -43,7 +43,7 @@ const decode = (s: string) =>
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-/** Écriture d'un GPX 1.1 (une `<trk>`, un `<trkseg>` par ligne) ; l'attribution est conservée dans `<desc>`. */
+/** Writes a GPX 1.1 (one `<trk>`, one `<trkseg>` per line); the attribution is kept in `<desc>`. */
 export function toGpx(t: { name: string; description?: string | null; attribution?: string | null; geometry: TrackGeometry }): string {
   const segs = t.geometry.type === 'LineString' ? [t.geometry.coordinates] : t.geometry.coordinates;
   const desc = [t.description, t.attribution].filter(Boolean).join(' — ');
@@ -68,8 +68,8 @@ const inner = (block: string, tag: string) => {
 };
 
 /**
- * Lecture d'un GPX complet : une entrée par `<trk>` (ses `<trkseg>` forment un MultiLineString),
- * à défaut par `<rte>`. Refuse les DOCTYPE/ENTITY (aucune entité externe n'est de toute façon résolue).
+ * Reads a full GPX: one entry per `<trk>` (its `<trkseg>`s form a MultiLineString),
+ * otherwise per `<rte>`. Rejects DOCTYPE/ENTITY (no external entity is resolved anyway).
  */
 export function parseGpxFile(xml: string): GpxFile {
   if (!/<gpx\b/.test(xml)) throw new Error('notGpx');

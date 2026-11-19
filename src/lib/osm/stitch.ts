@@ -3,25 +3,25 @@ import type { Position } from '@/lib/geo';
 const key = (p: Position) => `${p[0].toFixed(7)},${p[1].toFixed(7)}`;
 
 /**
- * Recolle les ways d'une relation OSM en lignes ordonnées.
+ * Stitches the ways of an OSM relation into ordered lines.
  *
- * Les ways d'une relation ne sont pas forcément dans l'ordre ni dans le même sens : on les accroche
- * bout à bout (en les retournant au besoin) quand ils partagent un nœud d'extrémité, puis on fusionne
- * les chaînes qui se rejoignent. Un trou (ways non connectés) donne plusieurs lignes ; l'ordre des
- * lignes suit la première apparition dans la relation.
+ * The ways of a relation are not necessarily in order nor in the same direction: they are attached
+ * end to end (reversed if needed) when they share an end node, then the chains that meet
+ * are merged. A gap (unconnected ways) gives several lines; the order of the
+ * lines follows the first appearance in the relation.
  */
 export function stitchWays(ways: Position[][]): Position[][] {
   let chains: Position[][] = [];
   for (const w of ways) {
     if (w.length < 2) continue;
     let cur = w;
-    // Accroche ce way à toutes les chaînes qu'il touche (il peut en relier deux).
+    // Attaches this way to every chain it touches (it may link two).
     for (let i = 0; i < chains.length; ) {
       const merged = join(chains[i], cur);
       if (merged) {
         cur = merged;
         chains.splice(i, 1);
-        i = 0; // une fusion peut en permettre une autre
+        i = 0; // a merge may allow another one
       } else i++;
     }
     chains.push(cur);
@@ -30,7 +30,7 @@ export function stitchWays(ways: Position[][]): Position[][] {
   return chains;
 }
 
-/** Joint deux lignes si elles partagent une extrémité ; `null` sinon. */
+/** Joins two lines if they share an end; `null` otherwise. */
 function join(a: Position[], b: Position[]): Position[] | null {
   const aStart = key(a[0]);
   const aEnd = key(a[a.length - 1]);

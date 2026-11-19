@@ -3,7 +3,7 @@ import { relationToTrack, type OverpassRelation } from './relation';
 
 export const DEFAULT_OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
 
-/** Requête Overpass : toutes les relations `route=mtb` du département (code INSEE), géométrie incluse. */
+/** Overpass query: every `route=mtb` relation of the department (INSEE code), geometry included. */
 export function buildQuery(regionCode: string, timeoutS = 180): string {
   return `[out:json][timeout:${timeoutS}];
 area["boundary"="administrative"]["admin_level"="6"]["ref:INSEE"="${regionCode.replace(/[^0-9AB]/gi, '')}"]->.a;
@@ -14,15 +14,15 @@ out geom;`;
 export type OsmSourceOptions = {
   url?: string;
   fetchImpl?: typeof fetch;
-  /** Abandon de la requête (ms). */
+  /** Request timeout (ms). */
   timeoutMs?: number;
   retries?: number;
   retryDelayMs?: number;
 };
 
 /**
- * Un appel Overpass (POST `data=`) avec un User-Agent générique (fair use) et des réessais espacés en cas de
- * 429/5xx (serveur saturé). Partagé par la synchro des itinéraires (#1336) et celle des singles (#1372).
+ * One Overpass call (POST `data=`) with a generic User-Agent (fair use) and spaced retries on
+ * 429/5xx (busy server). Shared by the route sync (#1336) and the singletrack sync (#1372).
  */
 export async function overpassFetch<T>(query: string, opts: OsmSourceOptions = {}): Promise<T> {
   const url = opts.url ?? process.env.OVERPASS_URL ?? DEFAULT_OVERPASS_URL;
@@ -48,7 +48,7 @@ export async function overpassFetch<T>(query: string, opts: OsmSourceOptions = {
   throw lastError;
 }
 
-/** Source OSM (Overpass) : un seul appel par synchro. Jamais appelée au chargement d'une page. */
+/** OSM source (Overpass): a single call per sync. Never called when a page loads. */
 export function osmSource(opts: OsmSourceOptions = {}): TrackSource {
   return {
     id: 'osm',

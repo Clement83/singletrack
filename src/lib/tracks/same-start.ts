@@ -1,11 +1,11 @@
 import { haversine } from '@/lib/geo/distance';
 
-/** Rayon (m) sous lequel deux départs sont « le même » (#1531) : un parking, pas deux carrefours. */
+/** Radius (m) under which two start points are "the same" (#1531): one car park, not two junctions. */
 export const SAME_START_M = 25;
 
 type WithStart = { slug: string; start: [number, number] };
 
-/** Traces dont le départ est à `radiusM` mètres ou moins du point `at` (`[lon, lat]`), les plus proches d'abord. */
+/** Tracks whose start is `radiusM` metres or less from point `at` (`[lon, lat]`), closest first. */
 export function tracksAtStart<T extends WithStart>(tracks: T[], at: [number, number], radiusM = SAME_START_M): T[] {
   return tracks
     .map((t) => ({ t, d: haversine(at, t.start) }))
@@ -14,7 +14,7 @@ export function tracksAtStart<T extends WithStart>(tracks: T[], at: [number, num
     .map((x) => x.t);
 }
 
-/** Regroupe les départs « au même endroit » (chaînage à moins de `radiusM`). Chaque groupe garde l'ordre d'entrée. */
+/** Groups the start points "at the same place" (chaining within `radiusM`). Each group keeps the input order. */
 export function groupSameStart<T extends WithStart>(tracks: T[], radiusM = SAME_START_M): T[][] {
   const groups: T[][] = [];
   const left = [...tracks];

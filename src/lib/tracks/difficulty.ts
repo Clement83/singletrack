@@ -3,16 +3,16 @@ import type { DIFFICULTIES } from '@/db/schema';
 export type Difficulty = (typeof DIFFICULTIES)[number];
 
 /**
- * Échelle commune (vert, bleu, rouge, noir, comme les pistes VTT balisées FFC).
+ * Common scale (green, blue, red, black, like FFC waymarked mountain-bike trails).
  *
- * - OSM `mtb:scale` (0-6, échelle d'Uphill/Downhill de Singletrail) : 0 → vert, 1 → bleu, 2 → rouge, ≥ 3 → noir.
- * - Utagawa : l'API n'est pas documentée (accès à demander, #1338) ; correspondance provisoire sur
- *   les libellés courants (très facile/vert, facile/bleu, difficile/rouge, très difficile/noir), à ajuster en #1348.
- * - Geotrek : `difficulty` du référentiel (id ou libellé) ; mêmes libellés que ci-dessus.
+ * - OSM `mtb:scale` (0-6, Singletrail Uphill/Downhill scale): 0 → green, 1 → blue, 2 → red, ≥ 3 → black.
+ * - Utagawa: the API is not documented (access to request, #1338); provisional mapping on
+ *   the usual labels (very easy/green, easy/blue, hard/red, very hard/black), to adjust in #1348.
+ * - Geotrek: `difficulty` from the reference list (id or label); same labels as above.
  */
 export function difficultyFromMtbScale(scale: string | number | null | undefined): Difficulty | null {
   if (scale === null || scale === undefined || scale === '') return null;
-  // `mtb:scale` peut valoir "1+", "2-" : on garde la partie numérique.
+  // `mtb:scale` may be "1+", "2-": the numeric part is kept.
   const n = Number.parseInt(String(scale), 10);
   if (Number.isNaN(n) || n < 0) return null;
   if (n === 0) return 'green';

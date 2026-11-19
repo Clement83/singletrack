@@ -3,7 +3,7 @@ import tokens from '../../../design/tokens.json';
 import type { Position, TrackGeometry } from './types';
 import { parseGpxFile, type GpxFile, type GpxTrack } from './gpx';
 
-/** Plafond du KML après décompression d'un KMZ (anti « zip bomb »). */
+/** Cap on the KML after decompressing a KMZ (anti "zip bomb"). */
 export const MAX_KML_BYTES = 20 * 1024 * 1024;
 
 const decode = (s: string) =>
@@ -16,7 +16,7 @@ const decode = (s: string) =>
     .replace(/&amp;/g, '&');
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-/** Texte d'un élément (CDATA levé) ; la description KML est souvent du HTML : on en garde le texte. */
+/** Text of an element (CDATA lifted); the KML description is often HTML: its text is kept. */
 function text(block: string, tag: string, html = false): string | null {
   const raw = new RegExp(`<${tag}\\b[^>]*>([\\s\\S]*?)</${tag}>`).exec(block)?.[1]?.trim();
   if (!raw) return null;
@@ -26,7 +26,7 @@ function text(block: string, tag: string, html = false): string | null {
   return v.trim() || null;
 }
 
-/** `lon,lat[,alt]` séparés par des espaces ou retours à la ligne. */
+/** `lon,lat[,alt]` separated by spaces or line breaks. */
 function coordinates(s: string): Position[] {
   const out: Position[] = [];
   for (const tuple of s.trim().split(/\s+/)) {
@@ -37,7 +37,7 @@ function coordinates(s: string): Position[] {
   return out;
 }
 
-/** `<gx:coord>lon lat alt</gx:coord>` (un point par élément). */
+/** `<gx:coord>lon lat alt</gx:coord>` (one point per element). */
 function gxCoords(block: string): Position[] {
   const out: Position[] = [];
   const re = /<gx:coord>\s*([^<]*?)\s*<\/gx:coord>/g;
@@ -50,7 +50,7 @@ function gxCoords(block: string): Position[] {
   return out;
 }
 
-/** Google My Maps écrit une altitude 0 partout : ce n'est pas une altitude, l'IGN la complétera. */
+/** Google My Maps writes a 0 elevation everywhere: that is not an elevation, IGN will fill it. */
 function dropFlatZero(lines: Position[][]): Position[][] {
   const all = lines.flat();
   if (all.length > 0 && all.every((p) => p[2] === 0)) return lines.map((l) => l.map((p) => [p[0], p[1]] as Position));
@@ -58,9 +58,9 @@ function dropFlatZero(lines: Position[][]): Position[][] {
 }
 
 /**
- * Lecture d'un KML : une entrée par `Placemark` qui porte une ligne (`LineString`, `gx:Track`, `MultiGeometry` /
- * `gx:MultiTrack` → MultiLineString). Les points, polygones et dossiers sans ligne sont ignorés.
- * Refuse les DOCTYPE/ENTITY. Même forme de retour que `parseGpxFile`.
+ * Reads a KML: one entry per `Placemark` carrying a line (`LineString`, `gx:Track`, `MultiGeometry` /
+ * `gx:MultiTrack` → MultiLineString). Points, polygons and folders without a line are ignored.
+ * Rejects DOCTYPE/ENTITY. Same return shape as `parseGpxFile`.
  */
 export function parseKmlFile(xml: string): GpxFile {
   if (!/<kml\b/.test(xml)) throw new Error('notGpx');
@@ -95,8 +95,8 @@ export function parseKmlFile(xml: string): GpxFile {
 }
 
 /**
- * Extrait le KML d'un KMZ (zip) : `doc.kml` de préférence, sinon le premier `.kml`. Lecteur minimal (répertoire
- * central + inflate brut), sans dépendance ; chiffrement et méthodes autres que « stocké / deflate » refusés.
+ * Extracts the KML from a KMZ (zip): `doc.kml` preferably, otherwise the first `.kml`. Minimal reader (central
+ * directory + raw inflate), no dependency; encryption and methods other than "stored / deflate" refused.
  */
 export function kmlFromKmz(buf: Buffer): string {
   const eocd = buf.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]));
@@ -136,13 +136,13 @@ export function kmlFromKmz(buf: Buffer): string {
   }
 }
 
-/** Couleur KML `aabbggrr` depuis un token `#rrggbb`. */
+/** KML colour `aabbggrr` from a `#rrggbb` token. */
 const kmlColor = (hex: string) => `ff${hex.slice(5, 7)}${hex.slice(3, 5)}${hex.slice(1, 3)}`;
 
 /**
- * Écriture d'un KML 2.2 : un `Placemark` / `LineString` (MultiGeometry si plusieurs lignes), altitude jointe quand elle existe
- * (`clampToGround` sinon). Pas de `gx:Track` : nos traces n'ont pas d'horodatage. L'attribution et la licence
- * restent dans `description` (obligation de licence).
+ * Writes a KML 2.2: one `Placemark` / `LineString` (MultiGeometry for several lines), elevation included when it exists
+ * (`clampToGround` otherwise). No `gx:Track`: our tracks have no timestamps. Attribution and licence
+ * stay in `description` (licence obligation).
  */
 export function toKml(t: { name: string; description?: string | null; attribution?: string | null; license?: string | null; geometry: TrackGeometry }): string {
   const lines = t.geometry.type === 'LineString' ? [t.geometry.coordinates] : t.geometry.coordinates;
@@ -161,7 +161,7 @@ export function toKml(t: { name: string; description?: string | null; attributio
   return `<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>${esc(t.name)}</name><Style id="trace"><LineStyle><color>${color}</color><width>4</width></LineStyle></Style><Placemark><name>${esc(t.name)}</name>${desc ? `<description>${esc(desc)}</description>` : ''}<styleUrl>#trace</styleUrl>${lines.length === 1 ? ls : `<MultiGeometry>${ls}</MultiGeometry>`}</Placemark></Document></kml>\n`;
 }
 
-/** Fichier de trace (GPX, KML ou KMZ) lu selon son extension. */
+/** Track file (GPX, KML or KMZ) read according to its extension. */
 export function parseTrackFile(name: string, bytes: Buffer): GpxFile {
   if (/\.gpx$/i.test(name)) return parseGpxFile(bytes.toString('utf8'));
   if (/\.kml$/i.test(name)) return parseKmlFile(bytes.toString('utf8'));

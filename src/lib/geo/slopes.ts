@@ -3,34 +3,34 @@ import { haversine } from './distance';
 import { smoothSymmetric } from './elevation';
 
 /**
- * Tronçons de pente **orientés** (départ → arrivée = ordre des coordonnées) et bornes kilométriques.
- * Logique pure, réutilisée par la carte, le profil et l'éditeur (#1380). Inverser le sens d'une trace
- * inverse les classes : une montée devient une descente.
+ * **Oriented** slope segments (start → finish = order of the coordinates) and kilometre markers.
+ * Pure logic, reused by the map, the profile and the editor (#1380). Reversing the direction of a track
+ * reverses the classes: a climb becomes a descent.
  */
 
-/** Seuils de pente en %, valeurs absolues : classes 1..5 = [0–3[, [3–6[, [6–9[, [9–12[, 12+. Source unique. */
+/** Slope thresholds in %, absolute values: classes 1..5 = [0–3[, [3–6[, [6–9[, [9–12[, 12+. Single source. */
 export const SLOPE_THRESHOLDS = [3, 6, 9, 12] as const;
-/** Sous cette pente (en valeur absolue, %), le tronçon est « plat » : couleur neutre, pas de dégradé. */
+/** Below this slope (absolute value, %), the segment is "flat": neutral colour, no gradient. */
 export const FLAT_GRADE = 1;
-/** Longueur minimale (m) sur laquelle une pente est mesurée : en dessous, le bruit GPS donne des pentes absurdes. */
+/** Minimum length (m) over which a slope is measured: below it, GPS noise gives absurd slopes. */
 export const SLOPE_WINDOW_M = 50;
-/** Nombre maximal de bornes km affichées quand le pas est automatique. */
+/** Maximum number of km markers shown when the step is automatic. */
 export const MAX_KM_MARKERS = 25;
-/** Pas automatiques possibles (km), du plus fin au plus large. */
+/** Possible automatic steps (km), finest to widest. */
 const KM_STEPS = [1, 2, 5, 10, 20, 50, 100];
 
 export type SlopeDirection = 'up' | 'down' | 'flat';
 export type SlopeClass = {
   direction: SlopeDirection;
-  /** 1 (douce) à 5 (très raide) ; 0 pour « plat ». */
+  /** 1 (gentle) to 5 (very steep); 0 for "flat". */
   level: 0 | 1 | 2 | 3 | 4 | 5;
-  /** Nom du token couleur (`slope-up-3`), `null` pour « plat ». */
+  /** Name of the colour token (`slope-up-3`), `null` for "flat". */
   token: string | null;
-  /** Identifiant stable (`up-3`, `down-1`, `flat`) : sert à fusionner les tronçons voisins. */
+  /** Stable id (`up-3`, `down-1`, `flat`): used to merge neighbouring segments. */
   id: string;
 };
 
-/** Classe de pente d'une pente signée en % (+ montée, − descente). */
+/** Slope class of a signed slope in % (+ climb, − descent). */
 export function slopeClass(grade: number): SlopeClass {
   const abs = Math.abs(grade);
   if (!Number.isFinite(grade) || abs < FLAT_GRADE) return { direction: 'flat', level: 0, token: null, id: 'flat' };
@@ -39,16 +39,16 @@ export function slopeClass(grade: number): SlopeClass {
   return { direction, level, token: `slope-${direction}-${level}`, id: `${direction}-${level}` };
 }
 
-/** Couleur CSS (variable du thème) d'une classe ; neutre pour « plat » ou une trace sans altitude. */
+/** CSS colour (theme variable) of a class; neutral for "flat" or a track without elevation. */
 export function slopeCssColor(cls: SlopeClass | null): string {
   return cls?.token ? `var(--${cls.token})` : 'var(--muted-foreground)';
 }
 
 /**
- * Pente (%) de chaque arête i → i+1 à partir de distances cumulées (m) et d'altitudes.
- * Altitudes lissées comme `gainLoss` (moyenne glissante de 5 points, mais symétrique aux bords pour ne pas
- * aplatir le début et la fin d'une montée), puis pente mesurée sur une fenêtre
- * centrée sur l'arête élargie jusqu'à couvrir au moins `windowM`.
+ * Slope (%) of each edge i → i+1 from cumulative distances (m) and elevations.
+ * Elevations smoothed like `gainLoss` (5-point moving average, but symmetric at the edges so as not to
+ * flatten the start and end of a climb), then slope measured over a window
+ * centred on the edge and widened until it covers at least `windowM`.
  */
 export function edgeGrades(distM: number[], eles: number[], windowM = SLOPE_WINDOW_M): number[] {
   const n = eles.length;
@@ -70,12 +70,12 @@ export function edgeGrades(distM: number[], eles: number[], windowM = SLOPE_WIND
 }
 
 export type SlopeSegment = {
-  /** Sommets du tronçon (au moins 2), dans le sens de la trace. */
+  /** Vertices of the segment (at least 2), in the direction of the track. */
   coordinates: Position[];
-  /** Pente moyenne signée (%) du tronçon. */
+  /** Signed average slope (%) of the segment. */
   grade: number;
   class: SlopeClass;
-  /** Distance cumulée (km) depuis le départ de la trace. */
+  /** Cumulative distance (km) from the start of the track. */
   fromKm: number;
   toKm: number;
 };
@@ -84,8 +84,8 @@ const lines = (g: TrackGeometry): Position[][] => (g.type === 'LineString' ? [g.
 const hasEle = (p: Position) => typeof p[2] === 'number' && !Number.isNaN(p[2]);
 
 /**
- * Découpe une trace en tronçons de même classe de pente. Tableau vide si une altitude manque
- * (la carte dessine alors la trace en couleur neutre). Les tronçons de même classe voisins sont fusionnés.
+ * Cuts a track into segments of the same slope class. Empty array if an elevation is missing
+ * (the map then draws the track in a neutral colour). Neighbouring segments of the same class are merged.
  */
 export function slopeSegments(geometry: TrackGeometry): SlopeSegment[] {
   const all = lines(geometry);
@@ -121,15 +121,15 @@ export function slopeSegments(geometry: TrackGeometry): SlopeSegment[] {
 
 export type KmMarker = { km: number; position: [number, number] };
 
-/** Pas (km) retenu pour une trace de `totalKm` : le plus fin de 1/2/5/10/… km qui reste sous `MAX_KM_MARKERS` bornes. */
+/** Step (km) chosen for a track of `totalKm`: the finest of 1/2/5/10/… km that stays under `MAX_KM_MARKERS` markers. */
 export function autoKmStep(totalKm: number): number {
   return KM_STEPS.find((s) => Math.floor(totalKm / s) <= MAX_KM_MARKERS) ?? KM_STEPS[KM_STEPS.length - 1];
 }
 
 /**
- * Bornes kilométriques le long de la trace (position interpolée, numéro = km). `stepKm` explicite = exactement ce
- * pas ; omis = pas automatique (`autoKmStep`) pour ne pas noyer la carte sous les bornes. MultiLineString : la
- * distance se cumule d'une ligne à l'autre (les trous ne comptent pas). Fonctionne sans altitude.
+ * Kilometre markers along the track (interpolated position, number = km). Explicit `stepKm` = exactly that
+ * step; omitted = automatic step (`autoKmStep`) so the map is not swamped with markers. MultiLineString: the
+ * distance accumulates from one line to the next (gaps do not count). Works without elevation.
  */
 export function kmMarkers(geometry: TrackGeometry, stepKm?: number): KmMarker[] {
   const segs: { a: Position; b: Position; from: number; len: number }[] = [];
@@ -155,8 +155,8 @@ export function kmMarkers(geometry: TrackGeometry, stepKm?: number): KmMarker[] 
 }
 
 /**
- * Pas des bornes affichées selon le zoom de la carte (#1382) : toutes les bornes de près, une sur 5 à moyenne
- * distance, une sur 10 de loin, pour ne pas surcharger la carte.
+ * Step of the markers shown according to the map zoom (#1382): every marker up close, one in 5 at medium
+ * distance, one in 10 from afar, so as not to clutter the map.
  */
 export function kmStepForZoom(zoom: number): number {
   if (zoom >= 13) return 1;

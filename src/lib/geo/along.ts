@@ -2,33 +2,33 @@ import { haversine } from './distance';
 import type { Position, TrackGeometry } from './types';
 
 export type AlongResult = {
-  /** Distance (m) entre le point demandé et la trace, au passage le plus proche. */
+  /** Distance (m) between the requested point and the track, at the closest pass. */
   distM: number;
-  /** Km depuis le départ à chaque passage proche du point (croissants) : un seul, deux pour une boucle ou un aller-retour. */
+  /** Km from the start at each pass close to the point (increasing): one, two for a loop or an out-and-back. */
   kms: number[];
-  /** Indice du sommet de la trace le plus proche du passage principal (pour retrouver altitude / pente). */
+  /** Index of the track vertex closest to the main pass (to find elevation / slope). */
   index: number;
 };
 
-/** Marge (m) autour du passage le plus proche : au-delà, un autre passage n'est plus « au même endroit ». */
+/** Margin (m) around the closest pass: beyond it, another pass is no longer "at the same place". */
 const PASS_TOLERANCE_M = 25;
 
 const flatten = (g: TrackGeometry | Position[]): Position[] =>
   Array.isArray(g) ? g : g.type === 'LineString' ? g.coordinates : g.coordinates.flat();
 
 /**
- * Km depuis le départ au point de la trace le plus proche de `[lon, lat]` (#1535). Projette le point sur chaque
- * arête (plan local équirectangulaire), puis regroupe les arêtes proches contiguës en « passages » : un aller-retour
- * ou une boucle qui repasse au même endroit renvoie ainsi deux km (« km 3,2 · km 28,4 »).
- * `totalKm` recale l'échelle quand la géométrie est simplifiée (longueur réelle connue par ailleurs).
- * Renvoie `null` pour une trace de moins de 2 points.
+ * Km from the start at the track point closest to `[lon, lat]` (#1535). Projects the point onto each
+ * edge (local equirectangular plane), then groups contiguous close edges into "passes": an out-and-back
+ * or a loop that comes back to the same place thus returns two km values (« km 3,2 · km 28,4 »).
+ * `totalKm` rescales when the geometry is simplified (real length known elsewhere).
+ * Returns `null` for a track with fewer than 2 points.
  */
 export function kmAlongTrack(geometry: TrackGeometry | Position[], lon: number, lat: number, totalKm?: number): AlongResult | null {
   const pts = flatten(geometry);
   if (pts.length < 2) return null;
   const k = Math.cos((lat * Math.PI) / 180);
   const M = 111_320;
-  // Pour chaque arête : distance au point (m) et abscisse curviligne (m) de la projection.
+  // For each edge: distance to the point (m) and curvilinear abscissa (m) of the projection.
   const cum: number[] = [0];
   for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + haversine(pts[i - 1], pts[i]));
   const total = cum[cum.length - 1];

@@ -1,5 +1,5 @@
-// Sans dépendance serveur : importé aussi par le formulaire client.
-/** Origines proposées au formulaire. `perso` = trace faite par l'utilisateur (aucune attribution requise). */
+// No server dependency: also imported by the client form.
+/** Origins offered by the form. `perso` = track made by the user (no attribution required). */
 export const IMPORT_ORIGINS = [
   { id: 'perso', label: 'Ma propre trace', credit: null },
   { id: 'utagawa', label: 'UtagawaVTT', credit: 'Source : UtagawaVTT.com' },

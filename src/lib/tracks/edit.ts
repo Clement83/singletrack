@@ -9,32 +9,32 @@ import { getDefaultTrackVisibility, isTrackVisibility } from '@/lib/user-profile
 import { SYNCED_SOURCES, deriveColumns, upsertTrack, type UpsertOptions } from './upsert';
 import { getTrackBySlug, getVisibleTrack } from './query';
 
-/** Ce que l'éditeur envoie à l'enregistrement. */
+/** What the editor sends on save. */
 export type EditorInput = {
   name: string;
   description?: string | null;
   geometry: TrackGeometry;
   waypoints: unknown;
   modes: unknown;
-  /** Slug de la trace d'origine : on enregistre alors une copie modifiée. */
+  /** Slug of the original track: a modified copy is saved instead. */
   parentSlug?: string | null;
-  /** `draft` (#1450) : enregistrement automatique, nom et longueur minimale non exigés. Absent = publiée. */
+  /** `draft` (#1450): automatic save, name and minimum length not required. Absent = published. */
   status?: 'draft' | 'published';
-  /** #1588 : absent = préférence du compte (création) ou inchangé (mise à jour). */
+  /** #1588: absent = account preference (creation) or unchanged (update). */
   visibility?: string | null;
 };
 
 export type EditorErrors = Partial<Record<'name' | 'geometry' | 'waypoints' | 'parent' | 'visibility', string>>;
 
 export const MAX_EDITOR_POINTS = 50_000;
-/** Sources dont l'auteur peut modifier la trace en place (jamais une trace OSM / Geotrek / Utagawa). */
+/** Sources whose author may edit the track in place (never an OSM / Geotrek / Utagawa track). */
 export const EDITABLE_SOURCES = ['manual', 'edited', 'gpx'] as const;
 
 const clean = (s: string | null | undefined) => s?.trim() || null;
 const validPos = (p: unknown): p is Position =>
   Array.isArray(p) && Number.isFinite(p[0]) && Number.isFinite(p[1]) && Math.abs(p[0]) <= 180 && Math.abs(p[1]) <= 90;
 
-/** Valide l'entrée de l'éditeur ; renvoie la géométrie nettoyée et le document d'édition à conserver. */
+/** Validates the editor's input; returns the cleaned geometry and the editing document to keep. */
 export function validateEditorInput(i: EditorInput, draft = i?.status === 'draft'): { name: string; description: string | null; geometry: TrackGeometry; stored: StoredDoc } | { errors: EditorErrors } {
   const errors: EditorErrors = {};
   const name = clean(i?.name);
@@ -48,7 +48,7 @@ export function validateEditorInput(i: EditorInput, draft = i?.status === 'draft
   }
   const stored = parseStored({ waypoints: i?.waypoints, modes: i?.modes });
   if (!stored) errors.waypoints = 'waypointsInvalid';
-  // #1590 : absent = défaut du compte / inchangé ; présent mais inconnu = 422.
+  // #1590: absent = account default / unchanged; present but unknown = 422.
   if (i?.visibility !== undefined && i.visibility !== null && !isTrackVisibility(i.visibility)) errors.visibility = 'visibilityInvalid';
   let geometry: TrackGeometry | null = null;
   if (coords && !errors.geometry) {
@@ -62,19 +62,19 @@ export function validateEditorInput(i: EditorInput, draft = i?.status === 'draft
   return { name: name ?? '', description: clean(i.description), geometry, stored };
 }
 
-/** L'utilisateur peut-il modifier cette trace en place ? Sinon : copie. */
+/** Can the user edit this track in place? Otherwise: copy. */
 export function canEditInPlace(t: Pick<TrackRow, 'source' | 'createdBy'>, userId: string): boolean {
   return t.createdBy === userId && (EDITABLE_SOURCES as readonly string[]).includes(t.source);
 }
 
-/** Document d'édition conservé dans `raw.editor` (waypoints + mode de chaque segment). */
+/** Editing document kept in `raw.editor` (waypoints + mode of each segment). */
 export function storedFromRaw(raw: unknown): StoredDoc | null {
   return parseStored((raw as { editor?: unknown } | null)?.editor);
 }
 
 /**
- * Change la visibilité d'une trace de l'utilisateur (#1590). 404 si inconnue ou invisible de lui, 403 si ce n'est pas
- * la sienne ou si elle vient d'une source synchronisée (toujours publique), 422 `invalid` pour une valeur inconnue.
+ * Changes the visibility of a track of the user (#1590). 404 if unknown or invisible to them, 403 if it is not
+ * theirs or if it comes from a synced source (always public), 422 `invalid` for an unknown value.
  */
 export function setTrackVisibility(db: Db, userId: string, slug: string, value: unknown): { ok: true; visibility: string } | { error: 'not_found' | 'forbidden' | 'invalid' } {
   const existing = getVisibleTrack(db, slug, userId);
@@ -88,14 +88,14 @@ export function setTrackVisibility(db: Db, userId: string, slug: string, value: 
 export type SaveResult = { slug: string } | { errors: EditorErrors } | { error: 'not_found' | 'forbidden' };
 
 /**
- * Crée une trace : maison (`source = manual`) ou copie modifiée d'une autre (`source = edited`,
- * `parent_track_id`, attribution de l'origine conservée — l'original n'est jamais touché).
+ * Creates a track: home-made (`source = manual`) or modified copy of another one (`source = edited`,
+ * `parent_track_id`, attribution of the original kept — the original is never touched).
  */
 export async function createEditedTrack(db: Db, userId: string, input: EditorInput, opts: UpsertOptions = {}): Promise<SaveResult> {
   const draft = input?.status === 'draft';
   const v = validateEditorInput(input, draft);
   if ('errors' in v) return v;
-  // Copie (#1589) : la trace d'origine doit être visible de l'auteur de la copie ; sinon même réponse que « disparue ».
+  // Copy (#1589): the original track must be visible to the copy's author; otherwise same answer as "gone".
   const parent = input.parentSlug ? getVisibleTrack(db, input.parentSlug, userId) : undefined;
   if (input.parentSlug && !parent) return { errors: { parent: 'parentGone' } };
   const t: NormalizedTrack = {
@@ -124,12 +124,12 @@ export async function createEditedTrack(db: Db, userId: string, input: EditorInp
   return { slug: res.slug };
 }
 
-/** Met à jour en place une trace de l'utilisateur (maison, copie ou GPX importé). Le slug ne change pas. */
+/** Updates a track of the user in place (home-made, copy or imported GPX). The slug does not change. */
 export async function updateEditedTrack(db: Db, userId: string, slug: string, input: EditorInput, opts: UpsertOptions = {}): Promise<SaveResult> {
   const existing = getTrackBySlug(db, slug);
   if (!existing) return { error: 'not_found' };
   if (!canEditInPlace(existing, userId)) return { error: 'forbidden' };
-  // Une trace publiée ne redevient jamais brouillon ; un brouillon est publié par `status: 'published'` (nom exigé).
+  // A published track never becomes a draft again; a draft is published with `status: 'published'` (name required).
   const status: 'draft' | 'published' = existing.status === 'published' || input?.status === 'published' ? 'published' : 'draft';
   const v = validateEditorInput(input, status === 'draft');
   if ('errors' in v) return v;

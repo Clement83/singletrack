@@ -1,7 +1,7 @@
 import { config } from '@/lib/config';
 import type { RegionConfig } from './types';
 
-/** Région de base des synchros (le code de zone est fixé par `SYNC_ZONES` / les arguments), centrée sur la maison. */
+/** Base region of the syncs (the area code is set by `SYNC_ZONES` / the arguments), centred on home. */
 export function regionFromConfig(): RegionConfig {
   return {
     code: config.syncZones[0] ?? '',

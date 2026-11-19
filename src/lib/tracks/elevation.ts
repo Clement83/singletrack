@@ -4,10 +4,10 @@ import { track, type TrackRow } from '@/db/schema';
 import { enrichElevation, geometryStats, type EnrichOptions } from '@/lib/geo';
 
 /**
- * Altitude à la demande (#1428) : les traces importées en masse (OSM…) n'ont pas d'altitude, l'IGN n'est pas
- * interrogé à l'import (milliers de traces × 5 req/s). À la première ouverture d'une trace (fiche, éditeur,
- * création de sortie) on complète l'altitude, puis on l'enregistre en base avec D+/D-/min/max recalculés :
- * les ouvertures suivantes ne rappellent plus l'IGN.
+ * Elevation on demand (#1428): tracks imported in bulk (OSM…) have no elevation, IGN is not
+ * queried at import (thousands of tracks × 5 req/s). The first time a track is opened (sheet, editor,
+ * outing creation) the elevation is completed, then stored in the database with recomputed gain/loss/min/max:
+ * later openings no longer call IGN.
  */
 const attempted = new Map<string, Promise<TrackRow>>();
 const MAX_ATTEMPTS_KEPT = 5000;
@@ -16,8 +16,8 @@ export const needsElevation = (t: Pick<TrackRow, 'minEle'>) => t.minEle == null;
 
 export async function ensureTrackElevation(db: Db, t: TrackRow, opts: EnrichOptions = {}): Promise<TrackRow> {
   if (!needsElevation(t)) return t;
-  // Une seule tentative par trace et par processus (points hors couverture IGN : on ne réessaie pas à chaque page) ;
-  // deux ouvertures simultanées partagent le même appel.
+  // A single attempt per track and per process (points outside IGN coverage: no retry on every page);
+  // two simultaneous openings share the same call.
   const key = `${t.id}:${t.updatedAt.getTime()}`;
   const running = attempted.get(key);
   if (running) return running;
@@ -25,12 +25,12 @@ export async function ensureTrackElevation(db: Db, t: TrackRow, opts: EnrichOpti
     try {
       const geometry = await enrichElevation(t.geometry, opts);
       const s = geometryStats(geometry);
-      if (s.minEle == null) return t; // IGN indisponible ou hors couverture : D+ reste inconnu
+      if (s.minEle == null) return t; // IGN unavailable or outside coverage: the gain stays unknown
       const patch = { geometry, elevationGainM: s.gainM, elevationLossM: s.lossM, minEle: s.minEle, maxEle: s.maxEle };
       db.update(track).set(patch).where(eq(track.id, t.id)).run();
       return { ...t, ...patch };
     } catch {
-      attempted.delete(key); // panne réseau : on pourra réessayer à la prochaine ouverture
+      attempted.delete(key); // network failure: retry on the next opening
       return t;
     }
   })();

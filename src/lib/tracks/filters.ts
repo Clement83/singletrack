@@ -1,7 +1,7 @@
 import { DIFFICULTIES } from '@/db/schema';
 import type { Difficulty } from './difficulty';
 
-/** Filtres de l'explorateur, sérialisés dans l'URL (`?q=…&dist=10-40&…`) : partageables, retour arrière. */
+/** Explorer filters, serialised in the URL (`?q=…&dist=10-40&…`): shareable, back button. */
 export type TrackFilters = {
   q?: string;
   minKm?: number;
@@ -9,13 +9,13 @@ export type TrackFilters = {
   minGain?: number;
   maxGain?: number;
   difficulty?: Difficulty[];
-  /** `loop` = boucles seulement, `oneway` = aller simple seulement. */
+  /** `loop` = loops only, `oneway` = one-way only. */
   shape?: 'loop' | 'oneway';
-  /** Rayon (km) autour de la maison. */
+  /** Radius (km) around home. */
   near?: number;
-  /** Seulement les traces dont aucun massif traversé n'est fermé (rouge/noir) aujourd'hui ou demain (#1349). */
+  /** Only tracks none of whose crossed massifs is closed (red/black) today or tomorrow (#1349). */
   access?: 'today' | 'tomorrow';
-  /** Seulement les traces de l'utilisateur connecté (créées, copiées, importées, #1430). */
+  /** Only the signed-in user's tracks (created, copied, imported, #1430). */
   mine?: boolean;
   bbox?: [number, number, number, number]; // minLon, minLat, maxLon, maxLat
 };
@@ -63,7 +63,7 @@ export function serializeFilters(f: TrackFilters): URLSearchParams {
   return sp;
 }
 
-/** Nombre de filtres actifs (hors emprise de carte), pour le badge du bouton « Filtres ». */
+/** Number of active filters (excluding the map extent), for the badge of the "Filters" button. */
 export function activeFilterCount(f: TrackFilters): number {
   const { bbox: _bbox, ...rest } = f;
   void _bbox;

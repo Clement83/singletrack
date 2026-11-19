@@ -2,7 +2,7 @@ import type { Bbox, Position, TrackGeometry } from './types';
 import { haversine, lineLength } from './distance';
 import { elevationStats, type ElevationStats } from './elevation';
 
-/** Les lignes d'une géométrie (une seule pour un LineString). */
+/** The lines of a geometry (a single one for a LineString). */
 export function lines(g: TrackGeometry): Position[][] {
   return g.type === 'LineString' ? [g.coordinates] : g.coordinates;
 }
@@ -11,7 +11,7 @@ export function geometryLength(g: TrackGeometry): number {
   return lines(g).reduce((s, l) => s + lineLength(l), 0);
 }
 
-/** Emprise (bbox) d'une géométrie ; `null` si elle est vide. */
+/** Extent (bbox) of a geometry; `null` if it is empty. */
 export function bboxOf(g: TrackGeometry): Bbox | null {
   let b: Bbox | null = null;
   for (const l of lines(g)) {
@@ -28,13 +28,13 @@ export function bboxOf(g: TrackGeometry): Bbox | null {
   return b;
 }
 
-/** Point de départ `[lon, lat]`, ou `null`. */
+/** Start point `[lon, lat]`, or `null`. */
 export function startOf(g: TrackGeometry): [number, number] | null {
   const first = lines(g).find((l) => l.length > 0)?.[0];
   return first ? [first[0], first[1]] : null;
 }
 
-/** Boucle : départ et arrivée à moins de `toleranceM` mètres (200 m par défaut). */
+/** Loop: start and finish within `toleranceM` metres (200 m by default). */
 export function isLoop(g: TrackGeometry, toleranceM = 200): boolean {
   const all = lines(g).filter((l) => l.length > 1);
   if (all.length === 0) return false;
@@ -46,7 +46,7 @@ export function isLoop(g: TrackGeometry, toleranceM = 200): boolean {
 
 export type GeometryStats = ElevationStats & { distanceM: number; bbox: Bbox | null; start: [number, number] | null; loop: boolean };
 
-/** Toutes les statistiques dérivées de la géométrie, pour remplir une trace. */
+/** Every statistic derived from the geometry, to fill a track. */
 export function geometryStats(g: TrackGeometry): GeometryStats {
   return {
     distanceM: geometryLength(g),

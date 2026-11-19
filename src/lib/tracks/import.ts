@@ -19,7 +19,7 @@ export type ImportInput = {
   author?: string | null;
   license?: string | null;
   geometry: TrackGeometry;
-  /** #1588 : absent = préférence « traces importées » du compte. */
+  /** #1588: absent = the account's "imported tracks" preference. */
   visibility?: string | null;
 };
 
@@ -27,7 +27,7 @@ export type ImportErrors = Partial<Record<'name' | 'origin' | 'sourceUrl' | 'aut
 
 const clean = (s: string | null | undefined) => s?.trim() || null;
 
-/** Valide le formulaire et construit la trace normalisée (`source = gpx`). Retourne les erreurs par champ. */
+/** Validates the form and builds the normalised track (`source = gpx`). Returns the errors per field. */
 export function buildImportedTrack(i: ImportInput): { track: NormalizedTrack } | { errors: ImportErrors } {
   const errors: ImportErrors = {};
   const name = clean(i.name);
@@ -73,7 +73,7 @@ export function buildImportedTrack(i: ImportInput): { track: NormalizedTrack } |
   };
 }
 
-/** Valeurs de pré-remplissage déduites du fichier. */
+/** Pre-fill values deduced from the file. */
 export function prefillFromGpx(file: GpxFile): { origin: ImportOriginId; sourceUrl: string | null; author: string | null } {
   const hay = `${file.creator ?? ''} ${file.link ?? ''}`.toLowerCase();
   const hit = (['utagawa', 'visorando', 'openrunner', 'strava', 'komoot'] as const).find((k) => hay.includes(k));
@@ -83,8 +83,8 @@ export function prefillFromGpx(file: GpxFile): { origin: ImportOriginId; sourceU
 export type DuplicateMatch = { slug: string; name: string; distanceKm: number };
 
 /**
- * Doublon probable : départ à moins de 150 m, distance à ±2 %, et bbox voisine (marge ~1 km).
- * Avertit seulement : ne bloque jamais l'enregistrement.
+ * Probable duplicate: start within 150 m, distance within ±2 %, and neighbouring bbox (margin ~1 km).
+ * Only warns: never blocks saving.
  */
 export function findDuplicates(db: Db, g: TrackGeometry): DuplicateMatch[] {
   const s = geometryStats(g);

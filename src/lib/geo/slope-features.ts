@@ -2,8 +2,8 @@ import type { Position, TrackGeometry } from './types';
 import { slopeSegments } from './slopes';
 
 /**
- * Données de la couche « trace colorée par pente » (#1381) : logique pure, testée.
- * Chaque tronçon porte `cls` = `up-3`, `down-1`, `flat` ou `none` (altitude inconnue → couleur neutre).
+ * Data of the "track coloured by slope" layer (#1381): pure logic, tested.
+ * Each segment carries `cls` = `up-3`, `down-1`, `flat` or `none` (unknown elevation → neutral colour).
  */
 export type SlopeFeature = {
   type: 'Feature';
@@ -21,7 +21,7 @@ const feature = (coordinates: Position[], cls: string, grade = 0): SlopeFeature 
 const lines = (g: TrackGeometry): Position[][] => (g.type === 'LineString' ? [g.coordinates] : g.coordinates);
 const hasEle = (p: Position) => typeof p[2] === 'number' && !Number.isNaN(p[2]);
 
-/** Tronçons colorés d'une géométrie ; sans altitude, une seule ligne neutre (`none`) par ligne. */
+/** Coloured segments of a geometry; without elevation, a single neutral line (`none`) per line. */
 export function slopeFeatures(geometry: TrackGeometry): SlopeCollection {
   const segs = slopeSegments(geometry);
   if (segs.length) return { type: 'FeatureCollection', features: segs.map((s) => feature(s.coordinates, s.class.id, s.grade)) };
@@ -29,8 +29,8 @@ export function slopeFeatures(geometry: TrackGeometry): SlopeCollection {
 }
 
 /**
- * Éditeur : les segments « chemins » consécutifs qui ont tous leur altitude forment un parcours continu (pente
- * calculée sur l'ensemble) ; les autres restent neutres. Les lignes droites ne sont pas passées ici.
+ * Editor: consecutive "paths" segments that all have their elevation form one continuous route (slope
+ * computed over the whole); the others stay neutral. Straight lines are not passed here.
  */
 export function slopeFeaturesForRuns(segmentLines: { coords: Position[]; route: boolean }[]): SlopeCollection {
   const features: SlopeFeature[] = [];
@@ -57,14 +57,14 @@ export function slopeFeaturesForRuns(segmentLines: { coords: Position[]; route: 
 
 export const SLOPE_CLASS_IDS = ['up-1', 'up-2', 'up-3', 'up-4', 'up-5', 'down-1', 'down-2', 'down-3', 'down-4', 'down-5'] as const;
 
-/** Couleur d'une classe (`up-3`…) ; `flat` et `none` : couleurs neutres fournies. */
+/** Colour of a class (`up-3`…); `flat` and `none`: neutral colours provided. */
 export function slopeColorOf(cls: string, colors: Record<string, string>, flat: string, none: string): string {
   if (cls === 'flat') return flat;
   if (cls === 'none') return none;
   return colors[`slope-${cls}`] ?? none;
 }
 
-/** Expression MapLibre `match` sur la propriété `cls`. */
+/** MapLibre `match` expression on the `cls` property. */
 export function slopeMatchExpression(colors: Record<string, string>, flat: string, none: string): unknown[] {
   const expr: unknown[] = ['match', ['get', 'cls']];
   for (const id of SLOPE_CLASS_IDS) expr.push(id, slopeColorOf(id, colors, flat, none));

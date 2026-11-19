@@ -1,4 +1,4 @@
-/** Position GeoJSON : `[lon, lat]` ou `[lon, lat, ele]`. */
+/** GeoJSON position: `[lon, lat]` or `[lon, lat, ele]`. */
 export type Position = [number, number] | [number, number, number];
 
 export type LineString = { type: 'LineString'; coordinates: Position[] };

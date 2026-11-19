@@ -9,13 +9,13 @@ export type ElevationStats = {
 };
 
 export type ElevationOptions = {
-  /** Fenêtre de la moyenne glissante (nombre de points, impair). Défaut 1 (aucun lissage : altitudes IGN sans bruit, #1517). */
+  /** Moving-average window (number of points, odd). Default 1 (no smoothing: noise-free IGN elevations, #1517). */
   window?: number;
-  /** Seuil d'hystérésis en mètres : une variation plus petite est du bruit. Défaut 1 m (#1517). */
+  /** Hysteresis threshold in metres: a smaller change is noise. Default 1 m (#1517). */
   thresholdM?: number;
 };
 
-/** Moyenne glissante centrée (fenêtre réduite aux bords). */
+/** Centred moving average (window shrunk at the edges). */
 export function smooth(values: number[], window = 5): number[] {
   const half = Math.floor(window / 2);
   return values.map((_, i) => {
@@ -28,9 +28,9 @@ export function smooth(values: number[], window = 5): number[] {
 }
 
 /**
- * Moyenne glissante centrée **symétrique** : aux bords, la fenêtre se réduit des deux côtés à la fois
- * (point 0 inchangé, point 1 = moyenne de 0..2…). Contrairement à `smooth`, une pente régulière reste
- * exactement linéaire jusqu'aux extrémités : sert au calcul des pentes (#1388).
+ * **Symmetric** centred moving average: at the edges, the window shrinks on both sides at once
+ * (point 0 unchanged, point 1 = average of 0..2…). Unlike `smooth`, a regular slope stays
+ * exactly linear up to the ends: used to compute slopes (#1388).
  */
 export function smoothSymmetric(values: number[], window = 5): number[] {
   const half = Math.floor(window / 2);
@@ -44,10 +44,10 @@ export function smoothSymmetric(values: number[], window = 5): number[] {
 }
 
 /**
- * D+ / D- d'une série d'altitudes. Les altitudes enregistrées viennent de l'IGN (modèle de terrain, sans
- * bruit GPS, #1514) : pas de lissage par défaut (fenêtre 1) et seuil d'hystérésis de 1 m, qui n'écarte que
- * les arrondis. Un lissage de 5 points + seuil 3 m effaçait les petites bosses (946 m au lieu de 1077 m).
- * Pour des altitudes GPS brutes, passer `{ window: 5, thresholdM: 3 }`.
+ * Gain / loss of a series of elevations. Stored elevations come from IGN (terrain model, no
+ * GPS noise, #1514): no smoothing by default (window 1) and a 1 m hysteresis threshold, which only drops
+ * rounding. A 5-point smoothing + 3 m threshold erased the small bumps (946 m instead of 1077 m).
+ * For raw GPS elevations, pass `{ window: 5, thresholdM: 3 }`.
  */
 export function gainLoss(eles: number[], opts: ElevationOptions = {}): { gainM: number; lossM: number } {
   if (eles.length < 2) return { gainM: 0, lossM: 0 };
@@ -69,7 +69,7 @@ export function gainLoss(eles: number[], opts: ElevationOptions = {}): { gainM: 
   return { gainM: gain, lossM: loss };
 }
 
-/** Statistiques d'altitude sur des lignes. Tout `null` si une altitude manque. */
+/** Elevation statistics over lines. All `null` if an elevation is missing. */
 export function elevationStats(lineList: Position[][], opts: ElevationOptions = {}): ElevationStats {
   const all = lineList.flat();
   if (all.length === 0 || all.some((p) => typeof p[2] !== 'number' || Number.isNaN(p[2]))) {
@@ -92,7 +92,7 @@ export function elevationStats(lineList: Position[][], opts: ElevationOptions = 
   return { gainM, lossM, minEle, maxEle };
 }
 
-/** Profil altimétrique `{distKm, ele}` d'une ligne (pour `ElevationProfile`). */
+/** Elevation profile `{distKm, ele}` of a line (for `ElevationProfile`). */
 export function profileOf(coords: Position[]): { distKm: number; ele: number }[] {
   const out: { distKm: number; ele: number }[] = [];
   let d = 0;
@@ -105,9 +105,9 @@ export function profileOf(coords: Position[]): { distKm: number; ele: number }[]
 }
 
 /**
- * Complète les altitudes manquantes (#1467) : interpolation linéaire selon la distance entre les points connus voisins,
- * valeur constante au-delà du premier/dernier point connu. `estimated[i]` vaut vrai pour les points complétés.
- * `null` si aucun point n'a d'altitude (rien à estimer).
+ * Fills missing elevations (#1467): linear interpolation by distance between the neighbouring known points,
+ * constant value beyond the first/last known point. `estimated[i]` is true for filled points.
+ * `null` if no point has an elevation (nothing to estimate).
  */
 export function fillElevation(coords: Position[]): { eles: number[]; estimated: boolean[] } | null {
   const n = coords.length;

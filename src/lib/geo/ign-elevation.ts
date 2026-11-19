@@ -2,10 +2,10 @@ import { sourceEnabled } from '@/lib/config';
 import type { Position, TrackGeometry } from './types';
 
 /**
- * Service d'altimétrie de l'IGN (Géoplateforme) : API ouverte, sans clé, ressource RGE ALTI.
- * Quotas publiés : 5 requêtes/s par IP et 5000 points par requête (à revérifier avant l'exposition publique).
- * On groupe les points par requêtes de 150 (URL GET raisonnable) et on met en cache les altitudes
- * par point arrondi à ~1 m (5 décimales) pour ne jamais réinterroger deux fois le même point.
+ * IGN elevation service (Géoplateforme): open API, no key, RGE ALTI resource.
+ * Published quotas: 5 requests/s per IP and 5000 points per request (to re-check before public exposure).
+ * Points are grouped in requests of 150 (reasonable GET URL) and elevations are cached
+ * per point rounded to ~1 m (5 decimals) so the same point is never queried twice.
  */
 export const IGN_ALTI_URL = 'https://data.geopf.fr/altimetrie/1.0/calcul/alti/rest/elevation.json';
 export const IGN_RESOURCE = 'ign_rge_alti_wld';
@@ -16,13 +16,13 @@ type FetchLike = (url: string) => Promise<{ ok: boolean; status: number; json():
 
 export type EnrichOptions = {
   fetchFn?: FetchLike;
-  /** Cache partagé entre appels (clé `lon,lat` à 5 décimales). */
+  /** Cache shared between calls (key `lon,lat` with 5 decimals). */
   cache?: Map<string, number>;
-  /** Pause entre requêtes (ms) ; 0 en test. */
+  /** Pause between requests (ms); 0 in tests. */
   intervalMs?: number;
   /**
-   * #1515 : remplace l'altitude de TOUS les points par celle de l'IGN (au lieu de ne compléter que les manquantes).
-   * Repli : point hors couverture ou IGN en panne → on garde l'altitude source si elle existe.
+   * #1515: replaces the elevation of ALL points with IGN's (instead of only filling the missing ones).
+   * Fallback: point outside coverage or IGN down → the source elevation is kept if it exists.
    */
   replace?: boolean;
 };
@@ -45,16 +45,16 @@ async function fetchChunk(points: Position[], fetchFn: FetchLike): Promise<numbe
 }
 
 /**
- * Complète l'altitude manquante d'une géométrie (OSM, certains GPX) via l'IGN.
- * Utilisée par toutes les sources. Ne touche pas une géométrie qui a déjà toutes ses altitudes.
- * Les points hors couverture (-99999) restent sans altitude ; si l'un manque, on laisse la géométrie
- * sans altitude (les statistiques D+ resteront nulles plutôt que fausses).
+ * Fills the missing elevation of a geometry (OSM, some GPX) through IGN.
+ * Used by every source. Does not touch a geometry that already has all its elevations.
+ * Points outside coverage (-99999) stay without elevation; if one is missing, the geometry is left
+ * without elevation (gain statistics stay null rather than wrong).
  */
 export async function enrichElevation<G extends TrackGeometry>(g: G, opts: EnrichOptions = {}): Promise<G> {
   const lineList: Position[][] = g.type === 'LineString' ? [g.coordinates] : g.coordinates;
   const allHaveEle = lineList.every((l) => l.every(hasEle));
   if (allHaveEle && !opts.replace) return g;
-  // Source `ign` désactivée (DATA_SOURCES, #1473) : pas d'appel réseau, la géométrie reste sans altitude.
+  // `ign` source disabled (DATA_SOURCES, #1473): no network call, the geometry stays without elevation.
   if (!opts.fetchFn && !sourceEnabled('ign')) return g;
 
   const cache = opts.cache ?? defaultCache;
@@ -72,7 +72,7 @@ export async function enrichElevation<G extends TrackGeometry>(g: G, opts: Enric
       if (interval && i + CHUNK < entries.length) await new Promise((r) => setTimeout(r, interval));
     }
   } catch (e) {
-    // IGN en panne en mode remplacement : l'altitude source (déjà complète) est conservée.
+    // IGN down in replace mode: the source elevation (already complete) is kept.
     if (opts.replace && allHaveEle) return g;
     throw e;
   }

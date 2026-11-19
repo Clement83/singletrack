@@ -4,23 +4,23 @@ import { outing, outingRide, track } from '@/db/schema';
 import { enrichElevation, gainLoss, geometryStats, type EnrichOptions, type Position, type TrackGeometry } from '@/lib/geo';
 
 /**
- * Recalcul du D+ de l'existant (#1519, epic #1514) : recote par l'IGN (mode `replace`, #1515) puis recalcule
- * D+/D-/min/max avec les réglages courants (#1517) pour :
- *  - les traces avec altitude (`track`) ;
- *  - les snapshots de toutes les sorties locales (`outing.track_snapshot`), passées comprises ;
- *  - les traces roulées (`outing_ride.gain_m`).
- * Les sorties distantes (`remote_outing`) ne sont pas concernées. Idempotent : une ligne ne s'écrit que si le résultat
- * diffère, et `done` (reprise) permet de ne pas réinterroger l'IGN pour ce qui est déjà traité.
+ * Elevation gain recomputation of existing data (#1519, epic #1514): re-elevates through IGN (`replace` mode, #1515) then
+ * recomputes gain/loss/min/max with the current settings (#1517) for:
+ *  - tracks with elevation (`track`);
+ *  - the snapshots of every local outing (`outing.track_snapshot`), past ones included;
+ *  - ridden tracks (`outing_ride.gain_m`).
+ * Remote outings (`remote_outing`) are not concerned. Idempotent: a row is only written if the result
+ * differs, and `done` (resume) avoids querying IGN again for what is already processed.
  */
 export type RecomputeKind = 'track' | 'snapshot' | 'ride';
 export type RecomputeReport = Record<RecomputeKind, { seen: number; changed: number; skipped: number; failed: number }>;
 
 export type RecomputeOptions = EnrichOptions & {
-  /** Clés `kind:id` déjà traitées (reprise) ; alimenté au fil de l'eau. */
+  /** `kind:id` keys already processed (resume); filled as we go. */
   done?: Set<string>;
   dryRun?: boolean;
   onItem?: (kind: RecomputeKind, id: string, outcome: 'changed' | 'unchanged' | 'skipped' | 'failed', detail?: string) => void;
-  /** Appelé après chaque ligne traitée (checkpoint). */
+  /** Called after each processed row (checkpoint). */
   onProgress?: (key: string) => void;
 };
 
@@ -38,7 +38,7 @@ export async function recomputeElevation(db: Db, opts: RecomputeOptions = {}): P
   const cache = opts.cache ?? new Map<string, number>();
   const baseFetch = opts.fetchFn ?? ((u: string) => fetch(u));
 
-  /** Recote une géométrie ; `null` si l'IGN a échoué (on ne touche alors à rien). */
+  /** Re-elevates a geometry; `null` if IGN failed (nothing is touched then). */
   async function recote(g: TrackGeometry): Promise<TrackGeometry | null> {
     let ignFailed = false;
     const out = await enrichElevation(g, {
@@ -87,7 +87,7 @@ export async function recomputeElevation(db: Db, opts: RecomputeOptions = {}): P
     }
   }
 
-  // 1. Traces avec altitude.
+  // 1. Tracks with elevation.
   const tracks = db.select().from(track).where(isNotNull(track.minEle)).all();
   for (const t of tracks) {
     await step('track', t.id, async () => {
@@ -101,7 +101,7 @@ export async function recomputeElevation(db: Db, opts: RecomputeOptions = {}): P
     });
   }
 
-  // 2. Snapshots de sorties (leur propre géométrie simplifiée, jamais la trace d'origine : la sortie reste figée).
+  // 2. Outing snapshots (their own simplified geometry, never the original track: the outing stays frozen).
   for (const o of db.select({ id: outing.id, snap: outing.trackSnapshot }).from(outing).all()) {
     if (!hasAllEle(o.snap.geometry) && o.snap.minEle == null) {
       report.snapshot.seen++;
@@ -120,7 +120,7 @@ export async function recomputeElevation(db: Db, opts: RecomputeOptions = {}): P
     });
   }
 
-  // 3. Traces roulées : géométrie (déjà simplifiée) recotée, D+ arrondi comme à l'enregistrement.
+  // 3. Ridden tracks: geometry (already simplified) re-elevated, gain rounded as at save time.
   for (const r of db.select().from(outingRide).all()) {
     await step('ride', r.id, async () => {
       const geometry = await recote(r.geometry);

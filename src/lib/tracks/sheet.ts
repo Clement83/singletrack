@@ -9,9 +9,9 @@ import { getVisibleTrack } from './query';
 export const PROFILE_POINTS = 240;
 
 /**
- * Fiche complète d'une trace (#1581), calculée une seule fois pour la page `/t/<slug>` et `GET /api/tracks/<slug>` :
- * géométrie à 5 m, profil (~240 points localisés), durée estimée, droits et sorties de l'utilisateur.
- * `undefined` si la trace est inconnue ou si c'est le brouillon d'un autre (⇒ 404). Complète l'altitude IGN au besoin.
+ * Full sheet of a track (#1581), computed once for the `/t/<slug>` page and `GET /api/tracks/<slug>`:
+ * geometry at 5 m, profile (~240 located points), estimated duration, rights and the user's outings.
+ * `undefined` if the track is unknown or someone else's draft (⇒ 404). Completes the IGN elevation if needed.
  */
 export async function trackSheet(db: Db, slug: string, userId?: string | null) {
   const found = getVisibleTrack(db, slug, userId);
@@ -34,7 +34,7 @@ export async function trackSheet(db: Db, slug: string, userId?: string | null) {
     slug: t.slug,
     name: t.name,
     status: t.status,
-    /** #1590 : seulement pour l'auteur d'une trace modifiable (jamais OSM / Geotrek) ; sert au badge et au menu « … ». */
+    /** #1590: only for the author of an editable track (never OSM / Geotrek); used for the badge and the "…" menu. */
     visibility: mine ? t.visibility : null,
     difficulty: t.difficulty,
     loop: t.loop,

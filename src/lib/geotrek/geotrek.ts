@@ -1,15 +1,15 @@
 import type { TrackGeometry, Position } from '@/lib/geo';
 import { difficultyFromLabel, type NormalizedTrack, type RegionConfig, type TrackSource } from '@/lib/tracks';
 
-/** Une instance Geotrek-admin (API v2, publique, sans clé) et les pratiques à importer. */
+/** A Geotrek-admin instance (API v2, public, no key) and the practices to import. */
 export type GeotrekInstance = {
-  /** Identifiant stable, préfixe de `external_id` (ex. `var`). */
+  /** Stable id, prefix of `external_id` (e.g. `var`). */
   id: string;
-  /** Base de l'API, sans slash final : `https://gestion-sportnature.var.fr/api/v2`. */
+  /** API base, no trailing slash: `https://gestion-sportnature.var.fr/api/v2`. */
   apiBase: string;
-  /** Pratiques à importer (`trek_practice`), ex. `[2]` = Randonnée VTT. */
+  /** Practices to import (`trek_practice`), e.g. `[2]` = mountain-bike hike. */
   practices: number[];
-  /** Fiche publique d'un itinéraire. */
+  /** Public page of a route. */
   ficheUrl: (t: GeotrekTrek) => string;
   attribution: string;
   license?: string | null;
@@ -22,7 +22,7 @@ export const SPORT_NATURE_VAR: GeotrekInstance = {
   practices: [2],
   ficheUrl: (t) => `https://sportnature.var.fr/trek/${t.id}-${slugify(t.name)}`,
   attribution: 'Source : Département du Var – Sport Nature Var',
-  // L'API ne déclare aucune licence : on ne l'invente pas, l'attribution suffit à citer la source.
+  // The API declares no licence: none is made up, the attribution is enough to credit the source.
   license: null,
   author: 'Département du Var',
 };
@@ -52,7 +52,7 @@ export function slugify(s: string): string {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
 
-/** HTML de Geotrek (`<p>`, entités) → texte brut. */
+/** Geotrek HTML (`<p>`, entities) → plain text. */
 export function htmlToText(html: string | null | undefined): string | null {
   if (!html) return null;
   const text = html
@@ -82,7 +82,7 @@ function toGeometry(g: GeotrekTrek['geometry']): TrackGeometry | null {
   return null;
 }
 
-/** Un itinéraire Geotrek → trace normalisée. `difficultyLabels` : id → libellé (référentiel `trek_difficulty`). */
+/** A Geotrek route → normalised track. `difficultyLabels`: id → label (`trek_difficulty` reference list). */
 export function trekToTrack(inst: GeotrekInstance, t: GeotrekTrek, difficultyLabels: Map<number, string>): NormalizedTrack | null {
   if (t.published === false) return null;
   const geometry = toGeometry(t.geometry);
@@ -107,7 +107,7 @@ export function trekToTrack(inst: GeotrekInstance, t: GeotrekTrek, difficultyLab
 
 export type GeotrekSourceOptions = { instance?: GeotrekInstance; fetchImpl?: typeof fetch; timeoutMs?: number };
 
-/** Source Geotrek générique : pagination `next`, référentiel de difficultés, un appel de liste par pratique. */
+/** Generic Geotrek source: `next` pagination, difficulty reference list, one list call per practice. */
 export function geotrekSource(opts: GeotrekSourceOptions = {}): TrackSource {
   const inst = opts.instance ?? SPORT_NATURE_VAR;
   const doFetch = opts.fetchImpl ?? fetch;

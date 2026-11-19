@@ -2,7 +2,7 @@ import type { Position, TrackGeometry } from './types';
 
 const M_PER_DEG = 111_320;
 
-/** Distance (m) d'un point à un segment, en projection équirectangulaire locale (suffisant à l'échelle d'une trace). */
+/** Distance (m) from a point to a segment, in a local equirectangular projection (enough at the scale of a track). */
 function segDistance(p: Position, a: Position, b: Position): number {
   const k = Math.cos((p[1] * Math.PI) / 180);
   const px = (p[0] - a[0]) * k * M_PER_DEG;
@@ -14,7 +14,7 @@ function segDistance(p: Position, a: Position, b: Position): number {
   return Math.hypot(px - t * bx, py - t * by);
 }
 
-/** Douglas-Peucker itératif (pas de récursion : les traces ont des milliers de points). Tolérance en mètres. */
+/** Iterative Douglas-Peucker (no recursion: tracks have thousands of points). Tolerance in metres. */
 export function simplifyLine(coords: Position[], toleranceM: number): Position[] {
   if (coords.length <= 2) return coords.slice();
   const keep = new Uint8Array(coords.length);

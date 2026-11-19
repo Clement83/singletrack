@@ -1,9 +1,9 @@
 /**
- * Durée estimée d'une sortie VTT (formule simple, volontairement prudente) :
+ * Estimated duration of a mountain-bike outing (simple, deliberately cautious formula):
  *   minutes = distance_km / VITESSE_PLAT × 60  +  D+ / VITESSE_ASCENSION × 60
- * - VITESSE_PLAT = 12 km/h (vitesse moyenne « balade soutenue » hors montée) ;
- * - VITESSE_ASCENSION = 400 m de D+ par heure (règle de Naismith adaptée au VTT).
- * Hors pauses. Les deux paramètres sont exportés pour être ajustés au même endroit.
+ * - VITESSE_PLAT = 12 km/h (average "steady ride" speed outside climbs);
+ * - VITESSE_ASCENSION = 400 m of elevation gain per hour (Naismith's rule adapted to mountain biking).
+ * Breaks excluded. Both parameters are exported to be tuned in one place.
  */
 export const FLAT_SPEED_KMH = 12;
 export const CLIMB_M_PER_H = 400;

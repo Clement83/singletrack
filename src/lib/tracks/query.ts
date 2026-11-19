@@ -8,7 +8,7 @@ import type { TrackFilters } from './filters';
 import type { Difficulty } from './difficulty';
 import type { TrackSourceId } from './types';
 
-/** Tolérance (m) de la géométrie servie à la carte d'ensemble : invisible à ces zooms, ~20× plus léger. */
+/** Tolerance (m) of the geometry served to the overview map: invisible at those zooms, ~20× lighter. */
 export const MAP_TOLERANCE_M = 15;
 
 export type TrackSummary = {
@@ -21,33 +21,33 @@ export type TrackSummary = {
   gainM: number | null;
   start: [number, number];
   bbox: [number, number, number, number];
-  /** `null` en vue d'ensemble (`overview`, #1428) : seuls les points de départ servent à ce zoom. */
+  /** `null` in the overview (`overview`, #1428): only start points are used at that zoom. */
   geometry: TrackGeometry | null;
-  /** `draft` : brouillon (visible seulement dans « Mes traces », #1450). */
+  /** `draft`: draft (visible only in "My tracks", #1450). */
   status: 'draft' | 'published';
-  /** Codes des massifs traversés (#1349). */
+  /** Codes of the crossed massifs (#1349). */
   massifs: string[];
-  /** #1590 : visibilité, seulement sur **ses propres** traces (absente sinon) ; sert au badge de « Mes traces ». */
+  /** #1590: visibility, only on **one's own** tracks (absent otherwise); used for the "My tracks" badge. */
   visibility?: 'public' | 'friends' | 'private';
 };
 
-/** Nombre maximal de traces servies par requête (#1428) : au-delà, les plus proches du centre de la vue d'abord. */
+/** Maximum number of tracks served per request (#1428): beyond it, the closest to the view centre first. */
 export const TRACKS_MAX_DETAIL = 400;
 export const TRACKS_MAX_OVERVIEW = 5000;
 const CACHE_MAX = 3000;
 
-/** Plafond du mode « départs » (#1530) : objets légers sans géométrie (~150 octets), tolérables par dizaines de milliers. */
+/** Cap of the "start points" mode (#1530): light objects without geometry (~150 bytes), fine by the tens of thousands. */
 export const TRACKS_MAX_STARTS = 20000;
-/** Nombre maximal de traces par appel de `/api/tracks/geometry`. */
+/** Maximum number of tracks per `/api/tracks/geometry` call. */
 export const GEOMETRY_MAX_SLUGS = 100;
 
-/** Tolérance de simplification (m) selon le zoom de la carte : fine en vue rapprochée, grossière en vue large. */
+/** Simplification tolerance (m) by map zoom: fine when zoomed in, coarse when zoomed out. */
 export function toleranceForZoom(zoom?: number): number {
   if (zoom === undefined || !Number.isFinite(zoom)) return MAP_TOLERANCE_M;
   return zoom >= 15 ? 2 : zoom >= 13 ? 5 : zoom >= 11 ? 10 : MAP_TOLERANCE_M;
 }
 
-/** Départ léger d'une trace (#1530) : tout sauf la géométrie. */
+/** Light start point of a track (#1530): everything but the geometry. */
 export type TrackStart = Pick<TrackSummary, 'slug' | 'name' | 'source' | 'difficulty' | 'loop' | 'distanceKm' | 'gainM' | 'start' | 'status' | 'visibility'>;
 
 const cache = new Map<string, TrackGeometry>();
@@ -55,39 +55,39 @@ function simplified(id: string, updatedAt: Date, g: TrackGeometry, tol = MAP_TOL
   const key = `${id}:${updatedAt.getTime()}:${tol}`;
   let s = cache.get(key);
   if (!s) {
-    if (cache.size >= CACHE_MAX) cache.clear(); // borne mémoire : des dizaines de milliers de traces en France
+    if (cache.size >= CACHE_MAX) cache.clear(); // memory bound: tens of thousands of tracks in France
     s = simplifyGeometry(g, tol);
     cache.set(key, s);
   }
   return s;
 }
 
-/** Traces correspondant aux filtres, géométrie simplifiée. `home` active le filtre de rayon. */
+/** Tracks matching the filters, simplified geometry. `home` enables the radius filter. */
 export function queryTracks(
   db: Db,
   f: TrackFilters,
   home?: { lat: number; lon: number },
-  /** `openOn` (YYYY-MM-DD) : écarte les traces qui traversent un massif fermé (niveau 4-5) ce jour-là. */
+  /** `openOn` (YYYY-MM-DD): drops the tracks that cross a closed massif (level 4-5) that day. */
   opts: { openOn?: string; overview?: boolean; starts?: boolean; limit?: number; userId?: string } = {},
 ): { tracks: TrackSummary[]; total: number } {
   const w: SQL[] = [];
   if (f.q) w.push(like(sql`lower(${track.name})`, `%${f.q.toLowerCase().replace(/[%_]/g, '')}%`));
   if (f.minKm !== undefined) w.push(gte(track.distanceM, f.minKm * 1000));
   if (f.maxKm !== undefined) w.push(lte(track.distanceM, f.maxKm * 1000));
-  // D+ inconnu (altitude pas encore calculée, #1428) : on ne l'exclut pas à tort d'un filtre de D+.
+  // Unknown gain (elevation not computed yet, #1428): not wrongly excluded by a gain filter.
   if (f.minGain !== undefined) w.push(or(isNull(track.elevationGainM), gte(track.elevationGainM, f.minGain))!);
   if (f.maxGain !== undefined) w.push(or(isNull(track.elevationGainM), lte(track.elevationGainM, f.maxGain))!);
   if (f.difficulty?.length) w.push(inArray(track.difficulty, f.difficulty));
   if (f.shape) w.push(eq(track.loop, f.shape === 'loop'));
-  // « Mes traces » (#1430) : sans utilisateur connu, rien (jamais les traces des autres).
+  // "My tracks" (#1430): without a known user, nothing (never other people's tracks).
   if (f.mine) w.push(opts.userId ? eq(track.createdBy, opts.userId) : sql`0`);
-  // Brouillons (#1450) : seulement dans « Mes traces », jamais dans l'explorateur ni chez les autres.
+  // Drafts (#1450): only in "My tracks", never in the explorer or for others.
   else w.push(eq(track.status, 'published'), trackVisibleSql(opts.userId));
   if (f.bbox) {
     const [minLon, minLat, maxLon, maxLat] = f.bbox;
     w.push(lte(track.bboxMinLon, maxLon), gte(track.bboxMaxLon, minLon), lte(track.bboxMinLat, maxLat), gte(track.bboxMaxLat, minLat));
   }
-  // Phase 1 : colonnes légères (sans la géométrie), filtre, tri par proximité du centre de la vue, plafond.
+  // Phase 1: light columns (no geometry), filter, sort by distance to the view centre, cap.
   const rows = db
     .select({
       id: track.id, slug: track.slug, name: track.name, source: track.source, difficulty: track.difficulty, loop: track.loop,
@@ -114,7 +114,7 @@ export function queryTracks(
       .slice(0, limit)
       .map((x) => x.r);
   }
-  // Phase 2 : la géométrie seulement pour les traces gardées (et pas du tout en vue d'ensemble).
+  // Phase 2: the geometry only for the kept tracks (and not at all in the overview).
   const geoms = new Map<string, TrackGeometry>();
   if (!opts.overview && !opts.starts) {
     const ids = kept.filter((r) => !cache.has(`${r.id}:${r.updatedAt.getTime()}:${MAP_TOLERANCE_M}`)).map((r) => r.id);
@@ -141,8 +141,8 @@ export function queryTracks(
 }
 
 /**
- * Géométries simplifiées de traces par slug (#1530), à la demande. Un slug inconnu ou un brouillon d'un autre est
- * simplement omis (jamais d'indice sur son existence). `updatedAt` sert d'ETag côté route.
+ * Simplified geometries of tracks by slug (#1530), on demand. An unknown slug or someone else's draft is
+ * simply left out (never a hint of its existence). `updatedAt` is used as the route's ETag.
  */
 export function getTrackGeometries(db: Db, slugs: string[], userId?: string | null, zoom?: number) {
   const tol = toleranceForZoom(zoom);
@@ -159,10 +159,10 @@ export function getTrackBySlug(db: Db, slug: string) {
 }
 
 /**
- * **Règle d'accès unique** aux traces (#1588). `draft` : son auteur seul, quelle que soit la visibilité ; sinon
- * `public` : tout le monde (même sans session), `friends` : l'auteur et ses copains (acceptés, via `areFriends`),
- * `private` : l'auteur seul. Un copain d'un autre serveur n'a pas de session ici : il n'est pas concerné.
- * La version SQL `trackVisibleSql` doit rester strictement équivalente (tests : table de cas commune).
+ * **Single access rule** for tracks (#1588). `draft`: its author only, whatever the visibility; otherwise
+ * `public`: everyone (even without a session), `friends`: the author and their friends (accepted, via `areFriends`),
+ * `private`: the author only. A friend on another server has no session here: not concerned.
+ * The SQL version `trackVisibleSql` must stay strictly equivalent (tests: shared case table).
  */
 export function canViewTrack(
   db: Db,
@@ -178,7 +178,7 @@ export function canViewTrack(
   return false;
 }
 
-/** Version SQL de `canViewTrack` pour filtrer les listes (brouillons : exclus ici, voir `queryTracks`). */
+/** SQL version of `canViewTrack` to filter lists (drafts: excluded here, see `queryTracks`). */
 export function trackVisibleSql(userId?: string | null): SQL {
   if (!userId) return eq(track.visibility, 'public');
   return or(
@@ -191,7 +191,7 @@ export function trackVisibleSql(userId?: string | null): SQL {
   )!;
 }
 
-/** Trace par slug **si** le visiteur peut la voir (brouillon d'un autre ⇒ `undefined`, donc 404). */
+/** Track by slug **if** the visitor can see it (someone else's draft ⇒ `undefined`, hence 404). */
 export function getVisibleTrack(db: Db, slug: string, userId?: string | null) {
   const t = getTrackBySlug(db, slug);
   return t && canViewTrack(db, t, userId) ? t : undefined;

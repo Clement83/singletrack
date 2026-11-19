@@ -1,6 +1,6 @@
 import type { TrackSourceId } from './types';
 
-/** Libellés d'affichage des sources (attribution détaillée : champ `attribution` de la trace). */
+/** Display labels of the sources (detailed attribution: the track's `attribution` field). */
 export const SOURCE_LABEL: Record<TrackSourceId, string> = {
   utagawa: 'UtagawaVTT',
   osm: 'OpenStreetMap',

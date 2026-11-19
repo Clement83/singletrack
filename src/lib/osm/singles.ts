@@ -3,16 +3,16 @@ import { difficultyFromMtbScale, type Difficulty } from '@/lib/tracks/difficulty
 import { overpassFetch, type OsmSourceOptions } from './overpass';
 
 /**
- * Calque des singles OSM (#1372) : ways `highway=path|track` tagués `mtb:scale` (difficulté VTT d'un tronçon).
- * Logique pure ; le stockage est dans `singles-store.ts`.
+ * OSM singletrack layer (#1372): `highway=path|track` ways tagged `mtb:scale` (mountain-bike difficulty of a segment).
+ * Pure logic; storage lives in `singles-store.ts`.
  */
 
-/** Ways retenus pour le calque. */
+/** Ways kept for the layer. */
 export const SINGLE_HIGHWAYS = ['path', 'track'] as const;
-/** Tolérance de simplification à l'import (m) : invisible à l'écran, divise le volume stocké. */
+/** Simplification tolerance at import (m): invisible on screen, divides the stored volume. */
 export const IMPORT_TOLERANCE_M = 2;
 
-/** Requête Overpass : tous les ways path/track avec `mtb:scale` du département (code INSEE), en un appel. */
+/** Overpass query: every path/track way with `mtb:scale` in the department (INSEE code), in one call. */
 export function buildSinglesQuery(regionCode: string, timeoutS = 300): string {
   return `[out:json][timeout:${timeoutS}];
 area["boundary"="administrative"]["admin_level"="6"]["ref:INSEE"="${regionCode.replace(/[^0-9AB]/gi, '')}"]->.a;
@@ -38,13 +38,13 @@ export type TrailSegment = {
   lengthM: number;
 };
 
-/** Un way OSM → segment du calque ; `null` si ce n'est pas un single exploitable (tags ou géométrie). */
+/** An OSM way → layer segment; `null` if it is not a usable singletrack (tags or geometry). */
 export function wayToSegment(way: OverpassWay): TrailSegment | null {
   const tags = way.tags ?? {};
   const highway = tags.highway;
   const scale = tags['mtb:scale']?.trim();
   if (!highway || !(SINGLE_HIGHWAYS as readonly string[]).includes(highway) || !scale) return null;
-  // `geometry` contient des `null` pour les nœuds hors de la zone d'extraction.
+  // `geometry` contains `null`s for nodes outside the extraction area.
   const coords = (way.geometry ?? []).filter((p): p is { lat: number; lon: number } => !!p).map((p): Position => [p.lon, p.lat]);
   if (coords.length < 2) return null;
   const geometry = simplifyGeometry({ type: 'LineString', coordinates: coords }, IMPORT_TOLERANCE_M);
@@ -61,7 +61,7 @@ export function wayToSegment(way: OverpassWay): TrailSegment | null {
   };
 }
 
-/** Segments d'une réponse Overpass (ways seulement, doublons d'id ignorés). */
+/** Segments of an Overpass answer (ways only, duplicate ids ignored). */
 export function segmentsFromOverpass(json: { elements?: { type: string }[] }): TrailSegment[] {
   const seen = new Set<string>();
   const out: TrailSegment[] = [];
@@ -75,17 +75,17 @@ export function segmentsFromOverpass(json: { elements?: { type: string }[] }): T
   return out;
 }
 
-/** Télécharge les singles de la région (un seul appel Overpass, réessais espacés). Jamais depuis une page. */
+/** Downloads the singletracks of the region (a single Overpass call, spaced retries). Never from a page. */
 export async function fetchSingles(regionCode: string, opts: OsmSourceOptions = {}): Promise<TrailSegment[]> {
   return segmentsFromOverpass(await overpassFetch(buildSinglesQuery(regionCode), opts));
 }
 
-/** Zoom minimal du calque : en dessous, trop de segments pour être lisibles (et servis). */
+/** Minimum zoom of the layer: below it, too many segments to be readable (and served). */
 export const SINGLES_MIN_ZOOM = 11;
-/** Nombre maximal de segments renvoyés par requête. */
+/** Maximum number of segments returned per request. */
 export const SINGLES_MAX_FEATURES = 4000;
 
-/** Tolérance de simplification (m) servie selon le zoom de la carte. */
+/** Simplification tolerance (m) served according to the map zoom. */
 export function toleranceForZoom(zoom: number): number {
   if (zoom >= 15) return 0;
   if (zoom >= 13) return 5;

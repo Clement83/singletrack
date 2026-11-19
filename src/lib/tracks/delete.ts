@@ -7,9 +7,9 @@ import { getTrackBySlug } from './query';
 export type DeleteResult = { ok: true } | { error: 'not_found' | 'forbidden' };
 
 /**
- * Supprime une trace de l'utilisateur (#1449) : mêmes droits que `canEditInPlace` (auteur, source maison / copie / GPX).
- * Les clés étrangères font le reste : `outing.track_id` et `track.parent_track_id` passent à NULL
- * (les sorties gardent leur `track_snapshot`, les copies gardent leur attribution).
+ * Deletes a track of the user (#1449): same rights as `canEditInPlace` (author, home-made / copy / GPX source).
+ * Foreign keys do the rest: `outing.track_id` and `track.parent_track_id` become NULL
+ * (outings keep their `track_snapshot`, copies keep their attribution).
  */
 export function deleteTrack(db: Db, userId: string, slug: string): DeleteResult {
   const t = getTrackBySlug(db, slug);

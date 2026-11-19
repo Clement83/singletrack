@@ -4,14 +4,14 @@ import type { Difficulty } from './difficulty';
 
 export type TrackSourceId = (typeof TRACK_SOURCES)[number];
 
-/** Zone à synchroniser (v1 : le Var). */
+/** Area to sync (v1: the Var). */
 export type RegionConfig = {
   code: string;
   center: { lat: number; lon: number };
   bbox: { minLon: number; minLat: number; maxLon: number; maxLat: number };
 };
 
-/** Une trace telle que fournie par une source : seuls la géométrie et les métadonnées d'origine. */
+/** A track as provided by a source: only the geometry and the original metadata. */
 export type NormalizedTrack = {
   source: TrackSourceId;
   externalId: string | null;
@@ -25,20 +25,20 @@ export type NormalizedTrack = {
   difficulty?: Difficulty | null;
   difficultyRaw?: string | null;
   sourceUpdatedAt?: Date | null;
-  /** Utilisateur qui a importé/créé la trace (traces gpx / maison). */
+  /** User who imported/created the track (gpx / home-made tracks). */
   createdBy?: string | null;
-  /** Copie éditée (#1340) : id de la trace d'origine. */
+  /** Edited copy (#1340): id of the original track. */
   parentTrackId?: string | null;
-  /** `draft` (#1450) : brouillon de son auteur ; absent = publiée. */
+  /** `draft` (#1450): its author's draft; absent = published. */
   status?: 'draft' | 'published';
-  /** #1588 : absent = `public` (ou inchangé en mise à jour). Forcé à `public` pour les sources synchronisées. */
+  /** #1588: absent = `public` (or unchanged on update). Forced to `public` for synced sources. */
   visibility?: 'public' | 'friends' | 'private';
   raw?: unknown;
 };
 
-/** Contrat commun des sources (OSM, GPX, Utagawa, Geotrek) : le reste de l'appli ne les distingue pas. */
+/** Common contract of the sources (OSM, GPX, Utagawa, Geotrek, DATAtourisme): the rest of the app does not tell them apart. */
 export interface TrackSource {
   id: 'utagawa' | 'osm' | 'geotrek' | 'gpx' | 'datatourisme';
-  /** Import en masse / mise à jour d'une région. */
+  /** Bulk import / update of a region. */
   sync(region: RegionConfig): AsyncIterable<NormalizedTrack>;
 }

@@ -5,18 +5,18 @@ import { massifsForGeometry } from '@/lib/fire';
 import { enrichElevation, geometryStats, type EnrichOptions } from '@/lib/geo';
 import type { NormalizedTrack, RegionConfig, TrackSource } from './types';
 
-/** Sources alimentées par synchro : toujours `public` (#1588). */
+/** Sources fed by a sync: always `public` (#1588). */
 export const SYNCED_SOURCES: readonly string[] = ['osm', 'geotrek', 'utagawa', 'datatourisme'];
 
 export type UpsertResult = { id: string; slug: string; created: boolean };
 
 export type UpsertOptions = {
-  /** Altitude IGN à l'enregistrement (défaut : oui, remplace l'altitude source #1515) ; `false` pour les sources en masse. */
+  /** IGN elevation at save time (default: yes, replaces the source elevation #1515); `false` for bulk sources. */
   enrich?: boolean | EnrichOptions;
   now?: Date;
 };
 
-/** Colonnes dérivées de la géométrie (bbox, départ, distance, D+/D-, boucle). */
+/** Columns derived from the geometry (bbox, start, distance, gain/loss, loop). */
 export async function deriveColumns(t: NormalizedTrack, opts: UpsertOptions = {}) {
   let geometry = t.geometry;
   if (opts.enrich !== false) {
@@ -42,9 +42,9 @@ export async function deriveColumns(t: NormalizedTrack, opts: UpsertOptions = {}
 }
 
 /**
- * Insère ou met à jour une trace sur `(source, external_id)`. Réimporter ne crée jamais de doublon
- * et conserve `id`, `slug` et `created_at` (les liens `/t/<slug>` restent valides).
- * Sans `externalId` (trace maison), on insère toujours.
+ * Inserts or updates a track on `(source, external_id)`. Re-importing never creates a duplicate
+ * and keeps `id`, `slug` and `created_at` (`/t/<slug>` links stay valid).
+ * Without `externalId` (home-made track), it always inserts.
  */
 export async function upsertTrack(db: Db, t: NormalizedTrack, opts: UpsertOptions = {}): Promise<UpsertResult> {
   const now = opts.now ?? new Date();
@@ -64,7 +64,7 @@ export async function upsertTrack(db: Db, t: NormalizedTrack, opts: UpsertOption
     ...(t.createdBy !== undefined ? { createdBy: t.createdBy } : {}),
     ...(t.parentTrackId !== undefined ? { parentTrackId: t.parentTrackId } : {}),
     ...(t.status ? { status: t.status } : {}),
-    // #1588 : OSM / Geotrek / Utagawa (synchro) sont toujours publiques, quoi qu'on demande.
+    // #1588: OSM / Geotrek / Utagawa / DATAtourisme (synced) are always public, whatever is asked.
     ...(SYNCED_SOURCES.includes(t.source) ? { visibility: 'public' as const } : t.visibility ? { visibility: t.visibility } : {}),
     raw: t.raw ?? null,
     importedAt: now,
@@ -92,7 +92,7 @@ export async function upsertTrack(db: Db, t: NormalizedTrack, opts: UpsertOption
 
 export type SyncReport = { created: number; updated: number; failed: number };
 
-/** Consomme une source et upsert chaque trace ; une trace en erreur n'arrête pas l'import. */
+/** Consumes a source and upserts each track; a failing track does not stop the import. */
 export async function syncSource(
   db: Db,
   source: TrackSource,
