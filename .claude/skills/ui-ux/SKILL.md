@@ -1,107 +1,109 @@
 ---
 name: ui-ux
-description: Bonnes pratiques UI/UX de singletrack (interactions, accessibilité, formulaires, tactile, mobile first, typographie française) — règles Vercel Web Interface Guidelines adaptées à la charte du projet. À charger AVANT d'écrire ou de modifier tout composant, page ou style (src/app, src/components, globals.css), et pour un audit UI (« revois l'UI », « audit UX », « accessibilité »).
+description: singletrack UI/UX best practices (interactions, accessibility, forms, touch, mobile first, French typography) — Vercel Web Interface Guidelines adapted to the project's charter. Load it BEFORE writing or changing any component, page or style (src/app, src/components, globals.css), and for a UI audit ("review the UI", "UX audit", "accessibility").
 ---
 
 # UI/UX — singletrack
 
-La **charte d'interface** et les **règles mobiles** de `AGENTS.md` font foi (simple, doux, mobile first, carte star, tokens et composants du design system #1363). Cette skill ajoute les règles d'exécution qui manquent souvent : un écran peut respecter la charte et rester pénible à utiliser (pas de curseur main, focus invisible, clavier numérique absent, double-tap qui zoome…).
+The **interface charter** and the **mobile rules** of `AGENTS.md` are authoritative (simple, calm, mobile first, the map as the star, design-system tokens and components #1363). This skill adds the execution rules that are often missing: a screen can follow the charter and still be painful to use (no pointer cursor, invisible focus, no numeric keyboard, double tap that zooms…).
 
-Base : [Vercel Web Interface Guidelines](https://github.com/vercel-labs/web-interface-guidelines) (MIT, © Vercel Labs), adaptées au français, à Tailwind 4 et à shadcn/ui. Les règles marquées **(ST)** sont propres à singletrack.
+Based on the [Vercel Web Interface Guidelines](https://github.com/vercel-labs/web-interface-guidelines) (MIT, © Vercel Labs), adapted to French copy, Tailwind 4 and shadcn/ui. Rules marked **(ST)** are specific to singletrack.
 
-## Avant de coder
+## Before coding
 
-1. Lire la charte de `AGENTS.md` et `design/README.md`. Réutiliser `src/components/ui/*` (`Button`, `Field`, `Badge`, `BottomSheet`, `EmptyState`, `Skeleton`, `Toaster`) : ne jamais recréer un bouton ou un champ à la main.
-2. Une seule action principale par écran (`Button size="lg"`, pleine largeur, en bas sur mobile).
-3. Prévoir dès le départ les 4 états : chargement (squelette), vide (ton tutoyé + action), erreur (ce qui s'est passé + quoi faire), contenu long.
+1. Read the charter in `AGENTS.md` and `design/README.md`. Reuse `src/components/ui/*` (`Button`, `Field`, `Badge`, `BottomSheet`, `EmptyState`, `Skeleton`, `Toaster`): never rebuild a button or a field by hand.
+2. One main action per screen (`Button size="lg"`, full width, at the bottom on mobile).
+3. Plan the 4 states from the start: loading (skeleton), empty (informal tone + action), error (what happened + what to do), long content.
 
-## Interactions et curseur
+## Interactions and cursor
 
-- Tout élément cliquable a `cursor: pointer` — **(ST)** posé globalement dans `globals.css` (`@layer base`) car Tailwind 4 ne le met plus sur `<button>`. Un élément cliquable qui n'est ni `<button>`, ni `<a>`, ni `role="button"` est un bug (voir Sémantique), pas un cas pour `cursor-pointer`.
-- Désactivé : `disabled` (bouton) ou `aria-disabled="true"` (+ curseur `not-allowed` global), opacité réduite, pas de survol.
-- Chaque bouton/lien a un état `hover:` **et** `active:` (le mobile n'a pas de survol : `active:` est le retour tactile). Les états interactifs augmentent le contraste, jamais l'inverse.
-- **Jamais d'action uniquement au survol** (charte) ; un tooltip ne porte jamais d'information indispensable.
-- Zones tactiles ≥ 44 px (`min-h-touch`, `size-touch`), espacées d'au moins 8 px.
-- `touch-action: manipulation` sur les éléments interactifs (posé globalement) ; `-webkit-tap-highlight-color` transparent (posé) ⇒ le retour visuel vient de `active:`.
-- Bouton d'envoi : actif jusqu'au départ de la requête, puis désactivé + spinner + libellé « Enregistrement… ». Pas de double envoi.
-- Action destructive (supprimer, révoquer un lien, annuler une sortie) : confirmation ou annulation possible (toast « Annuler ») — jamais immédiate et définitive.
-- Geste (glisser, pincer, balayer) : toujours une alternative au tap et au clavier.
-- `autoFocus` : jamais sur mobile (ouvre le clavier et masque l'écran) ; desktop seulement, un seul champ principal.
+- Every clickable element has `cursor: pointer` — **(ST)** set globally in `globals.css` (`@layer base`) because Tailwind 4 no longer sets it on `<button>`. A clickable element that is neither `<button>`, `<a>` nor `role="button"` is a bug (see Semantics), not a case for `cursor-pointer`.
+- Disabled: `disabled` (button) or `aria-disabled="true"` (+ global `not-allowed` cursor), reduced opacity, no hover.
+- Every button/link has a `hover:` **and** an `active:` state (mobile has no hover: `active:` is the touch feedback). Interactive states increase contrast, never the opposite.
+- **Never an action on hover alone** (charter); a tooltip never carries essential information.
+- Touch targets ≥ 44 px (`min-h-touch`, `size-touch`), at least 8 px apart.
+- `touch-action: manipulation` on interactive elements (set globally); `-webkit-tap-highlight-color` transparent (set) ⇒ visual feedback comes from `active:`.
+- Submit button: enabled until the request starts, then disabled + spinner + "Saving…" label. No double submit.
+- Destructive action (delete, revoke a link, cancel an outing): confirmation or undo (toast "Undo") — never immediate and final.
+- Gesture (drag, pinch, swipe): always an alternative by tap and keyboard.
+- `autoFocus`: never on mobile (opens the keyboard and hides the screen); desktop only, a single main field.
 
-## Focus et clavier
+## Focus and keyboard
 
-- Focus visible partout : `:focus-visible` global (anneau `--ring`). Jamais `outline-none` sans remplacement `focus-visible:ring-*`.
-- `:focus-visible` plutôt que `:focus` ; `:focus-within` pour les contrôles composés.
-- Ordre de tabulation = ordre visuel ; un `BottomSheet`/dialogue piège le focus et le rend à l'ouverture (Radix/vaul le font : ne pas le casser).
-- Barre du bas, en-têtes collants et sheets ne recouvrent pas l'élément focalisé (`scroll-margin`/`scroll-padding`).
+- Visible focus everywhere: global `:focus-visible` (`--ring` ring). Never `outline-none` without a `focus-visible:ring-*` replacement.
+- `:focus-visible` rather than `:focus`; `:focus-within` for composite controls.
+- Tab order = visual order; a `BottomSheet`/dialog traps focus and gives it back on close (Radix/vaul do it: do not break it).
+- The bottom bar, sticky headers and sheets do not cover the focused element (`scroll-margin`/`scroll-padding`).
 
-## Sémantique et accessibilité
+## Semantics and accessibility
 
-- `<button>` pour une action, `<a>`/`<Link>` pour une navigation (clic molette, Ctrl+clic). Jamais `<div onClick>`.
-- Bouton icône seule : `aria-label` en français (« Me localiser », « Fermer »). Icône décorative : `aria-hidden="true"` (lucide).
-- Chaque champ a un `<label>` cliquable (`htmlFor`) — `Field` le fait.
-- Messages asynchrones (toasts, validation, résultat d'un envoi) : `aria-live="polite"` (sonner le fait).
-- Titres hiérarchiques `h1` → `h2`… ; un seul `h1` par page.
-- Images : `alt` (ou `alt=""` si décorative), `width`/`height` explicites.
-- Contraste AA (texte 4.5, UI 3) **en clair et en sombre** : `npm run tokens:check`.
-- La couleur ne porte jamais seule une information (difficulté, incendie, pente) : libellé ou légende à côté.
+- `<button>` for an action, `<a>`/`<Link>` for navigation (middle click, Ctrl+click). Never `<div onClick>`.
+- Icon-only button: `aria-label` through the translations ("Me localiser" / "Locate me", "Fermer" / "Close"). Decorative icon: `aria-hidden="true"` (lucide).
+- Every field has a clickable `<label>` (`htmlFor`) — `Field` does it.
+- Asynchronous messages (toasts, validation, submit result): `aria-live="polite"` (sonner does it).
+- Hierarchical headings `h1` → `h2`…; a single `h1` per page.
+- Images: `alt` (or `alt=""` if decorative), explicit `width`/`height`.
+- AA contrast (text 4.5, UI 3) **in light and dark**: `npm run tokens:check`.
+- Colour never carries information alone (difficulty, fire, slope): a label or a legend next to it.
 
-## Formulaires (mobile)
+## Forms (mobile)
 
-- Bon `type` et `inputmode` : `email`, `tel`, `inputMode="numeric"` (codes, km, D+), `type="date"`/`time` natifs.
-- `autoComplete` pertinent (`email`, `one-time-code`, `name`) et `name` explicite ; `autoComplete="off"` sur les champs non liés à l'identité.
-- `spellCheck={false}` sur email, codes, identifiants. Ne jamais bloquer le collage.
-- Erreurs sous le champ concerné, en clair, avec la solution ; focus sur la première erreur à l'envoi.
-- Placeholder = exemple, finit par `…` (« ex. Col du Fenouillet… ») ; jamais à la place du label.
-- Avertir avant de quitter avec des modifications non enregistrées (éditeur de traces, formulaires de sortie).
-- Formulaires courts : demander le minimum, valeurs par défaut intelligentes.
+- Right `type` and `inputmode`: `email`, `tel`, `inputMode="numeric"` (codes, km, elevation), native `type="date"`/`time`.
+- Relevant `autoComplete` (`email`, `one-time-code`, `name`) and an explicit `name`; `autoComplete="off"` on fields unrelated to identity.
+- `spellCheck={false}` on email, codes, identifiers. Never block pasting.
+- Errors under the field concerned, in plain words, with the fix; focus on the first error on submit.
+- Placeholder = an example, ending with `…` (« ex. Col du Fenouillet… »); never instead of the label.
+- Warn before leaving with unsaved changes (track editor, outing forms).
+- Short forms: ask for the minimum, smart defaults.
 
-## Mise en page mobile first
+## Mobile-first layout
 
-- Concevoir à 375 px, puis élargir (`md:`, `lg:`). Pas de scroll horizontal (`min-w-0` sur les enfants flex, `truncate`/`line-clamp`/`break-words` sur le texte).
-- Plein écran : `env(safe-area-inset-*)` (encoche, barre de geste) — barre du bas, sheet, boutons fixés en bas.
-- `overscroll-behavior: contain` dans les sheets, dialogues et listes défilantes.
-- Mise en page par flex/grid, jamais par mesure JS.
-- Pas de `user-scalable=no` ni `maximum-scale=1` : le zoom reste possible.
-- **(ST)** Carte plein écran ou intégrée : suivre les « Règles mobiles » d'`AGENTS.md` (`BaseMap`, `LazyMap embedded`, `.map-touch`).
+- Design at 375 px, then widen (`md:`, `lg:`). No horizontal scroll (`min-w-0` on flex children, `truncate`/`line-clamp`/`break-words` on text).
+- Full screen: `env(safe-area-inset-*)` (notch, gesture bar) — bottom bar, sheet, buttons pinned at the bottom.
+- `overscroll-behavior: contain` in sheets, dialogs and scrolling lists.
+- Layout with flex/grid, never with JS measurements.
+- No `user-scalable=no` or `maximum-scale=1`: zoom stays possible.
+- **(ST)** Full-screen or embedded map: follow the "Mobile rules" of `AGENTS.md` (`BaseMap`, `LazyMap embedded`, `.map-touch`).
 
 ## Animation
 
-- ≤ 200 ms, sobres (charte). `prefers-reduced-motion` respecté (coupure globale dans `globals.css`).
-- Animer `transform`/`opacity` seulement ; jamais `transition: all` (`transition-colors`, `transition-[transform,opacity]`).
-- Animations interruptibles par l'utilisateur.
+- ≤ 200 ms, restrained (charter). `prefers-reduced-motion` respected (global switch-off in `globals.css`).
+- Animate `transform`/`opacity` only; never `transition: all` (`transition-colors`, `transition-[transform,opacity]`).
+- Animations can be interrupted by the user.
 
-## Typographie et textes (français) — (ST)
+## Typography and copy (French) — (ST)
 
-- Ton simple et **tutoyé**, voix active, verbes d'action précis : « Créer la sortie », pas « Valider » ni « OK ».
-- **Pas de Title Case** (règle anglaise de Vercel) : majuscule au premier mot seulement.
-- Ponctuation française : guillemets « », espace insécable (` `) avant `: ; ! ?` et entre nombre et unité (`12 km`, `350 m`), `…` et pas `...`, apostrophe typographique `’` dans les textes affichés.
-- Chiffres pour les quantités (« 3 invités »), `font-variant-numeric: tabular-nums` (`tabular-nums`) pour les stats et colonnes de chiffres.
-- Dates, heures, nombres : `Intl.DateTimeFormat`/`Intl.NumberFormat` en `fr-FR`, fuseau `Europe/Paris` ; attention aux écarts d'hydratation serveur/client sur les dates.
-- Titres : `text-balance` ; paragraphes : `text-pretty`.
-- Messages d'erreur : ce qui s'est passé + quoi faire (« Pas de réseau — on réessaie dès que tu es de retour »).
+These rules apply to the **French UI copy** (`messages/fr.json`); English copy follows English conventions.
 
-## Thème
+- Simple, **informal (tutoiement)** tone, active voice, precise action verbs: « Créer la sortie », not « Valider » or « OK ».
+- **No Title Case** (an English rule from Vercel's guidelines): capital on the first word only.
+- French punctuation: guillemets « », non-breaking space (` `) before `: ; ! ?` and between number and unit (`12 km`, `350 m`), `…` and not `...`, typographic apostrophe `’` in displayed text.
+- Digits for quantities (« 3 invités »), `font-variant-numeric: tabular-nums` (`tabular-nums`) for stats and columns of numbers.
+- Dates, times, numbers: `Intl.DateTimeFormat`/`Intl.NumberFormat` in `fr-FR`, `Europe/Paris` time zone; watch for server/client hydration mismatches on dates.
+- Headings: `text-balance`; paragraphs: `text-pretty`.
+- Error messages: what happened + what to do (« Pas de réseau — on réessaie dès que tu es de retour »).
 
-- Couleurs **uniquement** via les tokens (`bg-primary`, `text-muted-foreground`…) : jamais de couleur en dur (lint + tests).
-- Vérifier chaque écran en clair et en sombre ; `<select>` natifs lisibles en sombre (fond et couleur explicites).
-- `theme-color` cohérent avec le fond.
+## Theme
 
-## Performance perçue
+- Colours **only** through tokens (`bg-primary`, `text-muted-foreground`…): never a hard-coded colour (lint + tests).
+- Check every screen in light and dark; native `<select>`s readable in dark (explicit background and colour).
+- `theme-color` consistent with the background.
 
-- Squelettes plutôt que spinners plein écran ; pas de saut de mise en page (dimensions réservées).
-- Listes > 50 éléments : virtualiser ou `content-visibility: auto`.
-- Pas de lecture de layout (`getBoundingClientRect`…) pendant le rendu.
-- Voir aussi la skill `react-performance` pour React/Next.
+## Perceived performance
 
-## Audit d'un écran (checklist de fin de ticket UI)
+- Skeletons rather than full-screen spinners; no layout shift (reserved dimensions).
+- Lists > 50 items: virtualise or `content-visibility: auto`.
+- No layout reads (`getBoundingClientRect`…) during render.
+- See also the `react-performance` skill for React/Next.
 
-Pour chaque fichier touché, vérifier les règles ci-dessus et rendre les écarts au format `fichier:ligne - problème`, groupés par fichier (`✓ ok` si rien). Puis, dans l'app reconstruite :
+## Screen audit (end-of-ticket UI checklist)
 
-1. 375 px et desktop, clair et sombre (captures exigées par la charte).
-2. Tout au **clavier** seul : Tab, Entrée, Échap, focus toujours visible.
-3. Curseur main sur tout ce qui est cliquable, état `active:` au doigt.
-4. États vide / chargement / erreur / texte très long.
-5. Lighthouse accessibilité (voir `AGENTS.md`).
+For every file touched, check the rules above and report deviations as `file:line - problem`, grouped by file (`✓ ok` if none). Then, in the rebuilt app:
 
-Un écart trouvé hors du périmètre du ticket devient un ticket, il ne se corrige pas en douce.
+1. 375 px and desktop, light and dark (screenshots required by the charter).
+2. Everything with the **keyboard** alone: Tab, Enter, Escape, focus always visible.
+3. Pointer cursor on everything clickable, `active:` state under the finger.
+4. Empty / loading / error / very long text states.
+5. Lighthouse accessibility (see `AGENTS.md`).
+
+A deviation found outside the ticket's scope becomes a ticket; it is not fixed on the side.

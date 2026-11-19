@@ -1,8 +1,8 @@
-## Quoi et pourquoi / What and why
+## What and why
 
-## Vérifications
+## Checks
 
-- [ ] Tests, lint et `tsc --noEmit` passent (dans le conteneur)
-- [ ] Textes en FR **et** EN, tokens de design, pas de couleur en dur
-- [ ] Vérifié à 375 px et en desktop (si UI)
-- [ ] Aucun secret ni donnée personnelle
+- [ ] Tests, lint and `tsc --noEmit` pass (in the container)
+- [ ] UI texts in FR **and** EN, design tokens, no hard-coded colour
+- [ ] Checked at 375 px and on desktop (if UI)
+- [ ] No secret or personal data

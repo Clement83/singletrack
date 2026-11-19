@@ -1,10 +1,10 @@
-# spikes/hunting — extractions jetables (#1572)
+# spikes/hunting — throwaway extractions (#1572)
 
-Scripts de l'étude [`docs/hunting-sources.md`](../../docs/hunting-sources.md). **Pas de code de l'app** : exclus de tsc, ESLint et de l'image. Dérogation « scraping » valable pour ce POC seulement.
+Scripts of the study [`docs/hunting-sources.md`](../../docs/hunting-sources.md). **Not application code**: excluded from tsc, ESLint and the image. The "scraping" exception applies to this proof of concept only.
 
 ```bash
 docker run --rm -v "$PWD/spikes/hunting:/s:ro" -w /s node:22-alpine node ca-chasse.mjs
-docker run --rm -v "$PWD/spikes/hunting:/s:ro" -w /s node:22-alpine node cyneportail.mjs [AAAA-MM-JJ]
+docker run --rm -v "$PWD/spikes/hunting:/s:ro" -w /s node:22-alpine node cyneportail.mjs [YYYY-MM-DD]
 ```
 
-Sobriété : UA générique, ≥ 1,5 s entre appels, 3 appels (Ça chasse ?) et 1 appel (CynePortail). Rien n'est écrit sur disque : ne jamais commiter de données brutes.
+Restraint: generic UA, ≥ 1.5 s between calls, 3 calls (Ça chasse ?) and 1 call (CynePortail). Nothing is written to disk: never commit raw data.

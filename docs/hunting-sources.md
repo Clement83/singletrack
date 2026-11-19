@@ -1,33 +1,33 @@
-# Sources des jours de chasse / battues (étude #1572)
+# Sources for hunting days / driven hunts (study #1572)
 
-Étude du 2026-11-17, **sans intégration** (suite de #1354, #1469, #1488). Dérogation de Clément du 2026-11-16 : extraction autorisée pour ce POC seulement ; si une source convient, Clément demande l'autorisation à l'éditeur **avant** toute intégration. Scripts jetables : [`spikes/hunting/`](../spikes/hunting/).
+Study of 2026-11-17, **without integration** (follow-up of #1354, #1469, #1488). Exception granted by the maintainer on 2026-11-16: extraction allowed for this proof of concept only; if a source fits, the maintainer asks the publisher for permission **before** any integration. Throwaway scripts: [`spikes/hunting/`](../spikes/hunting/).
 
 ## Conclusion
 
-**Aucune source de battues déclarées n'est exploitable dans le Var aujourd'hui.** Les deux seules sources techniquement propres (JSON avec polygones, dates futures) couvrent **un seul territoire dans l'Oise** (Ça chasse ?) et **le Bas-Rhin / Alsace bossue** (CynePortail). Pour le Var, la seule information officielle et complète reste les **arrêtés préfectoraux** (déjà intégrés par #1354, « minimum garanti »).
+**No source of declared driven hunts ("battues") is usable in the Var today.** The only two technically clean sources (JSON with polygons, future dates) cover **a single territory in the Oise** (Ça chasse ?) and **the Bas-Rhin / Alsace bossue** (CynePortail). For the Var, the only official and complete information remains the **prefectoral orders** (already integrated by #1354, "guaranteed minimum").
 
-Régions où une donnée est exploitable : **Alsace (Bas-Rhin)**, via CynePortail (684 lots, ~3 semaines de battues à venir). Isère, Savoie, Hérault, Jura ont des applis locales, non vérifiées techniquement (voir tableau).
+Regions where data is usable: **Alsace (Bas-Rhin)**, through CynePortail (684 lots, ~3 weeks of upcoming hunts). Isère, Savoie, Hérault and Jura have local apps, not checked technically (see table).
 
-## Tableau des sources
+## Sources
 
-| # | Source | Couverture | Granularité | Dates | Accès | robots / CGU | Verdict |
+| # | Source | Coverage | Granularity | Dates | Access | robots / terms | Verdict |
 |---|---|---|---|---|---|---|---|
-| 1 | **Arrêtés préfectoraux Var** (var.gouv.fr, FDC 83) | **Tout le Var**, officiel | département (saison, périodes de battue sanglier) | saison entière | PDF, 1×/an | actes publics | **Déjà intégré** (#1354). Pas de « battue ici ce jour ». |
-| 2 | **CynePortail** (cyneportail.fr/declarations/timeline) | **Bas-Rhin** : 16 circonscriptions, 684 lots, 202 communes ; emprise lon 6,95–8,23 / lat 48,12–49,08. **0 lot dans le Var.** | **polygone du lot de chasse** + commune | jours futurs et passés sur 30 j (17/11/2026 → 04/01/2027) | **JSON same-origin** `GET /declarations/timeline/geojson` (1 appel, ~10 Mo, sans clé) | robots.txt : rien d'interdit ; pas de CGU ni licence trouvées | Meilleure donnée technique, **hors Var** |
-| 3 | **Ça chasse ?** (ca-chasse.com) | **1 territoire** : Croutoy (Oise). 0 dans le Var, J, J+30, J+60 | polygone par commune | J à `maxDate` (~3 mois) | JSON `GET /api/today?date=…` (UA navigateur requis) | robots Allow ; CGU : « extraction massive, surcharge » interdites, pas de licence | Bon format, **aucune donnée**. À re-tester (1 appel). |
-| 4 | **Chassé & Croisé** (FFRandonnée) | Sud-Ouest surtout (étude #1354) ; Var non vérifié | zone de battue | temps réel | appli mobile, pas d'API publique constatée | mode « privé » payant qui masque des zones | Écarté |
-| 5 | **Info Battue** (info-battue.lovable.app) | « France », projet amateur, publicité Google | carte | en cours / à venir | appli JS ; aucun endpoint repéré dans la page servie (non creusé) | aucune CGU trouvée | Écarté (fiabilité inconnue) |
-| 6 | **FDC 83** (fdc83.com) | Var | — | — | site WordPress, arrêtés en PDF ; `/public.api/` et `*.json` interdits par robots.txt | — | Aucune carte de battues publiée (page d'accueil mentionne « battue » seulement pour la réglementation) |
-| 7 | **ONF** (calendriers des chasses en forêt domaniale) | forêts domaniales, par forêt (Fontainebleau, Fougères…). Var : non trouvé | forêt | jours de chasse de la saison | **PDF** relayés par les communes | public | Pas de format machine ; à vérifier pour les forêts domaniales du Var |
-| 8 | Applis locales : **Chasse Info** (Isère), **Land Share** (Savoie), **Melckone** (Hérault), WeHunt (FDC 77), ChasseOnWeb (Wallonie) | départements/pays concernés, **pas le Var** | zones de battue | temps réel | appli ; non testé | — | Hors Var, non testé |
-| 9 | **ChassOuverte** (Jura) | Jura | — | — | logiciel libre, pas de carte publique | libre | Idéal si la FDC 83 l'adoptait un jour |
-| 10 | Mairies / sociétés de chasse / ACCA / panneaux | locale | commune | variable | PDF, Panneau Pocket, affichage | — | Impossible à agréger |
+| 1 | **Var prefectoral orders** (var.gouv.fr, FDC 83) | **The whole Var**, official | department (season, wild boar hunt periods) | whole season | PDF, once a year | public acts | **Already integrated** (#1354). No "hunt here today". |
+| 2 | **CynePortail** (cyneportail.fr/declarations/timeline) | **Bas-Rhin**: 16 districts, 684 lots, 202 municipalities; extent lon 6.95–8.23 / lat 48.12–49.08. **0 lots in the Var.** | **hunting lot polygon** + municipality | future and past days over 30 days (17/11/2026 → 04/01/2027) | **same-origin JSON** `GET /declarations/timeline/geojson` (1 call, ~10 MB, no key) | robots.txt: nothing forbidden; no terms or licence found | Best technical data, **outside the Var** |
+| 3 | **Ça chasse ?** (ca-chasse.com) | **1 territory**: Croutoy (Oise). 0 in the Var, D, D+30, D+60 | polygon per municipality | D to `maxDate` (~3 months) | JSON `GET /api/today?date=…` (browser UA required) | robots Allow; terms: "massive extraction, overload" forbidden, no licence | Good format, **no data**. To re-test (1 call). |
+| 4 | **Chassé & Croisé** (FFRandonnée) | Mostly south-west (study #1354); Var not checked | hunt area | real time | mobile app, no public API found | paid "private" mode hides areas | Discarded |
+| 5 | **Info Battue** (info-battue.lovable.app) | "France", hobby project, Google ads | map | ongoing / upcoming | JS app; no endpoint found in the served page (not dug further) | no terms found | Discarded (unknown reliability) |
+| 6 | **FDC 83** (fdc83.com) | Var | — | — | WordPress site, orders as PDF; `/public.api/` and `*.json` disallowed by robots.txt | — | No hunt map published (the home page mentions "battue" only for regulations) |
+| 7 | **ONF** (hunting calendars in state forests) | state forests, per forest (Fontainebleau, Fougères…). Var: not found | forest | hunting days of the season | **PDF** relayed by municipalities | public | No machine format; to check for the state forests of the Var |
+| 8 | Local apps: **Chasse Info** (Isère), **Land Share** (Savoie), **Melckone** (Hérault), WeHunt (FDC 77), ChasseOnWeb (Wallonia) | the departments/countries concerned, **not the Var** | hunt areas | real time | app; not tested | — | Outside the Var, not tested |
+| 9 | **ChassOuverte** (Jura) | Jura | — | — | free software, no public map | free | Ideal if FDC 83 adopted it one day |
+| 10 | Town halls / hunting societies / ACCA / notice boards | local | municipality | variable | PDF, Panneau Pocket, posters | — | Impossible to aggregate |
 
-Toutes ces données sont **déclaratives et non exhaustives** : aucune source ne permet d'affirmer « pas de chasse ici ».
+All this data is **declarative and incomplete**: no source makes it possible to state "no hunting here".
 
-## Extractions réelles (2026-11-17, scripts de `spikes/hunting/`)
+## Actual extractions (2026-11-17, scripts in `spikes/hunting/`)
 
-**Ça chasse ?** (3 appels, 1,5 s d'écart) :
+**Ça chasse ?** (3 calls, 1.5 s apart):
 
 ```
 2026-11-17 zones actives 0 territoires 0 features 1 dans le Var 0 territoires: Territoire Croutoy chasse
@@ -35,7 +35,7 @@ Toutes ces données sont **déclaratives et non exhaustives** : aucune source ne
 2027-01-16 zones actives 0 territoires 1 features 1 dans le Var 0 territoires: Territoire Croutoy chasse
 ```
 
-**CynePortail** (1 appel) :
+**CynePortail** (1 call):
 
 ```
 lots 684 communes 202 circonscriptions 16
@@ -45,16 +45,18 @@ lots dans le Var : 0
 battues le 2026-11-17 : 3 lots, ex. GRANDFONTAINE / GRANDFONTAINE - DONON LOT 10, PETERSBACH / PETERSBACH, STRUTH / STRUTH
 ```
 
-Schéma d'un lot : `{ CODE_LOT, name, no_lot, commune, commune_id, circonscription, battue_count, battue_dates: [AAAA-MM-JJ…], battues: [{from,to}] }` + géométrie `Polygon`. Directement intersectable avec une trace figée (même mécanique que les massifs, `src/lib/fire/`).
+Schema of a lot: `{ CODE_LOT, name, no_lot, commune, commune_id, circonscription, battue_count, battue_dates: [YYYY-MM-DD…], battues: [{from,to}] }` + `Polygon` geometry. Directly intersectable with a frozen track (same mechanism as the forest massifs, `src/lib/fire/`).
 
-## Recommandation
+## Recommendation
 
-1. **Var : ne pas intégrer de source de battues déclarées.** Garder le « minimum garanti » (arrêtés, #1354) et le message de prudence. Ne jamais afficher « pas de battue ».
-2. **Si on veut une vraie donnée pour le Var**, il faut qu'une fédération la publie. Le plus réaliste : **écrire à la FDC 83** (brouillon ci-dessous). Sinon, **suivre Ça chasse ?** (1 appel `GET /api/today`, compter `activeTerritories`) et rouvrir #1469 quand des territoires du Var apparaissent.
-3. **CynePortail est la meilleure source technique** (polygones par lot, dates futures, JSON simple) : si l'instance un jour couvre l'Alsace (`SYNC_ZONES`), c'est la source à demander à l'éditeur. Son format est celui de #1469 en mieux. Aucune licence : autorisation écrite requise avant toute intégration.
-4. Rien à intégrer maintenant : pas de ticket de code. Ticket `[Humain]` créé pour décider de l'envoi des mails.
+1. **Var: do not integrate any source of declared hunts.** Keep the "guaranteed minimum" (orders, #1354) and the caution message. Never display "no hunt".
+2. **To get real data for the Var**, a federation has to publish it. The most realistic path: **write to FDC 83** (draft below). Otherwise, **watch Ça chasse ?** (1 call `GET /api/today`, count `activeTerritories`) and reopen #1469 when territories in the Var appear.
+3. **CynePortail is the best technical source** (polygons per lot, future dates, simple JSON): if an instance ever covers Alsace (`SYNC_ZONES`), this is the source to ask the publisher about. Its format is that of #1469, only better. No licence: written permission required before any integration.
+4. Nothing to integrate now: no code ticket. A `[Humain]` ticket was created to decide whether to send the emails.
 
-### Brouillon de mail — FDC 83 (Var)
+### Email draft — FDC 83 (Var)
+
+Kept in French: it is addressed to a French federation.
 
 > Objet : Publication des jours de battue du Var pour les usagers (VTT, randonnée)
 >
@@ -63,7 +65,9 @@ Schéma d'un lot : `{ CODE_LOT, name, no_lot, commune, commune_id, circonscripti
 > La fédération prévoit-elle de publier les battues déclarées par les sociétés de chasse (carte, calendrier, ou flux de données) ? Si oui, accepteriez-vous leur réutilisation, avec mention de la source et sans surcharge de vos serveurs (quelques appels par jour) ? Je peux aussi vous renseigner sur l'outil libre ChassOuverte (déployé par la fédération du Jura).
 > Cordialement,
 
-### Brouillon de mail — CynePortail (si l'Alsace devient pertinente)
+### Email draft — CynePortail (if Alsace becomes relevant)
+
+Kept in French: it is addressed to a French publisher.
 
 > Objet : Réutilisation du flux des battues (carte des battues, Bas-Rhin)
 >
@@ -71,9 +75,9 @@ Schéma d'un lot : `{ CODE_LOT, name, no_lot, commune, commune_id, circonscripti
 > Nous affichons des conditions de sortie (météo, incendie) pour des pratiquants de VTT. Votre carte des battues alimentée par `/declarations/timeline/geojson` nous intéresserait pour avertir les participants d'une sortie. Autorisez-vous sa réutilisation (appel serveur à la demande, cache d'une heure, source citée, lien vers votre carte) ? Quelles conditions d'usage souhaitez-vous ? Merci de nous indiquer aussi si une API officielle existe.
 > Cordialement,
 
-## Limites de l'étude
+## Limits of the study
 
-- Chassé & Croisé, Info Battue et les applis locales n'ont **pas** été testés techniquement (applis mobiles ou JS sans endpoint repéré) ; la couverture du Var de Chassé & Croisé vient de l'étude #1354.
-- Les calendriers ONF n'ont pas été cherchés forêt par forêt pour le Var.
-- Un jeu de données de 30 jours (CynePortail) et un seul jour par appel (Ça chasse ?) : la couverture évolue, à re-tester avant toute décision.
-- Aucune donnée brute commitée : seuls les extraits ci-dessus.
+- Chassé & Croisé, Info Battue and the local apps were **not** tested technically (mobile apps or JS without a visible endpoint); the Var coverage of Chassé & Croisé comes from study #1354.
+- ONF calendars were not searched forest by forest for the Var.
+- One 30-day dataset (CynePortail) and a single day per call (Ça chasse ?): coverage changes, to be re-tested before any decision.
+- No raw data committed: only the excerpts above.

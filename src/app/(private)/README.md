@@ -1,1 +1,1 @@
-Routes privées (traces, sorties, éditeur). Protégées en #1344.
+Private routes (tracks, outings, editor). Protected since #1344.

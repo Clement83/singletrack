@@ -2,49 +2,48 @@
 
 [![CI](https://github.com/Clement83/singletrack/actions/workflows/ci.yml/badge.svg)](https://github.com/Clement83/singletrack/actions/workflows/ci.yml)
 
-Organiser des sorties VTT : une carte des traces (France métropolitaine, centrée sur le point de votre choix, `HOME_LAT`/`HOME_LON`), un éditeur de traces, des **sorties** datées et des invitations par lien que les invités suivent **sans compte**. Interface en français et en anglais, mobile first.
+Plan your mountain-bike rides: a trail map (metropolitan France, centred on the point of your choice, `HOME_LAT`/`HOME_LON`), a track editor, dated **outings** and invitation links that guests follow **without an account**. Interface in French and English, mobile first.
 
-*Plan your mountain-bike rides: a trail map, a track editor, dated outings and invitation links guests can follow without an account.*
+## Getting started
 
-## Démarrer
-
-Installation en quatre commandes (Docker + Docker Compose, images publiées sur GHCR) :
+Install in four commands (Docker + Docker Compose, images published on GHCR):
 
 ```bash
 mkdir singletrack && cd singletrack && mkdir scripts
 B=https://raw.githubusercontent.com/Clement83/singletrack/main
-curl -fsSLO $B/compose.yml && curl -fsSLO $B/.env.example && curl -fsSL $B/scripts/init-env.sh -o scripts/init-env.sh && chmod +x scripts/init-env.sh   # 1. fichiers
-./scripts/init-env.sh http://IP-OU-DOMAINE:3700      # 2. crée .env et génère les secrets
-docker compose up -d                                 # 3. démarre (les tuiles BRouter se téléchargent au 1er lancement)
-docker compose run --rm tools npm run user:create -- --email vous@example.org --name Prénom   # 4. premier compte
+curl -fsSLO $B/compose.yml && curl -fsSLO $B/.env.example && curl -fsSL $B/scripts/init-env.sh -o scripts/init-env.sh && chmod +x scripts/init-env.sh   # 1. files
+./scripts/init-env.sh http://IP-OR-DOMAIN:3700       # 2. creates .env and generates the secrets
+docker compose up -d                                 # 3. starts (BRouter tiles are downloaded on first start)
+docker compose run --rm tools npm run user:create -- --email you@example.org --name Firstname   # 4. first account
 ```
 
-L'application écoute sur `http://localhost:3700` (santé : `GET /api/health`) ; la connexion se fait par code reçu par mail (sans `RESEND_API_KEY`, le code est dans `docker compose logs app`). Ensuite, importez vos traces : `docker compose run --rm tools npm run sync:osm -- 83`.
+The application listens on `http://localhost:3700` (health: `GET /api/health`); sign-in uses a code sent by email (without `RESEND_API_KEY`, the code is printed in `docker compose logs app`). Then import tracks: `docker compose run --rm tools npm run sync:osm -- 83`.
 
-Guide complet (HTTPS, zone BRouter `BROUTER_TILES`, synchros, sauvegarde, mise à jour : `docker compose pull && docker compose up -d`) : **[`docs/install.md`](docs/install.md)**. Développement : [`AGENTS.md`](AGENTS.md) et `docker-compose.yml` (mode dev, code monté).
+Full guide (HTTPS, BRouter area `BROUTER_TILES`, syncs, backup, update: `docker compose pull && docker compose up -d`): **[`docs/install.md`](docs/install.md)**. Development: [`AGENTS.md`](AGENTS.md) and `docker-compose.yml` (`app-dev`, mounted source code).
 
 ## Licence
 
-Le code est publié sous **GNU Affero General Public License v3 ou ultérieure** (`AGPL-3.0-or-later`), texte complet dans [`LICENSE`](LICENSE).
+The code is released under the **GNU Affero General Public License v3 or later** (`AGPL-3.0-or-later`), full text in [`LICENSE`](LICENSE).
 
-Ce que cela implique : vous pouvez utiliser, étudier, modifier et redistribuer le code. Si vous **faites tourner une version modifiée en ligne** pour d'autres personnes, vous devez en publier le code source (AGPL §13). L'application affiche donc un lien « Code source » dans le menu du compte et sur la page de connexion ; il pointe par défaut vers le dépôt public et se règle avec la variable `SOURCE_URL` (à pointer vers votre fork si vous modifiez le code).
+What this means: you may use, study, modify and redistribute the code. If you **run a modified version online** for other people, you must publish its source code (AGPL §13). The application therefore shows a "Source code" link in the account menu and on the sign-in page; it points to the public repository by default and is set with the `SOURCE_URL` variable (point it to your fork if you modify the code).
 
-## Données tierces
+## Third-party data
 
-La licence du code **ne couvre pas** les données affichées, qui gardent leur licence d'origine. Respectez-les, surtout si vous hébergez une instance publique.
+The code licence **does not cover** the data displayed, which keeps its original licence. Respect it, especially if you host a public instance.
 
-| Source | Licence / statut | À respecter |
+| Source | Licence / status | What to respect |
 | --- | --- | --- |
-| OpenStreetMap | ODbL | Attribution « © contributeurs OpenStreetMap » obligatoire |
-| IGN (altitude) | Licence ouverte Etalab | Mentionner la source |
-| Open-Meteo (météo) | CC BY 4.0 | Attribution obligatoire |
-| Préfecture du Var (risque incendie) | Données publiques de la préfecture | Mentionner la source |
-| Geotrek (circuits officiels) | Licence non déclarée par les sources | Vérifier avant toute réutilisation ou redistribution |
-| UtagawaVTT | CC BY-NC | **Usage non commercial uniquement : interdit pour une instance commerciale** |
-| « Ça chasse ? » | Aucune licence | Consultation seulement, pas de copie ni de redistribution |
+| OpenStreetMap | ODbL | Attribution "© OpenStreetMap contributors" required |
+| IGN (elevation) | Etalab Open Licence | Credit the source |
+| Open-Meteo (weather) | CC BY 4.0 | Attribution required |
+| Var prefecture (fire risk) | Public data from the prefecture | Credit the source |
+| Geotrek (official routes) | Licence not declared by the sources | Check before any reuse or redistribution |
+| UtagawaVTT | CC BY-NC | **Non-commercial use only: forbidden for a commercial instance** |
+| "Ça chasse ?" | No licence | Viewing only, no copying or redistribution |
+| Mapzen Terrain Tiles (3D relief, AWS Open Data) | Per source (SRTM, etc.), attribution required | Keep the map attribution |
 
-Les imports GPX/KML des utilisateurs restent la propriété de leurs auteurs. Pas de scraping.
+GPX/KML files imported by users remain the property of their authors. No scraping.
 
-## Contribuer
+## Contributing
 
-Voir [`CONTRIBUTING.md`](CONTRIBUTING.md). Pas de CLA : vous gardez vos droits, et vos contributions sont acceptées sous la même licence, **AGPL v3 ou ultérieure**.
+See [`CONTRIBUTING.md`](CONTRIBUTING.md). No CLA: you keep your rights, and contributions are accepted under the same licence, **AGPL v3 or later**.

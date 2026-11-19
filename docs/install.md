@@ -1,31 +1,31 @@
-# Installer Singletrack sur votre serveur
+# Installing Singletrack on your server
 
-Prérequis : un serveur (NAS, mini-PC, VPS) avec **Docker + Docker Compose**, ≈ 2 Go de RAM, quelques centaines de Mo de disque (≈ 770 Mo de plus pour le routage de toute la France), et pour l'envoi des mails de connexion un compte [Resend](https://resend.com) avec un domaine validé.
+Requirements: a server (NAS, mini PC, VPS) with **Docker + Docker Compose**, ≈ 2 GB of RAM, a few hundred MB of disk (≈ 770 MB more for routing across the whole of France), and, to send the sign-in emails, a [Resend](https://resend.com) account with a verified domain.
 
-Toutes les commandes s'exécutent dans les conteneurs ; rien n'est à installer sur l'hôte (hors Docker et git).
+Every command runs inside the containers; nothing needs to be installed on the host (apart from Docker and git).
 
-## Installation rapide (images GHCR)
+## Quick install (GHCR images)
 
-Le fichier `compose.yml` à la racine est le compose de **distribution** : il utilise les images publiées, sans rien construire.
+The `compose.yml` file at the root is the **distribution** compose file: it uses the published images and builds nothing.
 
 ```bash
 mkdir singletrack && cd singletrack && mkdir scripts
 B=https://raw.githubusercontent.com/Clement83/singletrack/main
 curl -fsSLO $B/compose.yml && curl -fsSLO $B/.env.example
 curl -fsSL $B/scripts/init-env.sh -o scripts/init-env.sh && chmod +x scripts/init-env.sh
-./scripts/init-env.sh https://vtt.example.org     # .env + secrets + ./data (sans argument : éditer BETTER_AUTH_URL)
+./scripts/init-env.sh https://mtb.example.org     # .env + secrets + ./data (without an argument: edit BETTER_AUTH_URL)
 docker compose up -d
-docker compose run --rm tools npm run user:create -- --email vous@example.org --name Prénom
+docker compose run --rm tools npm run user:create -- --email you@example.org --name Firstname
 ```
 
-- **Tuiles BRouter** : le service `brouter-init` télécharge au premier lancement les tuiles de `BROUTER_TILES` (`france` ≈ 770 Mo par défaut, `home` = tuile du point maison, liste `E5_N40,W5_N40`, ou `none`), puis s'arrête ; les tuiles déjà présentes sont conservées. Sans tuile (ou si le téléchargement échoue), l'éditeur passe en ligne droite ; relancez `docker compose up -d` pour réessayer.
-- **Synchros de traces** (à la main, idempotentes) : `docker compose run --rm tools npm run sync:osm -- 83 06`, `sync:singles`, `sync:geotrek`. Le service `tools` (profil `tools`, image `singletrack-tools`) contient les scripts ; il partage `./data` avec l'application.
-- **Mise à jour** : sauvegardez `./data` et `.env` (voir §6), puis `docker compose pull && docker compose up -d`. Version épinglée : `SINGLETRACK_TAG=X.Y.Z` dans `.env` (`edge` = dernier commit de `main`).
-- **Vérification** : la CI joue ce parcours à chaque changement (`scripts/install-test.sh` : `compose up --wait`, `/api/health`, `/login`, création d'un compte, `down`), hors recalage BRouter.
+- **BRouter tiles**: on first start, the `brouter-init` service downloads the tiles listed in `BROUTER_TILES` (`france` ≈ 770 MB by default, `home` = the tile of the home point, a list such as `E5_N40,W5_N40`, or `none`), then stops; tiles already present are kept. Without a tile (or if the download fails), the editor falls back to straight lines; run `docker compose up -d` again to retry.
+- **Track syncs** (manual, idempotent): `docker compose run --rm tools npm run sync:osm -- 83 06`, `sync:singles`, `sync:geotrek`. The `tools` service (`tools` profile, `singletrack-tools` image) contains the scripts; it shares `./data` with the application.
+- **Update**: back up `./data` and `.env` (see §6), then `docker compose pull && docker compose up -d`. Pinned version: `SINGLETRACK_TAG=X.Y.Z` in `.env` (`edge` = latest commit on `main`).
+- **Verification**: CI runs this path on every change (`scripts/install-test.sh`: `compose up --wait`, `/api/health`, `/login`, account creation, `down`), BRouter routing excepted.
 
-Les sections 1 à 7 ci-dessous décrivent l'installation **depuis le code source** (clone git, compose de développement) ; les variables de `.env` et les sections 4 à 6 valent pour les deux.
+Sections 1 to 7 below describe the install **from source** (git clone, development compose file); the `.env` variables and sections 4 to 6 apply to both.
 
-## 1. Récupérer le code et configurer
+## 1. Get the code and configure it
 
 ```bash
 git clone https://github.com/Clement83/singletrack.git
@@ -33,145 +33,145 @@ cd singletrack
 cp .env.example .env
 ```
 
-Éditez `.env` (chaque variable est commentée : obligatoire ou facultative). L'essentiel :
+Edit `.env` (every variable is commented: required or optional). The essentials:
 
-| Variable | À faire |
+| Variable | What to do |
 | --- | --- |
 | `BETTER_AUTH_SECRET` | `openssl rand -base64 32` |
-| `INVITE_LINK_KEY` | `openssl rand -base64 32` — **à conserver, ne jamais la changer** (sauvegardez-la avec `.env`) |
-| `FEDERATION_KEY_ENC` | clé de la fédération ActivityPub : `openssl rand -base64 32` (à conserver, ne jamais la changer ; `init-env.sh` la génère). **La fédération est active par défaut dès que cette clé existe** ; `FEDERATION=off` la coupe — voir `docs/federation.md` |
-| `ADMIN_EMAILS` | emails des administrateurs (séparés par des virgules) : accès à `/admin/federation` pour bloquer des serveurs, lire les signalements et le journal des refus |
-| `BETTER_AUTH_URL` | l'URL publique, ex. `https://vtt.example.org` (sans slash final) |
-| `AUTH_TRUSTED_ORIGINS` | cette URL, plus l'accès LAN éventuel (`http://<IP_LAN>:3700`) |
-| `APP_PORT` | port publié sur l'hôte (défaut `3700`) |
-| `RESEND_API_KEY`, `MAIL_FROM` | clé Resend et expéditeur sur un domaine validé |
-| `HOME_LAT`, `HOME_LON` | votre point « maison » : centre de la carte et référence des distances (défaut : centre de la France) |
-| `SYNC_ZONES` | vos départements, ex. `83,06` (vide = toute la France, plusieurs heures) |
-| `DATA_SOURCES` | facultatif : n'activer que certaines sources (voir ci-dessous) |
+| `INVITE_LINK_KEY` | `openssl rand -base64 32` — **keep it, never change it** (back it up with `.env`) |
+| `FEDERATION_KEY_ENC` | ActivityPub federation key: `openssl rand -base64 32` (keep it, never change it; `init-env.sh` generates it). **Federation is on by default as soon as this key exists**; `FEDERATION=off` turns it off — see `docs/federation.md` |
+| `ADMIN_EMAILS` | administrator emails (comma-separated): access to `/admin/federation` to block servers, read reports and the rejection log |
+| `BETTER_AUTH_URL` | the public URL, e.g. `https://mtb.example.org` (no trailing slash) |
+| `AUTH_TRUSTED_ORIGINS` | that URL, plus any LAN access (`http://<LAN_IP>:3700`) |
+| `APP_PORT` | port published on the host (default `3700`) |
+| `RESEND_API_KEY`, `MAIL_FROM` | Resend key and sender on a verified domain |
+| `HOME_LAT`, `HOME_LON` | your "home" point: map centre and reference for distances (default: centre of France) |
+| `SYNC_ZONES` | your departments, e.g. `83,06` (empty = all of France, several hours) |
+| `DATA_SOURCES` | optional: enable only some sources (see below) |
 
-Pour un premier essai sans HTTPS ni nom de domaine : `BETTER_AUTH_URL=http://IP:3700`, `AUTH_TRUSTED_ORIGINS=http://IP:3700`, `AUTH_SECURE_COOKIES=false`.
+For a first try without HTTPS or a domain name: `BETTER_AUTH_URL=http://IP:3700`, `AUTH_TRUSTED_ORIGINS=http://IP:3700`, `AUTH_SECURE_COOKIES=false`.
 
-### Sources de données
+### Data sources
 
-`DATA_SOURCES` (vide = toutes) : `osm`, `geotrek`, `ign`, `openmeteo`, `fire83`, `hunting83`. L'incendie (`fire83`) et la chasse (`hunting83`) ne couvrent que le **Var** : ailleurs, ces rubriques affichent « non disponible ». Respectez les licences des données (voir le [README](../README.md#données-tierces)).
+`DATA_SOURCES` (empty = all): `osm`, `geotrek`, `ign`, `openmeteo`, `fire83`, `hunting83`. Fire risk (`fire83`) and hunting (`hunting83`) only cover the **Var** department: elsewhere these sections show "not available". Respect the data licences (see the [README](../README.md#third-party-data)).
 
-## 2. Télécharger le routage (BRouter)
+## 2. Download routing data (BRouter)
 
 ```bash
-./scripts/get-brouter-segments.sh          # tuile(s) de la zone de HOME_LAT/HOME_LON (≈ 60–250 Mo)
-./scripts/get-brouter-segments.sh france   # ou la France entière (≈ 770 Mo)
-./scripts/get-brouter-segments.sh E5_N40   # ou des tuiles de 5° choisies (nom = coin sud-ouest)
+./scripts/get-brouter-segments.sh          # tile(s) around HOME_LAT/HOME_LON (≈ 60–250 MB)
+./scripts/get-brouter-segments.sh france   # or the whole of France (≈ 770 MB)
+./scripts/get-brouter-segments.sh E5_N40   # or chosen 5° tiles (name = south-west corner)
 ```
 
-Idempotent. Après un ajout de tuiles : `docker compose restart brouter`. Le service `brouter` ne passe en bonne santé que si la tuile de votre point maison est présente : lancez ce script **avant** `up`.
+Idempotent. After adding tiles: `docker compose restart brouter`. The `brouter` service only becomes healthy when the tile of your home point is present: run this script **before** `up`.
 
-## 3. Démarrer
+## 3. Start
 
 ```bash
 docker compose -f docker-compose.yml --profile dev up -d app-dev
-docker compose -f docker-compose.yml ps     # app-dev et brouter « healthy » (la 1re compilation dure 1 à 2 minutes)
+docker compose -f docker-compose.yml ps     # app-dev and brouter "healthy" (the first compilation takes 1 to 2 minutes)
 curl http://localhost:3701/api/health
 ```
 
-La base SQLite est créée et migrée au démarrage, dans `./data/`.
+The SQLite database is created and migrated on start, in `./data/`.
 
-> **Mode dev ou production ?** Depuis le code source, `docker-compose.yml` lance l'application en mode développement (`app-dev` : rechargement à chaud, code monté, port 3701). Son service `app` (production) n'est **pas construit localement** : il utilise les images publiées, comme `compose.yml`. Pour une installation durable, utilisez donc le compose de distribution (en haut de cette page). Sur un hôte sans souci de réseau compose, vous pouvez retirer `network_mode: bridge` et `links`.
+> **Development or production?** From source, `docker-compose.yml` runs the application in development mode (`app-dev`: hot reload, mounted code, port 3701). Its `app` service (production) is **not built locally**: it uses the published images, like `compose.yml`. For a long-lived install, use the distribution compose file (top of this page). On a host without compose network issues, you can remove `network_mode: bridge` and `links`.
 
-## 4. Premier compte et premières données
+## 4. First account and first data
 
-La connexion se fait **sans mot de passe** (code, lien et QR code reçus par mail). Soit ouvrez l'URL et connectez-vous avec votre adresse (compte créé à la première connexion tant que `AUTH_DISABLE_SIGNUP=false`), soit créez le compte :
-
-```bash
-docker compose -f docker-compose.yml run --rm tools npm run user:create -- --email vous@example.org --name Prénom
-```
-
-Sans `RESEND_API_KEY`, aucun mail ne part : le code est écrit dans les logs (`docker compose logs app`), utile pour un premier essai. Pour fermer les inscriptions ensuite : `AUTH_DISABLE_SIGNUP=true` (puis `docker compose up -d`).
-
-Importez les traces de vos zones (`SYNC_ZONES`, ou en argument) :
+Sign-in is **passwordless** (code, link and QR code sent by email). Either open the URL and sign in with your address (the account is created on first sign-in while `AUTH_DISABLE_SIGNUP=false`), or create the account:
 
 ```bash
-docker compose -f docker-compose.yml run --rm tools npm run sync:osm         # itinéraires VTT OSM (un département après l'autre)
-docker compose -f docker-compose.yml run --rm tools npm run sync:singles     # calque des singles OSM
-docker compose -f docker-compose.yml run --rm tools npm run sync:geotrek     # circuits officiels des parcs (facultatif)
-docker compose -f docker-compose.yml run --rm tools npm run sync:osm -- 83 06   # zones explicites
+docker compose -f docker-compose.yml run --rm tools npm run user:create -- --email you@example.org --name Firstname
 ```
 
-Chaque script est idempotent : relancez-le pour rafraîchir (par exemple chaque mois, via cron).
+Without `RESEND_API_KEY`, no email is sent: the code is written to the logs (`docker compose logs app`), handy for a first try. To close sign-ups afterwards: `AUTH_DISABLE_SIGNUP=true` (then `docker compose up -d`).
 
-## 5. HTTPS derrière un reverse proxy
+Import the tracks of your areas (`SYNC_ZONES`, or as arguments):
 
-Les liens partagés (`/s`, `/t`, `/i`) doivent être joignables **sans SSO** : l'application a sa propre authentification. N'ajoutez donc pas de portail devant. Exemple nginx (certificat Let's Encrypt, ex. `certbot --nginx -d vtt.example.org`) :
+```bash
+docker compose -f docker-compose.yml run --rm tools npm run sync:osm         # OSM mountain-bike routes (one department after another)
+docker compose -f docker-compose.yml run --rm tools npm run sync:singles     # OSM singletrack layer
+docker compose -f docker-compose.yml run --rm tools npm run sync:geotrek     # official park routes (optional)
+docker compose -f docker-compose.yml run --rm tools npm run sync:osm -- 83 06   # explicit areas
+```
+
+Every script is idempotent: run it again to refresh (for example monthly, from cron).
+
+## 5. HTTPS behind a reverse proxy
+
+Shared links (`/s`, `/t`, `/i`) must be reachable **without SSO**: the application has its own authentication. So do not put a portal in front of it. nginx example (Let's Encrypt certificate, e.g. `certbot --nginx -d mtb.example.org`):
 
 ```nginx
 server {
     listen 443 ssl http2;
-    server_name vtt.example.org;
-    ssl_certificate     /etc/letsencrypt/live/vtt.example.org/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/vtt.example.org/privkey.pem;
-    client_max_body_size 20m;                       # photos et GPX
+    server_name mtb.example.org;
+    ssl_certificate     /etc/letsencrypt/live/mtb.example.org/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/mtb.example.org/privkey.pem;
+    client_max_body_size 20m;                       # photos and GPX
 
     location / {
         proxy_pass http://127.0.0.1:3700;           # APP_PORT
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header Upgrade $http_upgrade;     # rechargement à chaud en mode dev
+        proxy_set_header Upgrade $http_upgrade;     # hot reload in development mode
         proxy_set_header Connection "upgrade";
     }
 }
 ```
 
-Caddy (facultatif) fait le même travail, certificat automatique compris :
+Caddy (optional) does the same job, automatic certificate included:
 
 ```caddy
-vtt.example.org {
+mtb.example.org {
     reverse_proxy 127.0.0.1:3700
 }
 ```
 
-Puis `BETTER_AUTH_URL=https://vtt.example.org`, `AUTH_SECURE_COOKIES=true`, et ce domaine dans `AUTH_TRUSTED_ORIGINS` (et `ALLOWED_DEV_ORIGINS` en mode dev).
+Then `BETTER_AUTH_URL=https://mtb.example.org`, `AUTH_SECURE_COOKIES=true`, and this domain in `AUTH_TRUSTED_ORIGINS` (and `ALLOWED_DEV_ORIGINS` in development mode).
 
-## 6. Sauvegarde
+## 6. Backup
 
-Tout l'état est dans `./data/` (hors `data/brouter/segments`, re-téléchargeable) et dans `.env` :
+All the state lives in `./data/` (except `data/brouter/segments`, which can be downloaded again) and in `.env`:
 
-- `data/singletrack.db` (+ `-wal` / `-shm`) : traces, sorties, comptes ;
-- `data/media/` : photos des sorties ;
-- `.env` : en particulier `INVITE_LINK_KEY` et `BETTER_AUTH_SECRET`.
+- `data/singletrack.db` (+ `-wal` / `-shm`): tracks, outings, accounts;
+- `data/media/`: outing photos;
+- `.env`: in particular `INVITE_LINK_KEY` and `BETTER_AUTH_SECRET`.
 
-Sauvegarde à chaud cohérente de la base :
+Consistent hot backup of the database:
 
 ```bash
 docker compose exec app node -e "require('better-sqlite3')('/app/data/singletrack.db').backup('/app/data/backup.db').then(()=>console.log('ok'))"
 ```
 
-puis copiez `data/backup.db`, `data/media/` et `.env` hors du serveur. Restauration : arrêter (`docker compose down`), remettre les fichiers, redémarrer.
+then copy `data/backup.db`, `data/media/` and `.env` off the server. Restore: stop (`docker compose down`), put the files back, start again.
 
-## 7. Mise à jour
+## 7. Update
 
 ```bash
 git pull
 docker compose -f docker-compose.yml --profile dev up -d --build app-dev
 ```
 
-Installation sur les images publiées : `docker compose pull && docker compose up -d` (voir le haut de cette page).
+Install on the published images: `docker compose pull && docker compose up -d` (see the top of this page).
 
-Les migrations s'appliquent au démarrage. Lisez l'historique git si un changement de `.env` est annoncé (comparez avec `.env.example`).
+Migrations are applied on start. Read `CHANGELOG.md` if a `.env` change is announced (compare with `.env.example`).
 
-## Dépannage
+## Troubleshooting
 
-- **Connexion : 403** : l'origine de votre navigateur n'est pas dans `AUTH_TRUSTED_ORIGINS`.
-- **Connexion impossible en `http://IP`** : `AUTH_SECURE_COOKIES` doit être `false` hors HTTPS.
-- **`brouter` « unhealthy »** : la tuile du point maison manque (étape 2), puis `docker compose restart brouter`.
-- **Pas de mail** : `RESEND_API_KEY` vide, ou domaine d'envoi non validé ; consultez `docker compose logs app`.
-- **L'app refuse de démarrer en production** : `INVITE_LINK_KEY` manquante ou invalide.
+- **Sign-in: 403**: your browser's origin is not in `AUTH_TRUSTED_ORIGINS`.
+- **Cannot sign in over `http://IP`**: `AUTH_SECURE_COOKIES` must be `false` without HTTPS.
+- **`brouter` "unhealthy"**: the tile of the home point is missing (step 2), then `docker compose restart brouter`.
+- **No email**: `RESEND_API_KEY` is empty, or the sending domain is not verified; check `docker compose logs app`.
+- **The app refuses to start in production**: `INVITE_LINK_KEY` is missing or invalid.
 
-## Images publiées (GHCR)
+## Published images (GHCR)
 
-Le workflow `.github/workflows/images.yml` publie, pour `linux/amd64` et `linux/arm64` (provenance + SBOM) :
+The `.github/workflows/images.yml` workflow publishes, for `linux/amd64` and `linux/arm64` (built on native runners, with provenance + SBOM):
 
-- `ghcr.io/clement83/singletrack` (cible `release` du Dockerfile : build standalone sans devDependencies, utilisateur `node`, données dans `/app/data`) ;
-- `ghcr.io/clement83/singletrack-brouter` (profils maison, sans tuiles `.rd5`) ;
-- `ghcr.io/clement83/singletrack-tools` (cible `runner`, scripts de synchro et de gestion des comptes).
+- `ghcr.io/clement83/singletrack` (`release` target of the Dockerfile: standalone build without devDependencies, `node` user, data in `/app/data`);
+- `ghcr.io/clement83/singletrack-brouter` (custom profiles, without `.rd5` tiles);
+- `ghcr.io/clement83/singletrack-tools` (`runner` target, sync and account management scripts).
 
-Images : `singletrack` (application), `singletrack-brouter`, `singletrack-tools` (cible `runner`, avec les scripts de synchro). Tags : `edge` à chaque push sur `main` ; `X.Y.Z`, `X.Y` et `latest` sur un tag `vX.Y.Z`. Le paquet doit être rendu public une fois dans l'interface GitHub.
+Tags: `edge` on every push to `main`; `X.Y.Z`, `X.Y` and `latest` on a `vX.Y.Z` tag.

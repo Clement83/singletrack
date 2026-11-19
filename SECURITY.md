@@ -1,20 +1,20 @@
-# Politique de sécurité
+# Security policy
 
-## Signaler une vulnérabilité
+## Reporting a vulnerability
 
-**Ne publiez pas de faille dans une issue publique.** Utilisez le signalement privé de GitHub :
-onglet **Security** du dépôt → **Report a vulnerability** (GitHub Security Advisories).
+**Do not disclose a vulnerability in a public issue.** Use GitHub's private reporting:
+the repository's **Security** tab → **Report a vulnerability** (GitHub Security Advisories).
 
-Indiquez la version concernée (visible dans le menu du compte et dans `GET /api/health`), les étapes pour reproduire
-et l'impact estimé. Vous recevrez un accusé de réception sous quelques jours ; la correction est publiée dans une version
-corrective, puis l'avis est rendu public avec un crédit si vous le souhaitez.
+Include the affected version (shown in the account menu and in `GET /api/health`), the steps to reproduce
+and the estimated impact. You will get an acknowledgement within a few days; the fix ships in a patch
+release, then the advisory is made public, with credit if you wish.
 
-## Versions prises en charge
+## Supported versions
 
-Seule la **dernière version publiée** (`vX.Y.Z`, image `latest`) reçoit les correctifs de sécurité.
+Only the **latest published release** (`vX.Y.Z`, `latest` image) receives security fixes.
 
-## Périmètre
+## Scope
 
-Dans le périmètre : l'application, ses images Docker, les routes publiques par lien secret (`/t`, `/s`, `/i`) et la
-fédération ActivityPub (`/ap/*`, boîte d'entrée). Hors périmètre : les services tiers (OpenStreetMap, Open-Meteo, IGN…)
-et les installations modifiées par leur exploitant.
+In scope: the application, its Docker images, the public routes reached through a secret link (`/t`, `/s`, `/i`) and
+ActivityPub federation (`/ap/*`, inbox). Out of scope: third-party services (OpenStreetMap, Open-Meteo, IGN…)
+and installations modified by their operator.
