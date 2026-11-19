@@ -5,14 +5,14 @@ import { choiceDeltas, choiceOptions, choiceSegs } from '@/lib/editor/choice';
 import { EditorSim } from './helpers/editor-sim';
 
 /**
- * Déviation élargie aux points posés à la main (#1641). Schéma : route principale (y = 43.2) de x = 6.00 à 6.10,
- * carrefours en 6.015 et 6.075, route parallèle 1 km au sud entre les deux.
+ * Detour widened to hand-placed points (#1641). Layout: main road (y = 43.2) from x = 6.00 to 6.10,
+ * junctions at 6.015 and 6.075, parallel road 1 km to the south between them.
  */
 const Y = 43.2;
 const YP = 43.19;
 const poly = (...pts: LonLat[]): Position[] => pts.flatMap((p, k) => (k ? densify(pts[k - 1], p, 80).slice(1) : [p]));
 const main = (a: number, b: number) => poly([a, Y], [b, Y]);
-const X = [6.0, 6.01, 6.02, 6.03, 6.04, 6.05, 6.06, 6.07, 6.09, 6.1]; // 6.04 = point « 1 » ; 5 étoiles entre les carrefours
+const X = [6.0, 6.01, 6.02, 6.03, 6.04, 6.05, 6.06, 6.07, 6.09, 6.1]; // 6.04 = point "1"; 5 stars between the junctions
 const P: LonLat = [6.045, YP];
 
 function build(opts: { choice?: boolean } = {}) {
@@ -20,7 +20,7 @@ function build(opts: { choice?: boolean } = {}) {
   for (let k = 1; k < X.length; k++) s.stub([X[k - 1], Y], [X[k], Y], main(X[k - 1], X[k]));
   X.forEach((x) => s.add([x, Y]));
   s.settle();
-  // Routage vers la parallèle depuis n'importe quelle ancre : principale jusqu'au carrefour, puis la parallèle.
+  // Routing to the parallel road from any anchor: main road up to the junction, then the parallel road.
   for (const x of X.filter((v) => v < 6.015)) s.stub([x, Y], P, [...main(x, 6.015), ...poly([6.015, Y], [6.015, YP], P).slice(1)]);
   for (const x of X.filter((v) => v > 6.075)) s.stub(P, [x, Y], [...poly(P, [6.075, YP], [6.075, Y]), ...main(6.075, x).slice(1)]);
   return s;
@@ -42,7 +42,7 @@ describe('déviation élargie aux points posés à la main (#1641)', () => {
     expect(nw.doc.waypoints).toHaveLength(5);
     expect(old.doc.waypoints).toEqual(doc0.waypoints);
     expect(nw.stats.distanceM).toBeGreaterThan(old.stats.distanceM);
-    expect(old.stats.distanceM).toBeGreaterThan(0); // pas d’altitude dans ces fixtures : D+ et profil vides
+    expect(old.stats.distanceM).toBeGreaterThan(0); // no elevation in these fixtures: empty gain and profile
   });
 
   it('choisir l’ancien restaure exactement, sans historique ; re-choisir le nouveau aussi', () => {
@@ -125,7 +125,7 @@ describe('déviation élargie aux points posés à la main (#1641)', () => {
 
   it('plafond : si le nouveau tracé ne rejoint pas l’ancien dans les plafonds, comportement habituel', () => {
     const s = build();
-    // routes sans aucun point commun avec l’ancien tracé
+    // roads with no point in common with the old line
     for (const x of X) {
       s.stub([x, Y], P, poly([x, Y], [x, 43.1], P));
       s.stub(P, [x, Y], poly(P, [x, 43.1], [x, Y]));
@@ -153,7 +153,7 @@ describe('déviation élargie aux points posés à la main (#1641)', () => {
     const d = choiceDeltas(c);
     expect(d.new.km).toBeGreaterThan(0);
     expect(d.old.km).toBeCloseTo(-d.new.km, 9);
-    // Sélectionner « ancien » ne change pas les écarts : la valeur est relative à l'autre option, pas à l'affichage.
+    // Selecting "old" does not change the differences: the value is relative to the other option, not to the display.
     s.dispatch({ type: 'selectChoice', which: 'old' });
     expect(choiceDeltas(s.state.choice!).new.km).toBeCloseTo(d.new.km, 6);
   });

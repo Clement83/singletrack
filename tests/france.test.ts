@@ -64,9 +64,9 @@ describe('singles par zone et index R-tree (#1428)', () => {
   it('une synchro ne remplace que sa zone ; un way de bordure n’est jamais en double', () => {
     const { db } = openDb(':memory:');
     replaceSegments(db, [seg(1, 6.1, 43.2), seg(2, 6.2, 43.2)], new Date(), '83');
-    replaceSegments(db, [seg(3, 7.2, 43.7), seg(2, 6.2, 43.2)], new Date(), '06'); // way 2 en bordure
+    replaceSegments(db, [seg(3, 7.2, 43.7), seg(2, 6.2, 43.2)], new Date(), '06'); // way 2 on the border
     expect(db.select().from(trailSegment).all().map((r) => r.osmId).sort()).toEqual(['way/1', 'way/2', 'way/3']);
-    replaceSegments(db, [seg(1, 6.1, 43.2)], new Date(), '83'); // way 2 appartient maintenant à 06 : intact
+    replaceSegments(db, [seg(1, 6.1, 43.2)], new Date(), '83'); // way 2 now belongs to 06: untouched
     expect(db.select().from(trailSegment).where(eq(trailSegment.zone, '06')).all().map((r) => r.osmId).sort()).toEqual(['way/2', 'way/3']);
     expect(db.select().from(trailSegment).all()).toHaveLength(3);
     replaceSegments(db, [], new Date(), '06');
@@ -78,9 +78,9 @@ describe('singles par zone et index R-tree (#1428)', () => {
     const count = () => (sqlite.prepare('select count(*) n from trail_segment_rtree').get() as { n: number }).n;
     replaceSegments(db, [seg(1, 6.1, 43.2), seg(2, 2.35, 48.85)], new Date(), '83');
     expect(count()).toBe(2);
-    replaceSegments(db, [seg(1, 6.1, 43.2), seg(2, 2.35, 48.85)], new Date(), '83'); // upsert : pas de doublon d'index
+    replaceSegments(db, [seg(1, 6.1, 43.2), seg(2, 2.35, 48.85)], new Date(), '83'); // upsert: no index duplicate
     expect(count()).toBe(2);
-    replaceSegments(db, [seg(1, 6.5, 43.5)], new Date(), '83'); // way déplacé
+    replaceSegments(db, [seg(1, 6.5, 43.5)], new Date(), '83'); // way moved
     expect(count()).toBe(1);
     expect(querySegments(db, [6.4, 43.4, 6.6, 43.6], 13).features.map((f) => f.properties.id)).toEqual(['way/1']);
     expect(querySegments(db, [6.0, 43.1, 6.2, 43.3], 13).features).toEqual([]);
@@ -115,7 +115,7 @@ describe('explorateur à l’échelle de la France (#1428)', () => {
     expect(detail.total).toBe(30);
     expect(detail.tracks).toHaveLength(5);
     expect(detail.tracks.every((t) => t.geometry)).toBe(true);
-    // les 5 plus proches du centre (lon 6)
+    // the 5 closest to the centre (lon 6)
     const lons = detail.tracks.map((t) => t.start[0]);
     expect(Math.max(...lons) - Math.min(...lons)).toBeLessThan(2);
     const overview = queryTracks(db, f, undefined, { overview: true });

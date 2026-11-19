@@ -3,7 +3,7 @@ import { slopeClass, slopeSegments, kmMarkers, autoKmStep, edgeGrades, slopeCssC
 import { lineLength } from '../src/lib/geo';
 import type { Position, TrackGeometry } from '../src/lib/geo';
 
-// ~1 m de latitude ≈ 9e-6 degrés ; on avance plein nord par pas de `stepM`.
+// ~1 m of latitude ≈ 9e-6 degrees; we go due north in steps of `stepM`.
 const M = 1 / 111195;
 function line(n: number, stepM: number, ele: (i: number) => number | undefined): Position[] {
   return Array.from({ length: n }, (_, i) => {
@@ -68,7 +68,7 @@ describe('slopeSegments', () => {
     const back = slopeSegments(reverse(g)).map((x) => x.class.id);
     expect(back[0]).toBe('up-4');
     expect(back[back.length - 1]).toBe('down-4');
-    // une pure montée devient une pure descente
+    // a pure climb becomes a pure descent
     const up = ls(line(30, 20, (i) => 100 + i * 2));
     expect(slopeSegments(reverse(up))[0].class.id).toBe('down-4');
   });
@@ -91,7 +91,7 @@ describe('slopeSegments', () => {
 });
 
 describe('kmMarkers', () => {
-  // 42,3 km plein nord : 423 pas de 100 m
+  // 42.3 km due north: 423 steps of 100 m
   const long = ls(line(424, 100, () => undefined));
   it('42,3 km : 42 bornes au pas de 1 km, numérotées de 1 à 42', () => {
     expect(lineLength((long as { coordinates: Position[] }).coordinates)).toBeGreaterThan(42000);
@@ -118,7 +118,7 @@ describe('kmMarkers', () => {
     const b = line(8, 100, () => undefined).map((p) => [p[0] + 0.01, p[1]] as Position); // 700 m
     const m = kmMarkers({ type: 'MultiLineString', coordinates: [a, b] }, 1);
     expect(m).toHaveLength(1);
-    expect(m[0].position[0]).toBeCloseTo(6.01, 3); // la borne tombe dans la 2e ligne
+    expect(m[0].position[0]).toBeCloseTo(6.01, 3); // the marker falls in the 2nd line
   });
 });
 
@@ -126,7 +126,7 @@ describe('pastilles km selon le zoom (#1382)', () => {
   it('toutes de près, une sur 5 puis une sur 10 en dézoomant', async () => {
     const { kmStepForZoom, kmMarkers } = await import('../src/lib/geo/slopes');
     expect([14, 13, 12, 11, 10.5, 8].map(kmStepForZoom)).toEqual([1, 1, 5, 5, 10, 10]);
-    // Trace rectiligne d'environ 42,3 km vers l'est : bornes 1 à 42.
+    // Straight track of about 42.3 km eastwards: markers 1 to 42.
     const lonPerKm = 1 / (111.32 * Math.cos((43.2 * Math.PI) / 180));
     const g = { type: 'LineString' as const, coordinates: [[6, 43.2], [6 + 42.3 * lonPerKm, 43.2]] as [number, number][] };
     const km = kmMarkers(g, 1).map((m) => m.km);

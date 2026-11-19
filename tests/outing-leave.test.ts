@@ -62,7 +62,7 @@ describe('archiver et quitter (#1459)', () => {
     expect(isArchivedFor(archiveOverrides(db, 'b'), o, later)).toBe(false);
     expect(archiveOuting(db, 'b', o.id, true)).toEqual({ ok: true });
     expect(archiveOuting(db, 'd', o.id, true)).toEqual({ ok: false, error: 'not_found' });
-    expect(listJoinedOutings(db, 'b')).toHaveLength(1); // stats / profil / liste de base intacts
+    expect(listJoinedOutings(db, 'b')).toHaveLength(1); // stats / profile / base list untouched
     expect(db.select().from(outing).where(eq(outing.id, o.id)).get()!.status).toBe('planned');
   });
 });

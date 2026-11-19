@@ -8,7 +8,7 @@ import { OutingView, type OutingViewOuting } from '@/components/outings/outing-v
 import { OutingParticipants } from '@/components/outings/outing-participants';
 import type { TrackSnapshot } from '@/lib/outings/snapshot';
 
-// La carte embarquée (MapLibre) n'a pas sa place dans un rendu serveur de test.
+// The embedded map (MapLibre) has no place in a server-side test render.
 vi.mock('@/components/tracks/track-detail', () => ({ TrackDetail: () => h('div', { 'data-testid': 'track-detail' }) }));
 vi.mock('@/components/outings/outing-route', () => ({ OutingRoute: () => h('div', { 'data-testid': 'outing-route' }) }));
 

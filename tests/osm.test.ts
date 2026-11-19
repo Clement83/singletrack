@@ -50,7 +50,7 @@ describe('relations OSM réelles du Var (fixtures Overpass)', () => {
     const lines = g.type === 'LineString' ? [g.coordinates] : g.coordinates;
     const total = geometryLength(g);
     expect(total).toBeGreaterThan(1000);
-    // Pas de saut aberrant entre deux points consécutifs d'une ligne recollée (> 500 m).
+    // No aberrant jump between two consecutive points of a stitched line (> 500 m).
     for (const l of lines) {
       for (let i = 1; i < l.length; i++) {
         const d = Math.hypot((l[i][0] - l[i - 1][0]) * 80000, (l[i][1] - l[i - 1][1]) * 111000);

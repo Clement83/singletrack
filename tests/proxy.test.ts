@@ -65,7 +65,7 @@ describe('proxy (#1482)', () => {
       vi.stubEnv('DATABASE_URL', ':memory:');
       vi.stubEnv('FEDERATION_DB', ':memory:');
       const res = await proxy(new NextRequest('http://localhost/.well-known/webfinger?resource=acct:nobody@localhost', { headers: { accept: 'application/jrd+json' } }));
-      expect(res.status).toBe(404); // compte inconnu, répondu par WebFinger (et non une redirection)
+      expect(res.status).toBe(404); // unknown account, answered by WebFinger (not a redirect)
       expect(res.headers.get('location')).toBeNull();
       vi.unstubAllEnvs();
     });

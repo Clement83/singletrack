@@ -66,7 +66,7 @@ describe('profil et stats (#1433)', () => {
     expect(p.totals.lastAt?.toISOString().slice(0, 10)).toBe('2020-06-10');
     expect(p.shared).toEqual([]);
 
-    // Alice a un pote lié au compte de Bob et l'invite : sa sortie est marquée « avec toi » pour Bob.
+    // Alice has a buddy linked to Bob's account and invites him: her outing is marked "with you" for Bob.
     requestByEmail(db, 'a', 'b@x.fr');
     respondToRequest(db, 'b', listFriends(db, 'b').incoming[0].id, 'accept');
     const c = createContact(db, 'a', { name: 'Bobby' });
@@ -79,7 +79,7 @@ describe('profil et stats (#1433)', () => {
     expect(seen.rides.find((x) => x.title === 'Vieille')?.withViewer).toBe(false);
     expect(seen.shared).toEqual([]);
 
-    // Côté Alice : Bob organise, Alice (pote liée) vient ; la sortie de Bob est ouvrable par lui, listée sur le profil d'Alice.
+    // On Alice's side: Bob organises, Alice (linked buddy) comes; Bob's outing can be opened by him, listed on Alice's profile.
     const bobOuting = await mk('b', '2020-08-01', 'Chez Bob');
     const cb = createContact(db, 'b', { name: 'Alice' });
     if (!cb.ok) throw new Error('contact');

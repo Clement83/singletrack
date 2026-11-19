@@ -3,13 +3,13 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import fr from '../messages/fr.json';
 
-// #1405 : chaque zone n'envoie au navigateur que ses namespaces. Ce test parcourt les imports depuis les pages
-// de chaque zone et vérifie que tout namespace utilisé par un composant **client** est bien envoyé.
+// #1405: each area only sends its namespaces to the browser. This test walks the imports from the pages
+// of each area and checks that every namespace used by a **client** component is sent.
 const ROOT = path.join(__dirname, '..');
 const SRC = path.join(ROOT, 'src');
 const src = readFileSync(path.join(SRC, 'i18n/client-messages.tsx'), 'utf8');
 
-/** Lit CLIENT_NAMESPACES sans exécuter le module (il importe next-intl/server). */
+/** Reads CLIENT_NAMESPACES without running the module (it imports next-intl/server). */
 function zones(): Record<string, string[] | 'all'> {
   const consts: Record<string, string[]> = {};
   for (const m of src.matchAll(/const (\w+): Ns\[\] = \[([^\]]*)\]/g)) consts[m[1]] = [...m[2].matchAll(/'(\w+)'/g)].map((x) => x[1]);
@@ -34,7 +34,7 @@ function resolve(from: string, spec: string): string | null {
   return null;
 }
 
-/** Namespaces des composants client atteints depuis `entries` (un fichier serveur importé par un client devient client). */
+/** Namespaces of the client components reached from `entries` (a server file imported by a client becomes client). */
 function clientNamespaces(entries: string[]): Set<string> {
   const ns = new Set<string>();
   const seen = new Set<string>();
@@ -49,7 +49,7 @@ function clientNamespaces(entries: string[]): Set<string> {
       if (/useTranslations\(\)/.test(s)) for (const m of s.matchAll(/\bt\('(\w+)\./g)) ns.add(m[1]);
       if (/useErrorText\(/.test(s)) ns.add('errors');
     }
-    // Les `import type` ne livrent aucun code au navigateur.
+    // `import type` ships no code to the browser.
     const code = s.replace(/^import type [^;]+;$/gm, '').replace(/^export type [^;]+;$/gm, '');
     for (const m of code.matchAll(/(?:import|from)\s*\(?\s*'([^']+)'/g)) {
       const r = resolve(file, m[1]);
@@ -75,7 +75,7 @@ const ROUTES: Record<string, string[]> = {
   editor: [A('t/[slug]/edit/page.tsx')],
   guest: pagesUnder(A('i')),
   outing: pagesUnder(A('s')),
-  private: [...pagesUnder(A('(private)'), ['styleguide']), ...pagesUnder(A('(explore)'))], // carte publique (#1591) : même zone
+  private: [...pagesUnder(A('(private)'), ['styleguide']), ...pagesUnder(A('(explore)'))], // public map (#1591): same area
 };
 
 describe('messages client par zone (#1405)', () => {

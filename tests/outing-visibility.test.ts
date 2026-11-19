@@ -30,7 +30,7 @@ describe('visibilité des sorties (#1442)', () => {
     const { db } = await setup();
     expect(isOutingVisibility('friends')).toBe(true);
     expect(isOutingVisibility('secret')).toBe(false);
-    expect(getDefaultOutingVisibility(db, 'a')).toBe('friends'); // défaut « copains » depuis #1455
+    expect(getDefaultOutingVisibility(db, 'a')).toBe('friends'); // "friends" default since #1455
     expect(setDefaultOutingVisibility(db, 'a', 'secret')).toEqual({ ok: false, error: 'invalid' });
     expect(setDefaultOutingVisibility(db, 'a', 'invite').ok).toBe(true);
     expect(getDefaultOutingVisibility(db, 'a')).toBe('invite');
@@ -40,7 +40,7 @@ describe('visibilité des sorties (#1442)', () => {
   it('création : défaut du compte, ou surcharge explicite ; valeur invalide refusée', async () => {
     const { db, mk } = await setup();
     expect(getOwnedOuting(db, 'a', await mk('a', { title: 'Un' }))!.visibility).toBe('friends');
-    expect(setDefaultOutingVisibility(db, 'a', 'public').ok).toBe(false); // fige la sortie : jamais un défaut (#1455)
+    expect(setDefaultOutingVisibility(db, 'a', 'public').ok).toBe(false); // freezes the outing: never a default (#1455)
     expect(getOwnedOuting(db, 'a', await mk('a', { visibility: 'friends', title: 'Autre' }))!.visibility).toBe('friends');
     await expect(mk('a', { visibility: 'nope', title: 'X' })).rejects.toThrow();
   });
@@ -53,7 +53,7 @@ describe('visibilité des sorties (#1442)', () => {
     const bad = updateOuting(db, 'a', slug, { visibility: 'nope' });
     expect(bad.ok).toBe(false);
     expect(getOwnedOuting(db, 'a', slug)!.visibility).toBe('friends');
-    setDefaultOutingVisibility(db, 'a', 'public'); // la copie reprend la sortie d'origine, pas le défaut
+    setDefaultOutingVisibility(db, 'a', 'public'); // the copy takes the original outing's value, not the default
     const d = duplicateOuting(db, 'a', slug, { date: '2030-05-17', time: '08:30' });
     if (!d.ok) throw new Error('dup');
     expect(getOwnedOuting(db, 'a', d.slug)!.visibility).toBe('friends');
@@ -61,9 +61,9 @@ describe('visibilité des sorties (#1442)', () => {
 
   it('canSeeOuting : propriétaire, copain accepté / en attente / inconnu × 3 niveaux', async () => {
     const { db, mk } = await setup();
-    requestByEmail(db, 'b', 'a@x.fr'); // b → a, accepté
+    requestByEmail(db, 'b', 'a@x.fr'); // b → a, accepted
     respondToRequest(db, 'a', listFriends(db, 'a').incoming[0].id, 'accept');
-    requestByEmail(db, 'c', 'a@x.fr'); // c → a, en attente
+    requestByEmail(db, 'c', 'a@x.fr'); // c → a, pending
     const rows = {} as Record<string, typeof outing.$inferSelect>;
     for (const v of ['public', 'friends', 'invite'] as const) {
       const slug = await mk('a', { visibility: v, title: v });

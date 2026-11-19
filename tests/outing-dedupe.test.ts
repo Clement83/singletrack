@@ -4,7 +4,7 @@ import { user } from '@/db/schema';
 import { upsertTrack } from '@/lib/tracks';
 import { createInvitation, createOuting, listOutings } from '@/lib/outings';
 
-// #1424 : un double envoi du formulaire ne crée qu'une sortie ; une sortie n'apparaît qu'une fois dans « Mes sorties ».
+// #1424: a double form submission creates only one outing; an outing appears only once in "My outings".
 describe('sorties en double (#1424)', () => {
   it('deux créations identiques rapprochées = une seule sortie', async () => {
     const { db } = openDb(':memory:');

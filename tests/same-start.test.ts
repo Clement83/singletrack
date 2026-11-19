@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { groupSameStart, tracksAtStart, SAME_START_M } from '@/lib/tracks/same-start';
 
 const t = (slug: string, lon: number, lat: number) => ({ slug, start: [lon, lat] as [number, number] });
-// ~0,00001° de latitude ≈ 1,1 m
+// ~0.00001° of latitude ≈ 1.1 m
 const parking = [t('a', 6.1, 43.2), t('b', 6.1, 43.20001), t('c', 6.1006, 43.2)];
 const far = t('z', 6.5, 43.4);
 

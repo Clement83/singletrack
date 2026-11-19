@@ -4,7 +4,7 @@ import { addWaypoint, emptyDoc, snapWaypoint, type LonLat } from '@/lib/editor/d
 import { snapPointIn, moveLineDrag } from '@/lib/editor/gestures';
 import { editorReducer, initialState } from '@/lib/editor/state';
 
-// Projection écran factice : 1 degré = 1000 px.
+// Fake screen projection: 1 degree = 1000 px.
 const project = (c: number[]) => ({ x: c[0] * 1000, y: -c[1] * 1000 });
 const at = (lon: number, lat: number) => project([lon, lat]);
 const line = (...c: [number, number][]) => ({ coordinates: c });

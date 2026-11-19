@@ -88,7 +88,7 @@ describe('serveur bloqué', () => {
     blockDomain(db, 'evil.example');
     expect(await requestByAddress(db, 'ua', 'paul@evil.example', { resolve, deliver })).toEqual({ ok: true });
     expect(resolve).not.toHaveBeenCalled();
-    // un copain déjà là (cas d'un blocage posé hors purge) ne reçoit plus rien ; un autre serveur reçoit toujours
+    // a friend already there (block added outside the purge) receives nothing any more; another server still receives
     friend('b.example');
     friend('c.example', 'zed');
     db.insert(outing).values({ id: 'o1', slug: 's1', title: 'T', startsAt: new Date('2099-01-01'), meetingLat: 1, meetingLon: 1, ownerId: 'ua', createdBy: 'ua', visibility: 'public', trackSnapshot: {} } as never).run();
@@ -103,7 +103,7 @@ describe('serveur bloqué', () => {
     expect(importBlockList(db, csv)).toEqual({ added: 2, skipped: 2 });
     expect(listBlockedDomains(db).map((b) => [b.domain, b.source])).toEqual([['other.example', 'import'], ['spam.example', 'import']]);
     expect(importBlockList(db, csv).added).toBe(0);
-    expect(importBlockList(db, 'solo.example\n').added).toBe(1); // sans en-tête : une colonne
+    expect(importBlockList(db, 'solo.example\n').added).toBe(1); // no header: one column
   });
 });
 
@@ -119,7 +119,7 @@ describe('compte bloqué par un utilisateur', () => {
     expect(db.select().from(remoteResponse).all()).toHaveLength(0);
     expect(listRemoteOutings(db, 'ua')).toHaveLength(0);
     expect(db.select().from(remoteActorBlock).all()).toHaveLength(1);
-    // invitation « sur invitation » : pas de ligne de réponse pour l'invité
+    // "invitation only" invitation: no answer row for the guest
     const sent: string[] = [];
     onEvent(db, p.actorUrl, event('b.example', 2, { ext: { ...event('b.example', 2).ext, visibility: 'invite' } }), ['alice'], async (m) => { sent.push(m.to); });
     expect(db.select().from(remoteResponse).all()).toHaveLength(0);
@@ -156,9 +156,9 @@ describe('limites', () => {
     const t = 1_000_000;
     for (let i = 0; i < LIMITS.ratePerMinute; i++) expect(screenInbox(db, { size: 10, body: body('busy.example') }, t).ok).toBe(true);
     expect(screenInbox(db, { size: 10, body: body('busy.example') }, t)).toMatchObject({ ok: false, status: 429, reason: 'rate_limit' });
-    expect(screenInbox(db, { size: 10, body: body('calm.example') }, t).ok).toBe(true); // l'autre serveur n'est pas touché
-    expect(screenInbox(db, { size: 10, body: body('busy.example') }, t + 61_000).ok).toBe(true); // nouvelle fenêtre
-    expect(screenInbox(db, { size: 10, body: null }).ok).toBe(true); // Fedify refusera (pas d'acteur)
+    expect(screenInbox(db, { size: 10, body: body('calm.example') }, t).ok).toBe(true); // the other server is not affected
+    expect(screenInbox(db, { size: 10, body: body('busy.example') }, t + 61_000).ok).toBe(true); // new window
+    expect(screenInbox(db, { size: 10, body: null }).ok).toBe(true); // Fedify will reject it (no actor)
   });
 
   it('cache : 200 sorties par serveur au plus (les mises à jour passent), expiration à 30 jours', () => {
@@ -189,7 +189,7 @@ describe('limites', () => {
     await onFollow(db, p.actorUrl, 'alice', 'https://known.example/ap/follows/g', deps);
     expect(db.select().from(friendship).all()).toHaveLength(LIMITS.unseenServerRequestsPerDay + 2);
     expect(allowFriendRequest(db, 'ua', 'nouveau.example')).toBe(false);
-    expect(allowFriendRequest(db, 'ua', 'nouveau.example', new Date(Date.now() + 2 * 86_400_000))).toBe(true); // le lendemain
+    expect(allowFriendRequest(db, 'ua', 'nouveau.example', new Date(Date.now() + 2 * 86_400_000))).toBe(true); // the next day
   });
 });
 
@@ -225,7 +225,7 @@ describe('signalement', () => {
     db.insert(federationReport).values({ reporterId: null, objectUrl: 'x', domain: 'x', title: 'x' }).run();
     const deliver = vi.fn(async () => {});
     blockDomain(db, 'b.example');
-    expect(await reportRemoteOuting(db, 'ua', r.id, null, { deliver })).toEqual({ ok: false, error: 'not_found' }); // sortie retirée par le blocage
+    expect(await reportRemoteOuting(db, 'ua', r.id, null, { deliver })).toEqual({ ok: false, error: 'not_found' }); // outing removed by the block
     expect(deliver).not.toHaveBeenCalled();
   });
 });

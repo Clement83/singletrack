@@ -10,7 +10,7 @@ import {
 import { areFriends, linkContact, listFriends } from '@/lib/friends';
 import { listInvitableFriends } from '@/lib/outings/friend-invites';
 
-/** Deux « serveurs » en mémoire : l'envoi d'un serveur appelle directement les gestionnaires de l'autre (le réseau est testé par scripts/federation-two-instances.ts). */
+/** Two in-memory "servers": one server's delivery calls the other's handlers directly (the network is tested by scripts/federation-two-instances.ts). */
 type Server = { db: Db; domain: string; log: Outbound[] };
 const servers: Record<string, Server> = {};
 const actorUrl = (domain: string, handle: string) => `https://${domain}/ap/users/${handle}`;
@@ -66,7 +66,7 @@ describe('copains entre serveurs (#1475)', () => {
     expect(out[0]).toMatchObject({ userId: null, name: 'paul', remote: { handle: 'paul', domain: 'b.example' } });
     const inc = listFriends(b.db, 'up').incoming;
     expect(inc.map((e) => e.remote?.domain)).toEqual(['a.example']);
-    // Seul le destinataire accepte.
+    // Only the recipient accepts.
     expect(await respondFederated(a.db, 'ua', out[0].id, 'accept', depsFor(a))).toEqual({ ok: false, error: 'not_found' });
 
     expect(await respondFederated(b.db, 'up', inc[0].id, 'accept', depsFor(b))).toEqual({ ok: true });
@@ -74,7 +74,7 @@ describe('copains entre serveurs (#1475)', () => {
     expect(listFriends(a.db, 'ua').friends.map((f) => f.remote?.handle)).toEqual(['paul']);
     expect(listFriends(b.db, 'up').friends.map((f) => f.remote?.handle)).toEqual(['alice']);
     expect(listFriends(a.db, 'ua').outgoing).toEqual([]);
-    // Le Follow de retour est confirmé par un Accept, sans rien changer.
+    // The Follow back is confirmed by an Accept, without changing anything.
     expect(a.log.map((m) => m.t)).toEqual(['follow', 'accept']);
   });
 
@@ -119,7 +119,7 @@ describe('copains entre serveurs (#1475)', () => {
     expect(linkContact(a.db, 'ua', c.id, null, f.remote!.actorId)).toEqual({ ok: true });
     expect(a.db.select().from(contact).get()?.remoteActorId).toBe(f.remote!.actorId);
 
-    // Retrait côté B (celui qui avait accepté) : Undo de son Follow de retour ; A répond par l'Undo du sien.
+    // Removal on B's side (the one who accepted): Undo of its Follow back; A answers with the Undo of its own.
     b.log.length = 0; a.log.length = 0;
     expect(await removeFederated(b.db, 'up', listFriends(b.db, 'up').friends[0].id, depsFor(b))).toEqual({ ok: true });
     expect(b.log.map((m) => m.t)).toEqual(['undo']);
@@ -130,12 +130,12 @@ describe('copains entre serveurs (#1475)', () => {
   });
 
   it('demande croisée (chacun a demandé) = acceptation', async () => {
-    // A demande, B n'a pas encore reçu : B demande aussi à A avant de voir la demande.
+    // A asks, B has not received it yet: B also asks A before seeing the request.
     await requestByAddress(a.db, 'ua', 'paul@b.example', depsFor(a));
     const inc = listFriends(b.db, 'up').incoming[0];
     expect(inc).toBeTruthy();
-    // Côté B, une demande de B vers A alors qu'une demande de A est en attente vaut acceptation.
-    vi.stubEnv('BETTER_AUTH_URL', 'https://b.example'); // le « serveur » qui agit est B
+    // On B's side, a request from B to A while a request from A is pending counts as acceptance.
+    vi.stubEnv('BETTER_AUTH_URL', 'https://b.example'); // the acting "server" is B
     expect(await requestByAddress(b.db, 'up', 'alice@a.example', depsFor(b))).toEqual({ ok: true });
     expect(listFriends(b.db, 'up').friends).toHaveLength(1);
     expect(listFriends(a.db, 'ua').friends).toHaveLength(1);
@@ -170,8 +170,8 @@ describe('copains entre serveurs (#1475)', () => {
     expect(linkContact(a.db, 'ua', c.id, null, 'inconnu')).toEqual({ ok: false, error: 'notFriend' });
     expect(linkContact(a.db, 'ua', c.id, null, f.remote!.actorId)).toEqual({ ok: true });
     expect(linkContact(a.db, 'ua', c.id, null)).toEqual({ ok: true });
-    expect(areFriends(a.db, 'ua', 'up')).toBe(false); // pas un compte local
-    // Un copain distant n'a pas de compte local : il est proposé sous `remote:<acteur>` (invitation ActivityPub, #1476), pas en local.
+    expect(areFriends(a.db, 'ua', 'up')).toBe(false); // not a local account
+    // A remote friend has no local account: offered as `remote:<actor>` (ActivityPub invitation, #1476), not locally.
     const o = { id: 'o', ownerId: 'ua', createdBy: 'ua', visibility: 'friends', participantsCanInvite: false, status: 'planned', startsAt: new Date(Date.now() + 864e5) } as never;
     expect(listInvitableFriends(a.db, 'ua', o)).toEqual([{ userId: `remote:${f.remote!.actorId}`, name: 'paul · b.example' }]);
   });

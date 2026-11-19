@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import fr from '../messages/fr.json';
 import en from '../messages/en.json';
 
-// #1402 : les routes et la logique serveur renvoient des codes d'erreur, traduits côté client (`errors.<code>`).
+// #1402: routes and server logic return error codes, translated on the client (`errors.<code>`).
 const read = (f: string) => readFileSync(path.join(__dirname, '..', f), 'utf8');
 const SOURCES = [
   'src/lib/outings/service.ts',

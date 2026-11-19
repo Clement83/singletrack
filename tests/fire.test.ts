@@ -15,7 +15,7 @@ const fx = (f: string) => path.join(__dirname, 'fixtures/massifs', f);
 const dayJson = (d: string) => JSON.parse(fs.readFileSync(fx(`${d}.json`), 'utf8'));
 const fgb = () => new Uint8Array(fs.readFileSync(fx('massifs_83.fgb')));
 
-// Trace dans le massif des Maures (autour de Collobrières) et trace hors massif (littoral toulonnais, Hyères-les-Palmiers exclu).
+// Track in the Maures massif (around Collobrières) and track outside any massif (Toulon coast, Hyères-les-Palmiers excluded).
 const maures: TrackGeometry = { type: 'LineString', coordinates: [[6.3, 43.24, 100], [6.32, 43.25, 150], [6.34, 43.26, 200]] };
 const horsMassif: TrackGeometry = { type: 'LineString', coordinates: [[2.0, 48.0, 50], [2.01, 48.01, 60]] };
 
@@ -102,14 +102,14 @@ describe('récupération quotidienne', () => {
   it('hors saison : 404 → message « hors période », aucune erreur', async () => {
     const db = await setup();
     const now = new Date('2026-11-12T12:00:00Z');
-    expect(shouldFetch(db, '2026-11-12', '2026-11-12', 13, now)).toBe(false); // pas d'appel hors saison
+    expect(shouldFetch(db, '2026-11-12', '2026-11-12', 13, now)).toBe(false); // no call out of season
     expect(fireInfo(db, ['835'], '2026-11-12', now).kind).toBe('off_season');
     expect(await refreshFire(db, now, fakeFetch(() => 500))).toEqual([]);
     expect(fireInfo(db, [], '2026-11-12', now).kind).toBe('none');
   });
   it('en saison : 404 enregistré, réessai espacé de 3 h, demain pas avant 19 h', async () => {
     const db = await setup();
-    const now = new Date('2026-08-14T10:00:00Z'); // 12 h à Paris
+    const now = new Date('2026-08-14T10:00:00Z'); // noon in Paris
     expect(shouldFetch(db, '2026-08-15', '2026-08-14', 12, now)).toBe(false);
     expect(shouldFetch(db, '2026-08-14', '2026-08-14', 12, now)).toBe(true);
     expect(await fetchDay(db, '2026-08-14', fakeFetch(() => 404), now)).toBe('none');

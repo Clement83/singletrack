@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { safeNext } from '@/lib/safe-next';
 import { loginHref } from '@/lib/login-href';
 
-// #1591 : carte publique, retour sur la même vue après connexion, sans redirection ouverte.
+// #1591: public map, back to the same view after sign-in, without an open redirect.
 describe('retour après connexion vers la carte (#1591)', () => {
   it('safeNext accepte la carte et sa vue', () => {
     expect(safeNext('/')).toBe('/');

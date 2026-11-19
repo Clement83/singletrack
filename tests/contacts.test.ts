@@ -72,7 +72,7 @@ describe('carnet de potes', () => {
     expect(listContacts(db, 'u1').map((c) => c.name)).toEqual(['Ana']);
     const arch = listContacts(db, 'u1', { archived: true });
     expect(arch[0]).toMatchObject({ name: 'Ben', outings: 1 });
-    // archivé : absent de la sélection côté serveur aussi
+    // archived: absent from the selection on the server side too
     const slug = await mk('2099-07-01');
     const r = inviteMany(db, 'u1', slug, { contactIds: [b.id, a.id] });
     expect(r.ok && r.invites.map((i) => i.name)).toEqual(['Ana']);

@@ -16,7 +16,7 @@ const mk = (externalId: string | null, name: string, lat = 43.2): NormalizedTrac
   raw: { id: externalId },
 });
 
-/** Source factice : émet une trace deux fois (même external_id) puis une autre. */
+/** Fake source: emits a track twice (same external_id) then another one. */
 const fake: TrackSource = {
   id: 'osm',
   async *sync() {

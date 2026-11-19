@@ -11,7 +11,7 @@ import { icsEvent, feedResponse } from '@/lib/outings/export';
 import { subscribeLinks } from '@/lib/outings/links';
 import { isPublicPath } from '@/lib/public-routes';
 
-// Abonnement agenda webcal (#1357) : flux par invité et par organisateur, validé par ical.js.
+// webcal calendar subscription (#1357): feed per guest and per organiser, validated by ical.js.
 
 async function setup() {
   const { db } = openDb(':memory:');
@@ -57,7 +57,7 @@ describe('flux agenda (#1357)', () => {
     expect(vevents).toHaveLength(2);
     const ev = new ICAL.Event(vevents[0]);
     expect(ev.uid).toMatch(/^outing-.+@x\.me$/);
-    // l'heure locale Paris (08:30 en mai = UTC+2) est bien résolue par le VTIMEZONE
+    // Paris local time (08:30 in May = UTC+2) is resolved through the VTIMEZONE
     expect(ev.startDate.toJSDate().toISOString()).toBe('2099-05-10T06:30:00.000Z');
     expect(vevents.map((v) => v.getFirstPropertyValue('status'))).toContain('CANCELLED');
   });

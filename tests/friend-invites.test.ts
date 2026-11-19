@@ -77,10 +77,10 @@ describe('inviter ses copains (#1458)', () => {
     expect(listInvitableFriends(db, 'b', o)).toEqual([]);
     db.update(outing).set({ participantsCanInvite: true }).where(eq(outing.id, o.id)).run();
     const o2 = db.select().from(outing).where(eq(outing.id, o.id)).get()!;
-    expect(listInvitableFriends(db, 'b', o2).map((f) => f.userId)).toEqual(['c']); // l'organisateur est exclu
+    expect(listInvitableFriends(db, 'b', o2).map((f) => f.userId)).toEqual(['c']); // the organiser is excluded
     expect(inviteFriends(db, 'b', o2, ['c'], mailer)).toEqual({ ok: true, invited: ['C'], skipped: [] });
     expect(db.select().from(invitation).where(eq(invitation.userId, 'c')).get()!.createdByUserId).toBe('b');
-    // quelqu'un qui n'est pas dans la sortie, ou qui a seulement « peut-être »
+    // someone who is not in the outing, or only answered "maybe"
     expect(inviteFriends(db, 'c', o2, ['b'], mailer).ok).toBe(false);
     db.update(invitation).set({ status: 'pending' }).where(eq(invitation.userId, 'b')).run();
     expect(inviteFriends(db, 'b', o2, ['c'], mailer)).toEqual({ ok: false, error: 'not_found' });

@@ -3,12 +3,12 @@ import { chooseRoute, climbPenaltyPer100m, scoreRoute, type Rider } from '@/lib/
 import { candidateRequests, routeBetween, routeScored } from '@/lib/routing/brouter';
 import type { Position } from '@/lib/geo';
 
-/** IGN simulé en panne : le routage garde l'altitude BRouter (pas d'appel réseau en test). */
+/** Simulated IGN outage: routing keeps the BRouter elevation (no network call in tests). */
 const noIgn = { fetchFn: async () => ({ ok: false, status: 503, json: async () => ({}) }), cache: new Map<string, number>(), intervalMs: 0 };
 
-// Notation des itinéraires (#1385). Traces synthétiques plein est, à 43,2° de latitude.
+// Route scoring (#1385). Synthetic tracks due east, at latitude 43.2°.
 const LON_PER_KM = 1 / (111.32 * Math.cos((43.2 * Math.PI) / 180));
-/** Ligne de tronçons [km, pente %] avec un point tous les 50 m. */
+/** Line made of segments [km, slope %] with a point every 50 m. */
 function line(parts: [number, number][]): Position[] {
   const pts: Position[] = [[6, 43.2, 100]];
   let lon = 6;

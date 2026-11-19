@@ -6,7 +6,7 @@ import { signInCodeMail } from '@/lib/mail-templates';
 import { fireMessage, fireTone, type FireInfo } from '@/lib/fire';
 import { translatorFor } from '@/i18n/server';
 
-// Passe de traduction des pages publiques et des mails (#1401).
+// Translation pass of the public pages and emails (#1401).
 describe('mail de connexion dans la langue du destinataire', () => {
   it('anglais : objet, texte, HTML et pièce jointe', async () => {
     const m = await signInCodeMail('a@b.fr', '123456', 'https://x/login/lien#e=a&c=1', 10, 'en');

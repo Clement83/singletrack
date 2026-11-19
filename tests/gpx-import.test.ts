@@ -61,7 +61,7 @@ describe('import GPX', () => {
     const far = parseGpxFile(read('visorando-route-sans-altitude.gpx')).tracks[0].geometry;
     expect(findDuplicates(db, far)).toHaveLength(0);
     const r2 = await upsertTrack(db, { ...b.track, createdBy: 'u' }, { enrich: false });
-    expect(r2.created).toBe(true); // externalId null : jamais bloqué
+    expect(r2.created).toBe(true); // null externalId: never blocked
     const row = sqlite.prepare('select source, created_by from track where slug=?').get(r1.slug);
     expect(row).toEqual({ source: 'gpx', created_by: 'u' });
   });

@@ -10,10 +10,10 @@ import {
 } from '@/lib/editor/gestures';
 
 /**
- * Simulateur d'éditeur (#1522) : même câblage que `track-editor.tsx` (reducer + fonctions de `gestures.ts`), sans
- * React ni carte. Routage simulé par les fixtures BRouter réelles (`tests/fixtures/brouter/segments.json`, enregistrées
- * par `scripts/editor-routing-check.ts --record`) ; une paire inconnue reçoit un tracé synthétique à 3 points.
- * Projection écran fictive : 5000 px par degré (≈ 14 m par pixel à Toulon, zoom 13).
+ * Editor simulator (#1522): same wiring as `track-editor.tsx` (reducer + functions from `gestures.ts`), without
+ * React or a map. Routing simulated with the real BRouter fixtures (`tests/fixtures/brouter/segments.json`, recorded
+ * by `scripts/editor-routing-check.ts --record`); an unknown pair gets a synthetic 3-point line.
+ * Fake screen projection: 5000 px per degree (≈ 14 m per pixel at Toulon, zoom 13).
  */
 export type Fixture = {
   from: LonLat; to: LonLat; coordinates: Position[];
@@ -22,13 +22,13 @@ export type Fixture = {
 
 const loadFixtures = (): Fixture[] => JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'brouter', 'segments.json'), 'utf8'));
 export const FIXTURES = loadFixtures();
-/** Waypoints (lon, lat) de la fixture `k` : `from` et `to` tels que posés par l'utilisateur. */
+/** Waypoints (lon, lat) of fixture `k`: `from` and `to` as placed by the user. */
 export const fx = (k: number) => FIXTURES[k];
 
 const PX_PER_DEG = 5000;
 export const project = (c: Position) => ({ x: c[0] * PX_PER_DEG, y: -c[1] * PX_PER_DEG });
 export const unproject = (p: [number, number]) => ({ lng: p[0] / PX_PER_DEG, lat: -p[1] / PX_PER_DEG });
-/** Décale un point de `px` pixels écran vers l'est. */
+/** Shifts a point `px` screen pixels eastwards. */
 export const shiftPx = (p: LonLat, px: number): LonLat => [p[0] + px / PX_PER_DEG, p[1]];
 
 const eq = (a: LonLat, b: LonLat) => a[0] === b[0] && a[1] === b[1];
@@ -38,19 +38,19 @@ export class EditorSim {
   altSets: AltSet[] = [];
   snapOn: boolean;
   tolPx: number;
-  /** Élargit chaque glisser aux points posés à la main (#1641), comme le fera l'éditeur. */
+  /** Widens every drag to hand-placed points (#1641), as the editor will. */
   choice: boolean;
   rider = 'muscle' as const;
   singles: { coordinates: Position[] }[] = [];
-  /** Appels de routage effectués (clé `from|to`), pour vérifier le cache. */
+  /** Routing calls made (key `from|to`), to check the cache. */
   calls: string[] = [];
-  /** Temps simulé (ms) : avance de 1 s à chaque geste pour que le relâchement d'un glisser ne bloque pas le tap suivant. */
+  /** Simulated time (ms): advances 1 s per gesture so that releasing a drag does not block the next tap. */
   private now = 10_000;
   private lastDrag = -Infinity;
   private cache = new Map<string, { coords: Position[]; alts: Fixture['alternatives'] }>();
   failFor = new Set<string>();
   private extra: Fixture[] = [];
-  /** Impose le tracé BRouter d'un couple de points (cas que les fixtures n'ont pas). */
+  /** Forces the BRouter line of a pair of points (cases the fixtures do not have). */
   stub(from: LonLat, to: LonLat, coordinates: Position[], alternatives: Fixture['alternatives'] = []) {
     this.extra.unshift({ from, to, coordinates, alternatives });
   }
@@ -65,9 +65,9 @@ export class EditorSim {
   get doc() { return this.state.present; }
   get waypoints() { return this.doc.waypoints; }
   get segments() { return this.doc.segments; }
-  /** Jeux d'alternatives encore valables, un par tronçon (#1527). */
+  /** Alternative sets still valid, one per segment (#1527). */
   get altList() { return withoutChoiceAlts(liveAltSets(this.altSets, (i) => this.doc.segments[i]?.coords ?? undefined, this.rider), this.state.choice); }
-  /** Dernier jeu valable (compatibilité des scénarios à un seul tronçon). */
+  /** Last valid set (compatibility with single-segment scenarios). */
   get alts() { return this.altList.at(-1) ?? null; }
   get geometry() { return docGeometry(this.doc); }
   dispatch = (a: EditorAction) => { this.state = editorReducer(this.state, a); };
@@ -77,7 +77,7 @@ export class EditorSim {
 
   private tick() { this.now += 1000; }
 
-  /** Tap / clic carte avec les calques touchés. */
+  /** Map tap / click with the layers hit. */
   click(p: LonLat, features: HitFeature[] = []) {
     this.tick();
     const d = decideClick({ features, p, selected: this.state.selected, lineMenuOpen: false, sinceDragMs: this.now - this.lastDrag, snap: (q) => this.snap(q) });
@@ -86,21 +86,21 @@ export class EditorSim {
     else if (d.kind === 'dispatch') this.dispatch(d.action);
     return d;
   }
-  /** Tap sur la ligne (calque `edit-hit` du tronçon `seg`). */
+  /** Tap on the line (`edit-hit` layer of segment `seg`). */
   tapLine(seg: number, p: LonLat) { return this.click(p, [{ layer: 'edit-hit', props: { seg } }]); }
   tapAlt(alt: number, p: LonLat) { return this.click(p, [{ layer: 'alt-hit', props: { alt } }]); }
   tapDeviation(p: LonLat) { return this.click(p, [{ layer: 'dev-hit', props: {} }]); }
-  /** Pose un point (tap sur la carte vide). */
+  /** Places a point (tap on the empty map). */
   add(p: LonLat) { return this.click(p); }
 
-  /** Glisser le point `i` jusqu'en `p`. */
+  /** Drags point `i` to `p`. */
   dragPoint(i: number, p: LonLat) {
     this.tick();
     this.lastDrag = this.now;
     this.dispatch(dragPointAction(i, p, this.snap(p, pointDragExclude(i))));
     this.widen();
   }
-  /** Glisser la ligne du tronçon `seg` depuis `from` jusqu'en `to` (`moved` faux = simple clic, rien ne se passe). */
+  /** Drags the line of segment `seg` from `from` to `to` (`moved` false = simple click, nothing happens). */
   dragLine(seg: number, from: LonLat, to: LonLat, moved = true) {
     this.tick();
     const sp = project(from);
@@ -114,7 +114,7 @@ export class EditorSim {
       this.widen();
     }
   }
-  /** Calcule les ancres lointaines puis ouvre la paire de choix (si le tracé rejoint l'ancien dans les plafonds). */
+  /** Computes the far anchors then opens the choice pair (if the line rejoins the old one within the caps). */
   widen() {
     const pd = this.state.pending;
     if (!this.choice || !pd) return;
@@ -143,7 +143,7 @@ export class EditorSim {
     return { coords: [from, [(from[0] + to[0]) / 2, (from[1] + to[1]) / 2 + 0.0005], to], alts: [] };
   }
 
-  /** Attend le routage : demande chaque tronçon en attente (cache par couple de points) jusqu'à stabilité. */
+  /** Waits for routing: requests every pending segment (cache per pair of points) until stable. */
   settle() {
     for (let guard = 0; guard < 50; guard++) {
       const pending = pendingSegments(this.doc);

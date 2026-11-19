@@ -45,7 +45,7 @@ describe('sorties', () => {
     expect(await createOuting(db, 'u1', { ...base, date: 'nope' })).toHaveProperty('errors.date');
     expect(await createOuting(db, 'u1', { ...base, level: 'x' })).toHaveProperty('errors.level');
     expect(await createOuting(db, 'u1', { ...base, trackSlug: 'inconnu' })).toEqual({ error: 'not_found' });
-    expect(parisToUtc('2026-07-01', '10:00')!.toISOString()).toBe('2026-07-01T08:00:00.000Z'); // été UTC+2
+    expect(parisToUtc('2026-07-01', '10:00')!.toISOString()).toBe('2026-07-01T08:00:00.000Z'); // summer UTC+2
     expect(parisToUtc('2026-01-15', '10:00')!.toISOString()).toBe('2026-01-15T09:00:00.000Z'); // hiver UTC+1
     expect(utcToParisInputs(new Date('2026-07-01T08:00:00Z'))).toEqual({ date: '2026-07-01', time: '10:00' });
   });
@@ -67,7 +67,7 @@ describe('sorties', () => {
     const { db, sqlite, o1 } = await setup();
     const r = createInvitation(db, 'u1', o1, 'Julien');
     if (!r.ok) throw new Error();
-    expect(r.token.length).toBeGreaterThanOrEqual(43); // 256 bits en base64url
+    expect(r.token.length).toBeGreaterThanOrEqual(43); // 256 bits in base64url
     const rows = db.select().from(invitation).all();
     expect(rows[0].tokenHash).toBe(hashToken(r.token));
     expect(JSON.stringify(sqlite.prepare('select * from invitation').all())).not.toContain(r.token);
@@ -88,12 +88,12 @@ describe('sorties', () => {
     expect(respond(db, j.token, { status: 'oui' })).toMatchObject({ ok: false, error: 'invalid' });
     expect(respond(db, j.token, { name: 'Jul' }).ok).toBe(true);
     expect(respond(db, j.token, { status: 'maybe' }).ok).toBe(true);
-    // Révocation
+    // Revocation
     expect(revokeInvitation(db, 'u2', o1, m.id).ok).toBe(false);
     expect(revokeInvitation(db, 'u1', o1, m.id).ok).toBe(true);
     expect(getInvitationByToken(db, m.token)).toBeUndefined();
     expect(respond(db, m.token, { status: 'yes' })).toEqual({ ok: false, error: 'not_found' });
-    // Pas de régénération : le lien est réaffiché tel quel (#1456) ; révoqué ⇒ plus de lien
+    // No regeneration: the link is shown again as is (#1456); revoked ⇒ no link
     expect(getInvitationLink(db, 'u1', o1, j.id)).toEqual({ ok: true, token: j.token });
     expect(getInvitationLink(db, 'u1', o1, j.id)).toEqual({ ok: true, token: j.token });
     expect(getInvitationLink(db, 'u2', o1, j.id)).toEqual({ ok: false, error: 'not_found' });
@@ -122,7 +122,7 @@ describe('sorties', () => {
     const b = createInvitation(db, 'u1', o1, 'B');
     if (!a.ok || !b.ok) throw new Error();
     expect(respond(db, a.token, { status: 'yes' }).ok).toBe(true);
-    expect(respond(db, a.token, { status: 'yes' }).ok).toBe(true); // déjà dedans
+    expect(respond(db, a.token, { status: 'yes' }).ok).toBe(true); // already in
     expect(respond(db, b.token, { status: 'yes' })).toEqual({ ok: false, error: 'full' });
     expect(respond(db, b.token, { status: 'maybe' }).ok).toBe(true);
   });
@@ -138,7 +138,7 @@ describe('sorties', () => {
     expect(joinOpen(db, o.openLinkToken, '')).toMatchObject({ ok: false, error: 'invalid' });
     setOpenLink(db, 'u1', o1, false);
     expect(joinOpen(db, o.openLinkToken, 'Eve')).toEqual({ ok: false, error: 'disabled' });
-    // Le jeton du lien ouvert n'ouvre jamais la page organisateur
+    // The open link's token never opens the organiser page
     expect(getOwnedOuting(db, 'u1', o.openLinkToken)).toBeUndefined();
   });
 
@@ -166,7 +166,7 @@ describe('dupliquer une sortie (#1360)', () => {
     expect([b.title, b.description, b.level, b.ebike, b.maxParticipants, b.trackId]).toEqual([a.title, a.description, a.level, a.ebike, a.maxParticipants, a.trackId]);
     expect(utcToParisInputs(b.startsAt)).toEqual({ date: '2099-05-17', time: '08:30' });
     expect(listInvitations(db, b.id)).toHaveLength(0);
-    expect(b.trackSnapshot.name).toBe('Renommée'); // défaut : version actuelle de la trace
+    expect(b.trackSnapshot.name).toBe('Renommée'); // default: current version of the track
     expect(a.trackSnapshot.name).toBe('Boucle');
     updateOuting(db, 'u1', r.slug, { title: 'Autre' });
     expect(getOwnedOuting(db, 'u1', o1)!.title).toBe('Dimanche');

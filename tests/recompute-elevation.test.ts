@@ -6,7 +6,7 @@ import { snapshotOf } from '@/lib/outings/snapshot';
 import { geometryStats } from '@/lib/geo';
 import { recomputeElevation } from '@/lib/tracks/recompute-elevation';
 
-// IGN simulé : altitude = 100 + 10 × (lon - 6) × 1000, soit +10 m par point espacé de 0,001°.
+// Simulated IGN: elevation = 100 + 10 × (lon - 6) × 1000, i.e. +10 m per point spaced 0.001° apart.
 const fakeFetch = async (url: string) => {
   const lons = new URL(url).searchParams.get('lon')!.split('|').map(Number);
   return { ok: true, status: 200, json: async () => ({ elevations: lons.map((l) => 100 + Math.round((l - 6) * 10000)) }) };
@@ -53,7 +53,7 @@ describe('recomputeElevation (#1519)', () => {
     expect(r.ride.changed).toBe(1);
     const o2 = db.select().from(outing).where(eq(outing.id, o.id)).get()!;
     expect(o2.trackSnapshot.elevationGainM).toBe(30);
-    expect(o2.trackSnapshot.slug).toBe(snap.slug); // le reste du snapshot est intact
+    expect(o2.trackSnapshot.slug).toBe(snap.slug); // the rest of the snapshot is untouched
     expect(db.select().from(outingRide).where(eq(outingRide.id, ride.id)).get()!.gainM).toBe(30);
     const again = await recomputeElevation(db, { fetchFn: fakeFetch, intervalMs: 0 });
     expect(again.snapshot.changed + again.ride.changed + again.track.changed).toBe(0);

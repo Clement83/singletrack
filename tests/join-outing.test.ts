@@ -18,7 +18,7 @@ async function setup() {
   const mk = async (owner: string, extra: object = {}) => {
     const r = await createOuting(db, owner, { trackSlug: t.slug, title: `Sortie ${++n}`, date: '2099-05-10', time: '08:30', ...extra });
     if (!('slug' in r)) throw new Error('création');
-    // Ces tests couvrent des sorties « publiques » encore pourvues d'un propriétaire (antérieures à #1455) : on le leur rend.
+    // These tests cover "public" outings that still have an owner (before #1455): it is given back to them.
     db.update(outing).set({ ownerId: owner }).where(eq(outing.slug, r.slug)).run();
     return db.select().from(outing).where(eq(outing.slug, r.slug)).get()!;
   };
@@ -76,7 +76,7 @@ describe('rejoindre une sortie visible (#1444)', () => {
     expect(reopenJoinedOuting(db, 'b', o.id)).toEqual({ ok: true, token: r1.token });
     expect(getInvitationByToken(db, r1.token)).toBeDefined();
     expect(reopenJoinedOuting(db, 'c', o.id)).toEqual({ ok: false, error: 'not_found' });
-    // Lien créé avant le chiffrement : non réaffichable, jamais régénéré
+    // Link created before encryption: cannot be shown again, never regenerated
     db.update(invitation).set({ tokenEnc: null }).where(eq(invitation.userId, 'b')).run();
     expect(reopenJoinedOuting(db, 'b', o.id)).toEqual({ ok: false, error: 'linkUnavailable' });
     expect(getInvitationByToken(db, r1.token)).toBeDefined();

@@ -71,9 +71,9 @@ describe('handle fédéré (#1474)', () => {
       expect(changeHandle(db, 'u1', 'BOB')).toEqual({ ok: false, error: 'taken' });
       expect(changeHandle(db, 'u1', 'alice')).toEqual({ ok: false, error: 'same' });
       expect(changeHandle(db, 'u2', 'bob_v2')).toMatchObject({ ok: true });
-      // « bob » est retiré mais appartient toujours à u2 : u1 ne peut pas le prendre.
+      // "bob" was dropped but still belongs to u2: u1 cannot take it.
       expect(changeHandle(db, 'u1', 'bob')).toEqual({ ok: false, error: 'taken' });
-      // Et un nouveau compte « Bob » n’hérite pas de « bob ».
+      // And a new "Bob" account does not inherit "bob".
       expect(generateHandle(db, 'Bob')).toBe('bob2');
     });
     it('refuse sans handle', () => {

@@ -11,7 +11,7 @@ import { listFriends, requestByEmail, respondToRequest } from '@/lib/friends';
 import { listVisibleOutings, joinVisibleOuting } from '@/lib/outings/open';
 import { getDefaultOutingVisibility, setDefaultOutingVisibility } from '@/lib/user-profile';
 
-// a = organisateur, b = copain accepté, c = inconnu, d = participant avec compte, e = copain non invité d'un participant
+// a = organiser, b = accepted friend, c = stranger, d = participant with an account, e = uninvited friend of a participant
 async function setup() {
   const { db } = openDb(':memory:');
   db.insert(user).values(['a', 'b', 'c', 'd', 'e'].map((id) => ({ id, name: id.toUpperCase(), email: `${id}@x.fr` }))).run();
@@ -42,16 +42,16 @@ describe('outingPermissions (#1455)', () => {
     const stranger = outingPermissions(db, { userId: 'c' }, o);
     expect(stranger).toMatchObject({ canView: false, canJoin: false, canInvite: false });
     expect(outingPermissions(db, {}, o).canView).toBe(false);
-    // Invité par lien (sans compte) : voit, ne modifie pas, ne rejoint pas « avec compte ».
+    // Guest through a link (no account): sees, does not edit, does not join "with an account".
     const inv = createInvitation(db, 'a', o.slug, 'Léo');
     if (!inv.ok) throw new Error('inv');
     const guestInv = db.select().from(invitation).where(eq(invitation.id, inv.id)).get()!;
     const guest = outingPermissions(db, { invitation: guestInv }, o);
     expect(guest).toMatchObject({ canView: true, canEdit: false, canInvite: false, canJoin: false, canModerateComment: false });
-    expect(guest.canRevoke(guestInv)).toBe(false); // créée par l'organisateur, pas par lui (#1457)
-    expect(guest.canRevoke({ createdByUserId: null, createdByInvitationId: guestInv.id })).toBe(true); // un lien créé par lui
+    expect(guest.canRevoke(guestInv)).toBe(false); // created by the organiser, not by them (#1457)
+    expect(guest.canRevoke({ createdByUserId: null, createdByInvitationId: guestInv.id })).toBe(true); // a link they created
     expect(owner.canRevoke({ createdByUserId: null, createdByInvitationId: null })).toBe(true);
-    // Participant avec compte : voit même sans être copain.
+    // Participant with an account: sees even without being a friend.
     expect(joinVisibleOuting(db, 'b', o.id)).toMatchObject({ ok: true });
     db.insert(invitation).values({ outingId: o.id, tokenHash: 'h', name: 'D', userId: 'd', status: 'yes' }).run();
     const participant = outingPermissions(db, { userId: 'd' }, o);
@@ -76,10 +76,10 @@ describe('outingPermissions (#1455)', () => {
     ]).run();
     expect(outingPermissions(db, { userId: 'd' }, o)).toMatchObject({ canInvite: true, canInviteFriends: true, canShareGroupLink: true, canEdit: false });
     expect(outingPermissions(db, { userId: 'e' }, o)).toMatchObject({ canInvite: false });
-    // Un invité par lien sans compte invite, mais pas « ses copains » (il n'en a pas).
+    // A link guest without an account can invite, but not "their friends" (they have none).
     const link = db.select().from(invitation).where(eq(invitation.tokenHash, 'h1')).get()!;
     expect(outingPermissions(db, { invitation: { ...link, userId: null } }, o)).toMatchObject({ canInvite: true, canInviteFriends: false });
-    // Option désactivée (défaut) : personne d'autre que le propriétaire.
+    // Option off (default): nobody but the owner.
     const o2 = row(await mk('a', { visibility: 'invite', title: 'Sans option' }));
     expect(o2.participantsCanInvite).toBe(false);
   });
@@ -96,9 +96,9 @@ describe('outingPermissions (#1455)', () => {
       });
     }
     expect(outingPermissions(db, { userId: 'c' }, o).canJoin).toBe(true);
-    expect(outingPermissions(db, {}, o)).toMatchObject({ canView: false, canInvite: false }); // anonyme sans lien
+    expect(outingPermissions(db, {}, o)).toMatchObject({ canView: false, canInvite: false }); // anonymous without a link
     expect(getOwnedOuting(db, 'a', slug)).toBeUndefined();
-    expect(getManagedOuting(db, 'a', slug)?.slug).toBe(slug); // son créateur garde sa page
+    expect(getManagedOuting(db, 'a', slug)?.slug).toBe(slug); // its creator keeps their page
     expect(getManagedOuting(db, 'c', slug)).toBeUndefined();
   });
 
@@ -110,11 +110,11 @@ describe('outingPermissions (#1455)', () => {
     expect(refreshSnapshot(db, 'a', slug)).toEqual({ ok: false, error: 'outingFrozen' });
     expect(setOpenLink(db, 'a', slug, false)).toEqual({ ok: false, error: 'outingFrozen' });
     expect(updateOuting(db, 'c', slug, { title: 'X' })).toEqual({ ok: false, error: 'not_found' });
-    // Le créateur peut inviter et révoquer ses propres liens ; un tiers non.
+    // The creator can invite and revoke their own links; a third party cannot.
     const inv = createInvitation(db, 'a', slug, 'Léo');
     expect(inv.ok).toBe(true);
     expect(createInvitation(db, 'c', slug, 'Zoé')).toEqual({ ok: false, error: 'not_found' });
-    // Révocation limitée aux liens qu'on a créés soi-même (#1457) : un lien créé par un autre compte reste intouchable.
+    // Revocation limited to the links one created (#1457): a link created by another account cannot be touched.
     db.insert(invitation).values({ outingId: row(slug).id, tokenHash: 'z1', name: 'Zoé', createdByUserId: 'c' }).run();
     const other = db.select().from(invitation).where(eq(invitation.tokenHash, 'z1')).get()!;
     expect(revokeInvitation(db, 'a', slug, other.id)).toEqual({ ok: false, error: 'not_found' });
@@ -128,7 +128,7 @@ describe('outingPermissions (#1455)', () => {
     expect(row(slug).ownerId).toBe('a');
     expect(makePublic(db, 'a', slug)).toEqual({ ok: true });
     expect(row(slug)).toMatchObject({ visibility: 'public', ownerId: null, createdBy: 'a', openLinkEnabled: true, participantsCanInvite: true });
-    expect(makePublic(db, 'a', slug)).toEqual({ ok: false, error: 'not_found' }); // plus de propriétaire
+    expect(makePublic(db, 'a', slug)).toEqual({ ok: false, error: 'not_found' }); // no owner any more
     expect(updateOuting(db, 'a', slug, { visibility: 'friends' })).toEqual({ ok: false, error: 'outingFrozen' });
   });
 

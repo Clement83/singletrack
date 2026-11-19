@@ -29,8 +29,8 @@ describe('document de l’éditeur', () => {
     const line = [[...A, 100], [6.145, 43.221, 120], [...B, 130]] as [number, number, number][];
     d = resolveSegment(d, 0, A, B, line);
     expect(pendingSegments(d)).toEqual([1]);
-    expect(docGeometry(d)!.coordinates.slice(0, 3)).toEqual(line); // jonction non dupliquée
-    // le point B a bougé entre-temps : le tracé reçu n’est plus valable
+    expect(docGeometry(d)!.coordinates.slice(0, 3)).toEqual(line); // junction not duplicated
+    // point B moved in the meantime: the received line is no longer valid
     const moved = moveWaypoint(d, 1, [6.16, 43.2]);
     expect(resolveSegment(moved, 0, A, B, line)).toBe(moved);
   });

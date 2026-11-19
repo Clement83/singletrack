@@ -60,14 +60,14 @@ describe('lib/geo GPX de référence', () => {
 describe('lib/geo altitude', () => {
   it('gainLoss : bruit sous le seuil ignoré, vraie pente comptée', () => {
     expect(gainLoss([100, 100.4, 100, 100.4, 100]).gainM).toBe(0);
-    // réglages GPS bruité (lissage 5 + seuil 3 m) toujours disponibles
+    // noisy GPS settings (smoothing 5 + 3 m threshold) still available
     expect(gainLoss([100, 101, 100, 101, 100, 101], { window: 5, thresholdM: 3 }).gainM).toBe(0);
     const r = gainLoss([0, 10, 20, 30, 40, 50, 40, 30, 20, 10, 0]);
     expect(r.gainM).toBeGreaterThan(20);
     expect(r.lossM).toBeGreaterThan(20);
   });
   it('gainLoss : petites bosses d’un profil IGN comptées (pas de lissage, seuil 1 m)', () => {
-    const eles = [100, 102, 100, 102, 100, 102, 100, 102, 100]; // 4 bosses de 2 m
+    const eles = [100, 102, 100, 102, 100, 102, 100, 102, 100]; // 4 bumps of 2 m
     expect(gainLoss(eles).gainM).toBe(8);
     expect(gainLoss(eles, { window: 5, thresholdM: 3 }).gainM).toBeLessThan(4);
   });

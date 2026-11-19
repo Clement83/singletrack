@@ -4,7 +4,7 @@ import path from 'node:path';
 import { ESLint } from 'eslint';
 import { checkContrasts, contrastRatio, generateCss, resolveThemed, type Tokens } from '../scripts/tokens/lib';
 
-// Design system (#1363) : tokens source unique, contrastes WCAG, règle anti-couleur en dur.
+// Design system (#1363): single-source tokens, WCAG contrasts, no-hard-coded-colour rule.
 const root = path.resolve(__dirname, '..');
 const tokens = JSON.parse(readFileSync(path.join(root, 'design/tokens.json'), 'utf8')) as Tokens;
 
@@ -41,7 +41,7 @@ describe('tokens : génération', () => {
 
   it('changer primary dans tokens.json change la variable de tous les thèmes qui en héritent', () => {
     const edited = structuredClone(tokens);
-    // Thème d'essai qui hérite du clair (le mécanisme `extends` reste disponible, #1396 a retiré « garrigue »).
+    // Trial theme inheriting from light (the `extends` mechanism is still available, #1396 removed "garrigue").
     edited.themes.push({ id: 'essai', name: 'Essai', scheme: 'light', extends: 'light', usage: 'test' });
     const primary = edited.color.find((c) => c.name === 'primary')!;
     primary.value.light = '#123456';
@@ -52,7 +52,7 @@ describe('tokens : génération', () => {
   });
 
   describe('chartes (#1624)', () => {
-    // Charte d'essai : copie de la charte de base (Singletrack, id `classique`), rayons à 0, polices et verre propres, clair et sombre.
+    // Trial charter: copy of the base charter (Singletrack, id `classique`), radii at 0, own fonts and glass, light and dark.
     const edited = structuredClone(tokens);
     edited.chartes.push({ id: 'essai', name: 'Essai', usage: 'test' });
     for (const r of edited.radius) r.chartes = { essai: '0px' };
@@ -76,7 +76,7 @@ describe('tokens : génération', () => {
       for (const v of ['--radius-xl: 0px;', '--radius-2xl: 0px;', '--font-display: Georgia, serif;', '--glass-blur: blur(16px);', '--elevation-md: none;', '--text-body: 17px;']) {
         expect(css).toContain(`  ${v}`);
       }
-      // Seulement les différences : la couleur de fond n'est pas redéclarée.
+      // Only the differences: the background colour is not declared again.
       const block = css.split("[data-charte='essai'][data-theme='light']")[1].split('}')[0];
       expect(block).not.toContain('--background');
     });
@@ -100,7 +100,7 @@ describe('tokens : génération', () => {
     });
 
     it('charte par défaut Singletrack (#1645) : verre flouté + saturé sur les couches flottantes, repli opaque garanti par `glass`', () => {
-      expect(tokens.chartes[0].id).toBe('classique'); // id conservé pour les comptes existants
+      expect(tokens.chartes[0].id).toBe('classique'); // id kept for existing accounts
       expect(css).toContain('--glass-opacity: 72%;');
       expect(css).toContain('--glass-blur: saturate(180%) blur(20px);');
       const globals = readFileSync(path.join(root, 'src/app/globals.css'), 'utf8');
@@ -136,8 +136,8 @@ describe('tokens : génération', () => {
   });
 });
 
-// Le premier lintText charge la config ESLint et le parseur TypeScript (plusieurs secondes sur une machine
-// chargée) : préchauffage dans un beforeAll au délai long, puis marge raisonnable par test (#1404).
+// The first lintText loads the ESLint config and the TypeScript parser (several seconds on a loaded
+// machine): warm-up in a beforeAll with a long timeout, then a reasonable margin per test (#1404).
 describe('règle anti-couleur en dur', { timeout: 20_000 }, () => {
   const eslint = new ESLint({ cwd: root });
   const lint = async (code: string) =>

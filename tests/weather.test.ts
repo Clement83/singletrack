@@ -6,12 +6,12 @@ import {
 } from '../src/lib/weather';
 import { overallTone } from '../src/lib/conditions';
 
-// Vraie réponse Open-Meteo (Pierrefeu-du-Var, récupérée le 2026-11-12) : 2 jours passés + 16 jours de prévision.
+// Real Open-Meteo answer (Pierrefeu-du-Var, fetched on 2026-11-12): 2 past days + 16 forecast days.
 const raw = JSON.parse(readFileSync(path.join(__dirname, 'fixtures/weather/pierrefeu.json'), 'utf8'));
 const f = parseForecast(raw);
 const H = 3_600_000;
 const DAY = 24 * H;
-/** 14 novembre 2026, 9 h à Paris (UTC+1). */
+/** 14 November 2026, 9:00 in Paris (UTC+1). */
 const J2_9H = Date.UTC(2026, 10, 14, 8);
 const NOW = Date.UTC(2026, 10, 12, 14);
 

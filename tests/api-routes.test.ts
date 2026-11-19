@@ -9,7 +9,7 @@ import { createEditedTrack, updateEditedTrack, upsertTrack, type EditorInput } f
 import { createOuting, createInvitation } from '@/lib/outings';
 import type { Position } from '@/lib/geo';
 
-// Route handlers appelés directement, base SQLite en mémoire (#1482).
+// Route handlers called directly, in-memory SQLite database (#1482).
 const st = vi.hoisted(() => ({ h: undefined as unknown, db: undefined as unknown, uid: null as string | null }));
 vi.mock('@/db', async (orig) => ({ ...(await orig<typeof import('@/db')>()), getDb: () => st.h }));
 vi.mock('@/lib/current-user', () => {
@@ -133,7 +133,7 @@ describe('GET /api/tracks/[slug] (#1581)', () => {
     expect(b.bbox).toHaveLength(4);
     expect(b.start).toHaveLength(2);
     expect(b.end).toHaveLength(2);
-    expect(b.rights).toEqual({ edit: false, copy: true, delete: false }); // source OSM : pas modifiable en place
+    expect(b.rights).toEqual({ edit: false, copy: true, delete: false }); // OSM source: cannot be edited in place
     const d = await (await trackRoute.GET(get(), ctx(draftSlug))).json();
     expect(d.rights).toEqual({ edit: true, copy: false, delete: true });
     expect(Array.isArray(b.outings)).toBe(true);
@@ -317,10 +317,10 @@ describe('/api/health et /api/locale', () => {
   });
 });
 
-// Matrice #1589 : anonyme / auteur / copain / autre × public / friends / private / draft ⇒ 200 ou 404, jamais 403.
+// Matrix #1589: anonymous / author / friend / other × public / friends / private / draft ⇒ 200 or 404, never 403.
 describe('visibilité des traces : toutes les lectures (#1589)', () => {
   const VIS = ['public', 'friends', 'private'] as const;
-  // viewer → visibilité → lisible ? (brouillon : auteur seul)
+  // viewer → visibility → readable? (draft: author only)
   const WHO: Record<string, [string | null, Record<string, boolean>]> = {
     anonyme: [null, { public: true, friends: false, private: false, draft: false }],
     auteur: ['a', { public: true, friends: true, private: true, draft: true }],
@@ -358,7 +358,7 @@ describe('visibilité des traces : toutes les lectures (#1589)', () => {
       const list = await (await tracksList.GET(get('/api/tracks?starts=1'))).json();
       const names = list.tracks.map((t: { name: string }) => t.name);
       for (const v of VIS) expect(names.includes(`V-${v}`), `starts ${v}`).toBe(expected[v]);
-      // Un brouillon ne sort jamais de l'explorateur (seulement « Mes traces »).
+      // A draft never leaves the explorer (only "My tracks").
       expect(list.tracks.some((t: { status: string }) => t.status === 'draft')).toBe(false);
     });
   }
@@ -420,7 +420,7 @@ describe('visibilité des traces : toutes les lectures (#1589)', () => {
     const call = (slug: string, body: unknown) => trackRoute.PATCH(new Request('http://x/api/tracks/x', { method: 'PATCH', body: JSON.stringify(body) }), { params: Promise.resolve({ slug }) });
     st.uid = null;
     expect((await call(slugs.public, { visibility: 'private' })).status).toBe(401);
-    st.uid = 'b'; // autre : voit la publique mais n'est pas l'auteur ; ne voit pas la privée
+    st.uid = 'b'; // other: sees the public one but is not the author; does not see the private one
     expect((await call(slugs.public, { visibility: 'private' })).status).toBe(403);
     expect((await call(slugs.private, { visibility: 'public' })).status).toBe(404);
     expect(db.select().from(track).where(eq(track.slug, slugs.public)).get()?.visibility).toBe('public');
@@ -429,10 +429,10 @@ describe('visibilité des traces : toutes les lectures (#1589)', () => {
     expect(ok.status).toBe(200);
     expect(await ok.json()).toEqual({ visibility: 'friends' });
     expect(db.select().from(track).where(eq(track.slug, slugs.public)).get()?.visibility).toBe('friends');
-    // Trace d'une source synchronisée : aucun choix.
+    // Track from a synced source: no choice.
     const osm = await upsertTrack(db, { source: 'osm', externalId: 'r/9', name: 'O', geometry: { type: 'LineString', coordinates: coords }, raw: null, createdBy: 'a' }, { enrich: false });
     expect((await call(osm.slug, { visibility: 'private' })).status).toBe(403);
-    // Fiche : la visibilité n'est exposée qu'à l'auteur.
+    // Sheet: the visibility is only exposed to the author.
     st.uid = 'a';
     const mine = await (await trackRoute.GET(get(`/api/tracks/${slugs.friends}`), { params: Promise.resolve({ slug: slugs.friends }) })).json();
     expect(mine.visibility).toBe('friends');
@@ -455,17 +455,17 @@ describe('visibilité des traces : toutes les lectures (#1589)', () => {
       expect(body, `carte ${uid}`).toContain('PubPriv');
       expect(body).not.toContain(trackSlug);
       expect(body).not.toContain(row.trackId!);
-      // La trace elle-même : 404 (fiche, géométrie, GPX).
+      // The track itself: 404 (sheet, geometry, GPX).
       expect((await trackRoute.GET(get(`/api/tracks/${trackSlug}`), ctx(trackSlug))).status, `fiche ${uid}`).toBe(404);
       expect((await trackGpx.GET(get('/'), ctx(trackSlug))).status, `gpx ${uid}`).toBe(404);
     }
-    // Fiche de découverte d'un autre compte : parcours figé, sans slug de trace.
+    // Discovery page of another account: frozen route, without the track slug.
     const { getOutingDiscovery } = await import('@/lib/outings/map');
     const d = getOutingDiscovery(db, 'b', row.id);
     expect(d.kind).toBe('show');
     expect(JSON.stringify(d)).not.toContain(trackSlug);
     expect((d as { outing: { distanceM: number } }).outing.distanceM).toBeGreaterThan(0);
-    // Avertissement du formulaire : sortie plus large que la trace.
+    // Form warning: outing wider than the track.
     const { outingWiderThanTrack } = await import('@/lib/outings/track-exposure');
     expect(outingWiderThanTrack('public', 'private')).toBe(true);
     expect(outingWiderThanTrack('friends', 'friends')).toBe(false);
@@ -484,7 +484,7 @@ describe('visibilité des traces : toutes les lectures (#1589)', () => {
     expect((await outingsMap.GET(get(q))).headers.get('cache-control')).toContain('public');
     st.uid = 'a';
     const mine = await (await outingsMap.GET(get(q))).json();
-    expect(mine.outings.length).toBe(4); // 3 ci-dessus + celle du beforeEach
+    expect(mine.outings.length).toBe(4); // 3 above + the one from beforeEach
     expect((await outingsMap.GET(get(q))).headers.get('cache-control')).toContain('private');
     expect((await outingsMap.GET(get('/api/outings/map?bbox=x'))).status).toBe(400);
   });
@@ -508,7 +508,7 @@ describe('visibilité des traces : toutes les lectures (#1589)', () => {
     expect((await one(idOf('Inv2').id)).status).toBe(404); // anonyme : non publique
     expect((await one('inconnue')).status).toBe(404);
     st.uid = 'b';
-    expect((await one(idOf('Inv2').id)).status).toBe(404); // connecté sans droit
+    expect((await one(idOf('Inv2').id)).status).toBe(404); // signed in without rights
     expect((await one(pub.id)).status).toBe(200);
     st.uid = 'a';
     expect((await one(idOf('Inv2').id)).status).toBe(200);
@@ -523,7 +523,7 @@ describe('/api/profile : charte du compte (#1625)', () => {
     const bad = await profileRoute.PUT(json('PUT', { charte: 'nope' }));
     expect(bad.status).toBe(422);
     expect((await bad.json()).error).toBe('charteInvalid');
-    // Chartes retirées (#1646) : inconnues, donc refusées ; un compte qui en avait une retombe sur la charte par défaut (getCharte).
+    // Removed charters (#1646): unknown, so refused; an account that had one falls back to the default charter (getCharte).
     expect((await profileRoute.PUT(json('PUT', { charte: 'nuit' }))).status).toBe(422);
     const ok = await profileRoute.PUT(json('PUT', { charte: 'classique' }));
     expect(ok.status).toBe(200);

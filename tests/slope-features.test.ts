@@ -37,7 +37,7 @@ describe('slopeFeaturesForRuns', () => {
     ]).features.map((x) => x.properties.cls);
     expect(f[0]).toMatch(/^up-/);
     expect(f[f.length - 1]).toBe('none');
-    expect(f.filter((x) => x === 'none')).toHaveLength(1); // la ligne droite n'ajoute rien
+    expect(f.filter((x) => x === 'none')).toHaveLength(1); // the straight line adds nothing
   });
 });
 

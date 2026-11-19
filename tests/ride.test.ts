@@ -6,11 +6,11 @@ import { upsertTrack } from '@/lib/tracks';
 import { analyzeRide, canUploadRide, createOuting, deleteRide, listRides, saveRide } from '@/lib/outings';
 
 const gpx = (pts: string) => `<?xml version="1.0"?><gpx version="1.1" creator="t"><trk><trkseg>${pts}</trkseg></trk></gpx>`;
-// 21 points tous les 100 m vers l'est (~0,00123° de longitude à 43,2°), 20 s d'écart (18 km/h), montée 5 m / point, puis une pause GPS.
+// 21 points every 100 m eastwards (~0.00123° of longitude at 43.2°), 20 s apart (18 km/h), climbing 5 m / point, then a GPS pause.
 const pt = (i: number, t: string, ele = 100 + i * 5) => `<trkpt lat="43.2" lon="${6.1 + i * 0.00123}"><ele>${ele}</ele><time>${t}</time></trkpt>`;
 const ride = gpx(
   Array.from({ length: 21 }, (_, i) => pt(i, new Date(Date.UTC(2026, 10, 14, 8, 0, i * 20)).toISOString())).join('') +
-    // 10 min plus tard : pause du GPS, 2 points quasi immobiles
+    // 10 min later: GPS pause, 2 almost still points
     pt(21, '2026-11-14T08:17:00Z', 205) + pt(22, '2026-11-14T08:17:30Z', 205),
 );
 
@@ -31,7 +31,7 @@ async function setup() {
   return { db, o, inv };
 }
 const after = new Date('2026-11-14T12:00:00Z');
-/** Faux IGN : altitude = 500 + 10 × rang du point dans la requête (recoter prouve que l'altitude GPS est remplacée). */
+/** Fake IGN: elevation = 500 + 10 × rank of the point in the request (re-elevating proves the GPS elevation is replaced). */
 const ign = () => fakeIgn(true);
 const fakeIgn = (fail = false) => ({
   fetchFn: vi.fn(async (url: string) => {
@@ -45,11 +45,11 @@ const fakeIgn = (fail = false) => ({
 
 describe('analyzeRide (#1412)', () => {
   it('distance, D+, temps de déplacement hors pauses, durée totale', async () => {
-    const s = await analyzeRide(ride, fakeIgn(true)); // IGN en panne : altitude GPS en repli
+    const s = await analyzeRide(ride, fakeIgn(true)); // IGN down: GPS elevation as a fallback
     expect(s.distanceM).toBeGreaterThan(2000);
     expect(s.distanceM).toBeLessThan(2400);
     expect(s.gainM).toBeGreaterThan(80);
-    expect(s.movingSec).toBe(430); // 20 × 20 s + 30 s ; la pause GPS de 10 min ne compte pas
+    expect(s.movingSec).toBe(430); // 20 × 20 s + 30 s; the 10-min GPS pause does not count
     expect(s.elapsedSec).toBe(17 * 60 + 30);
   });
   it('D+ calculé sur les altitudes IGN, pas sur celles du GPS (#1515)', async () => {
@@ -62,7 +62,7 @@ describe('analyzeRide (#1412)', () => {
     const f = gpx('<trkpt lat="43.2" lon="6.1"/><trkpt lat="43.2" lon="6.11"/>');
     const s = await analyzeRide(f, fakeIgn());
     expect(s.movingSec).toBeNull();
-    expect(s.gainM).not.toBeNull(); // altitude IGN présente (D+ lissé, 2 points)
+    expect(s.gainM).not.toBeNull(); // IGN elevation present (smoothed gain, 2 points)
     expect((await analyzeRide(f, fakeIgn(true))).gainM).toBeNull();
     expect(s.distanceM).toBeGreaterThan(700);
   });

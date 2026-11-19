@@ -5,7 +5,7 @@ import { toGpx, parseGpx } from '@/lib/geo';
 
 const home = { lat: 43.2269, lon: 6.1469 };
 
-/** Boucle d'environ `km` km autour de (lat, lon), avec un relief. */
+/** Loop of about `km` km around (lat, lon), with some relief. */
 function loopTrack(id: string, name: string, lat: number, lon: number, km: number, over: Partial<NormalizedTrack> = {}): NormalizedTrack {
   const n = 200;
   const r = km / (2 * Math.PI) / 111;
@@ -83,7 +83,7 @@ describe('performance avec toutes les traces du Var', () => {
     for (let i = 0; i < 500; i++) {
       const t = loopTrack(`p${i}`, `Trace ${i}`, 43.0 + (i % 25) * 0.03, 5.8 + Math.floor(i / 25) * 0.05, 8 + (i % 40), {});
       const c = (t.geometry as { coordinates: [number, number, number][] }).coordinates;
-      // 1 500 points : on densifie la boucle de 200 points.
+      // 1,500 points: the 200-point loop is densified.
       const dense: [number, number, number][] = Array.from({ length: 1500 }, (_, k) => c[Math.floor((k / 1500) * (c.length - 1))]);
       await upsertTrack(db, { ...t, geometry: { type: 'LineString', coordinates: dense } }, { enrich: false });
     }

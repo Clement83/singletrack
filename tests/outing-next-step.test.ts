@@ -25,12 +25,12 @@ describe('nextStep invité', () => {
     expect(String(s.params.day)).toContain('dimanche');
   });
   it('je viens, le jour même ⇒ « Départ dans X h » (fuseau Paris)', () => {
-    // 22 nov 00:30 UTC = 01:30 Paris, même jour que le départ à 08:30 Paris : 7 h
+    // 22 Nov 00:30 UTC = 01:30 Paris, same day as the 08:30 Paris start: 7 h
     const s = nextStep({ ...base, answer: 'yes', now: new Date('2026-11-22T00:30:00Z') });
     expect(s).toMatchObject({ contextKey: 'meetingSoon', params: { hours: 7 } });
-    // 21 nov 23:30 UTC = 00:30 Paris le 22 : encore le jour même
+    // 21 Nov 23:30 UTC = 00:30 Paris on the 22nd: still the same day
     expect(nextStep({ ...base, answer: 'yes', now: new Date('2026-11-21T23:30:00Z') }).contextKey).toBe('meetingSoon');
-    // 21 nov 22:30 UTC = 23:30 Paris le 21 : veille
+    // 21 Nov 22:30 UTC = 23:30 Paris on the 21st: the day before
     expect(nextStep({ ...base, answer: 'yes', now: new Date('2026-11-21T22:30:00Z') }).contextKey).toBe('meetingWhen');
   });
 });

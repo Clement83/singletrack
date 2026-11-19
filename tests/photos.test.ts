@@ -10,7 +10,7 @@ import { upsertTrack } from '@/lib/tracks';
 import { createOuting, deletePhoto, listPhotos, PHOTO_MAX_PER_OUTING, readPhoto, savePhoto, _resetRateLimit } from '@/lib/outings';
 import { readExifGps } from '@/lib/media/exif';
 
-/** JPEG minimal avec un APP1 Exif contenant un GPS (43°13'30" N, 6°8'45" E) + un faux numéro de série. */
+/** Minimal JPEG with an Exif APP1 holding a GPS position (43°13'30" N, 6°8'45" E) + a fake serial number. */
 function jpegWithGps(base: Buffer, ref = ['N', 'E']): Buffer {
   const le = true;
   const parts: number[] = [];
@@ -18,9 +18,9 @@ function jpegWithGps(base: Buffer, ref = ['N', 'E']): Buffer {
   const w32 = (v: number) => parts.push(v & 255, (v >> 8) & 255, (v >> 16) & 255, (v >> 24) & 255);
   void le;
   parts.push(0x49, 0x49); w16(42); w32(8);
-  // IFD0 : 1 entrée GPS pointer (0x8825) vers l'offset 26
+  // IFD0: 1 GPS pointer entry (0x8825) to offset 26
   w16(1); w16(0x8825); w16(4); w32(1); w32(26); w32(0);
-  // GPS IFD @26 : 4 entrées
+  // GPS IFD @26: 4 entries
   w16(4);
   const asc = (tag: number, c: string) => { w16(tag); w16(2); w32(2); parts.push(c.charCodeAt(0), 0, 0, 0); };
   const rat = (tag: number, off: number) => { w16(tag); w16(5); w32(3); w32(off); };

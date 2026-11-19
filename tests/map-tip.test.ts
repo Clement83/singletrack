@@ -28,6 +28,6 @@ describe('infobulle des sorties sur la carte (#1538)', () => {
     expect(lines).toHaveLength(5);
     expect(lines[0].title).toBe('S0');
     expect(lines[0].date).toBe(formatOutingDate(new Date(base.startsAt), 'fr'));
-    expect(lines[0].date).toMatch(/9.h.30/); // 08:30 UTC = 09:30 à Paris en décembre (format fr : « 9 h 30 »)
+    expect(lines[0].date).toMatch(/9.h.30/); // 08:30 UTC = 09:30 in Paris in December (French format: « 9 h 30 »)
   });
 });

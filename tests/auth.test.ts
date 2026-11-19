@@ -16,7 +16,7 @@ async function setup(opts: { disableSignUp?: boolean } = {}) {
   const mails: MailMessage[] = [];
   const auth = createAuth(db, { disableSignUp: opts.disableSignUp ?? false, mailer: async (m) => void mails.push(m) });
   await createUser(auth, { email: 'Clem@Example.org', name: 'Clem' });
-  /** Demande un code et le relit dans le mail capturé (l'envoi part en arrière-plan). */
+  /** Requests a code and reads it back from the captured email (sending happens in the background). */
   async function requestCode(email: string) {
     const before = mails.length;
     await auth.api.sendVerificationOTP({ body: { email, type: 'sign-in' } });

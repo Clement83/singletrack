@@ -35,12 +35,12 @@ describe('sorties sur la carte (#1461)', () => {
     await mk('a', { visibility: 'public', title: 'P' });
     await mk('a', { visibility: 'friends', title: 'F' });
     const inv = await mk('a', { visibility: 'invite', title: 'I' });
-    invite(inv, 'c'); // invité lié sans réponse
+    invite(inv, 'c'); // linked guest without an answer
     const titles = (v: string) => listMapOutings(db, v, BBOX).map((o) => o.title).sort();
-    expect(titles('b')).toEqual(['F', 'P']); // copain : pas la sortie sur invitation
-    expect(titles('c')).toEqual(['I', 'P']); // invité non répondu
+    expect(titles('b')).toEqual(['F', 'P']); // friend: not the invitation-only outing
+    expect(titles('c')).toEqual(['I', 'P']); // guest who has not answered
     expect(titles('d')).toEqual(['P']); // inconnu
-    expect(titles('a')).toEqual(['F', 'I', 'P']); // propriétaire
+    expect(titles('a')).toEqual(['F', 'I', 'P']); // owner
   });
 
   it('exclut passées, annulées, masquées, hors emprise ; expose le décompte sans identité', async () => {
@@ -66,7 +66,7 @@ describe('sorties sur la carte (#1461)', () => {
     const p = await mk('a', { visibility: 'invite', title: 'I' });
     expect(getOutingDiscovery(db, 'a', f.id)).toMatchObject({ kind: 'redirect', path: `/s/${f.slug}` });
     expect(getOutingDiscovery(db, 'b', f.id)).toMatchObject({ kind: 'show', canJoin: true });
-    // #1598 : le parcours affiché par OutingView ne contient jamais le slug de la trace d'origine.
+    // #1598: the route shown by OutingView never contains the slug of the original track.
     const shown = getOutingDiscovery(db, 'b', f.id);
     if (shown.kind !== 'show') throw new Error('show');
     expect(shown.outing.track.name).toBeTruthy();

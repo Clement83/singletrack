@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-// #1389 : Tailwind 4 ne met plus `cursor: pointer` sur les boutons ; le socle le rétablit.
+// #1389: Tailwind 4 no longer sets `cursor: pointer` on buttons; the base layer restores it.
 const css = readFileSync('src/app/globals.css', 'utf8');
 
 describe('socle CSS des interactions', () => {

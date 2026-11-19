@@ -6,7 +6,7 @@ import { getTableName, is } from 'drizzle-orm';
 import { openDb } from '@/db';
 import * as schema from '@/db/schema';
 
-// Toutes les migrations sur une base vide, puis le schéma réel correspond à src/db/schema.ts (#1482).
+// Every migration on an empty database, then the real schema matches src/db/schema.ts (#1482).
 const DIR = path.join(process.cwd(), 'src/db/migrations');
 const tables = Object.values(schema).filter((v) => is(v, SQLiteTable)) as SQLiteTable[];
 
@@ -18,7 +18,7 @@ describe('migrations', () => {
     journal.entries.forEach((e, i) => expect(e.idx).toBe(i));
     const whens = journal.entries.map((e) => e.when);
     expect(whens).toEqual([...whens].sort((a, b) => a - b));
-    // Le préfixe numérique est continu.
+    // The numeric prefix is continuous.
     files.forEach((f, i) => expect(Number(f.slice(0, 4))).toBe(i));
   });
 
@@ -44,7 +44,7 @@ describe('migrations', () => {
         expect(real!.type.toLowerCase(), `${cfg.name}.${c.name} type`).toBe(c.getSQLType().toLowerCase());
         if (!c.primary) expect(!!real!.notnull, `${cfg.name}.${c.name} notNull`).toBe(c.notNull);
       }
-      // Pas de colonne orpheline en base : le schéma Drizzle les décrit toutes.
+      // No orphan column in the database: the Drizzle schema describes them all.
       expect([...byName.keys()].sort(), `${cfg.name} colonnes`).toEqual(cfg.columns.map((c) => c.name).sort());
     }
     sqlite.close();

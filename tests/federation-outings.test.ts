@@ -14,8 +14,8 @@ import { upsertTrack } from '@/lib/tracks';
 import { countYes, createOuting, inviteFriends, listInvitableFriends, revokeInvitation, setStatus, updateOuting } from '@/lib/outings';
 
 /**
- * Serveurs en mémoire : l'envoi de l'un appelle directement les gestionnaires de l'autre (le réseau est testé par
- * scripts/federation-two-instances.ts). L'origine publique est celle du serveur « courant » (`as`).
+ * In-memory servers: one server's delivery calls the other's handlers directly (the network is tested by
+ * scripts/federation-two-instances.ts). The public origin is the one of the "current" server (`as`).
  */
 type Server = { db: Db; domain: string; log: { to: string; msg: OutingMsg }[]; mails: { to: string; html: string }[] };
 const servers: Record<string, Server> = {};
@@ -49,14 +49,14 @@ function mk(domain: string, name: string, uid: string): Server {
   ensureHandle(db, uid);
   return (servers[domain] = { db, domain, log: [], mails: [] });
 }
-/** Amitié acceptée entre mon compte local et un compte de l'autre serveur. */
+/** Accepted friendship between my local account and an account on the other server. */
 function befriend(s: Server, uid: string, otherDomain: string, otherHandle: string) {
   const a = upsertRemoteActor(s.db, { actorUrl: actorUrl(otherDomain, otherHandle), handle: otherHandle, displayName: otherHandle, inboxUrl: `${actorUrl(otherDomain, otherHandle)}/inbox` });
   s.db.insert(friendship).values({ requesterId: uid, addresseeId: null, remoteActorId: a.id, pairKey: remotePairKey(uid, a.id), status: 'accepted' }).run();
   return a;
 }
 
-/** Fedify factice : tout envoi « réel » (déclenché par les branchements dans les services) est capturé ici, jamais émis. */
+/** Fake Fedify: every "real" delivery (triggered by the hooks in the services) is captured here, never sent. */
 type Sent = { sender: unknown; to: { id: URL }; activity: Create | Update | Delete | Join | Leave | TentativeAccept | Accept | Reject };
 const sent: Sent[] = [];
 type G = typeof globalThis & { __singletrackFederation?: unknown };
@@ -75,7 +75,7 @@ afterEach(() => { delete (globalThis as G).__singletrackFederation; });
 let a: Server, b: Server, c: Server;
 const dbA = () => a.db;
 async function newOuting(extra: object = {}) {
-  vi.stubEnv('FEDERATION', 'off'); // création sans envoi : les envois sont déclenchés explicitement avec des serveurs en mémoire
+  vi.stubEnv('FEDERATION', 'off'); // creation without delivery: deliveries are triggered explicitly with in-memory servers
   const t = await upsertTrack(a.db, {
     source: 'osm', externalId: 'r1', name: 'Boucle', license: 'ODbL', attribution: '© OSM',
     geometry: { type: 'LineString', coordinates: Array.from({ length: 12 }, (_, i) => [6.1 + i * 0.002, 43.2, 100 + i * 20] as [number, number, number]) }, raw: {},
@@ -129,7 +129,7 @@ describe('sorties entre serveurs (#1476)', () => {
     ]);
     expect(listRemoteOutings(b.db, 'up').map((v) => v.title)).toEqual(['Boucle du dimanche']);
     expect(listRemoteOutings(b.db, 'up')[0]).toMatchObject({ visibility: 'friends', invited: false, answer: 'pending', organizer: { handle: 'alice', domain: 'a.example' } });
-    expect(listRemoteOutings(b.db, 'ub2')).toEqual([]); // compte de B qui n’est pas copain d’Alice
+    expect(listRemoteOutings(b.db, 'ub2')).toEqual([]); // account on B that is not Alice's friend
   });
 
   it('publique : visible de tout compte du serveur distant', async () => {
@@ -141,7 +141,7 @@ describe('sorties entre serveurs (#1476)', () => {
 
   it('sur invitation : seulement le serveur du copain invité ; un copain non invité ne reçoit rien', async () => {
     const o = await newOuting({ visibility: 'invite' });
-    // Aucune invitation : rien ne part.
+    // No invitation: nothing is sent.
     await as(a, () => publishOuting(dbA(), o.id, 'Create', depsFor(a)));
     expect(a.log).toEqual([]);
 
@@ -150,7 +150,7 @@ describe('sorties entre serveurs (#1476)', () => {
     const paulOpt = opts.find((f) => f.name.startsWith('paul'))!;
     expect(paulOpt.userId.startsWith('remote:')).toBe(true);
     vi.stubEnv('FEDERATION', 'off');
-    expect(listInvitableFriends(dbA(), 'ua', o)).toEqual([]); // fédération coupée : pas d’invitation distante
+    expect(listInvitableFriends(dbA(), 'ua', o)).toEqual([]); // federation off: no remote invitation
     vi.stubEnv('FEDERATION', 'on');
 
     const r = await as(a, async () => inviteFriends(dbA(), 'ua', o, [paulOpt.userId, 'remote:inconnu']));
@@ -158,21 +158,21 @@ describe('sorties entre serveurs (#1476)', () => {
     const inv = dbA().select().from(invitation).where(eq(invitation.outingId, o.id)).all();
     expect(inv).toHaveLength(1);
     expect(inv[0]).toMatchObject({ name: 'paul', status: 'pending', origin: 'remote', userId: null, tokenEnc: null });
-    // Doublon ignoré.
+    // Duplicate ignored.
     expect(await as(a, async () => inviteFriends(dbA(), 'ua', o, [paulOpt.userId]))).toEqual({ ok: true, invited: [], skipped: ['paul'] });
 
     await as(a, () => publishToActors(dbA(), o.id, [inv[0].remoteActorId!], depsFor(a)));
     expect(a.log.map((l) => l.to)).toEqual(['https://b.example/ap/users/paul']);
     expect(listRemoteOutings(c.db, 'uz')).toEqual([]);
     expect(c.db.select().from(remoteOuting).all()).toEqual([]);
-    // Chez Paul : invitation en attente + mail (lien vers la fiche distante, jamais /i/).
+    // At Paul's: pending invitation + email (link to the remote outing page, never /i/).
     const v = listRemoteOutings(b.db, 'up')[0];
     expect(v).toMatchObject({ invited: true, answer: 'pending', visibility: 'invite' });
     await vi.waitFor(() => expect(b.mails).toHaveLength(1));
     expect(b.mails[0].to).toBe('up@x.test');
     expect(b.mails[0].html).toContain(`/sorties/distante/${v.id}`);
     expect(b.mails[0].html).not.toContain('/i/');
-    // Une modification n’atteint toujours que l’invité.
+    // A change still only reaches the guest.
     a.log.length = 0;
     await as(a, () => publishOuting(dbA(), o.id, 'Update', depsFor(a)));
     expect(a.log.map((l) => l.to)).toEqual(['https://b.example/ap/users/paul']);
@@ -201,7 +201,7 @@ describe('sorties entre serveurs (#1476)', () => {
     expect(await as(b, () => respondRemote(b.db, 'up', rid, 'yes', depsFor(b)))).toEqual({ ok: true });
     expect(dbA().select().from(invitation).where(eq(invitation.outingId, o.id)).get()).toMatchObject({ status: 'yes' });
     expect(countYes(dbA(), o.id)).toBe(1);
-    // Chez Paul : Accept reçu, puis Update(Event) avec le nombre à jour.
+    // At Paul's: Accept received, then Update(Event) with the up-to-date count.
     expect(listRemoteOutings(b.db, 'up')[0]).toMatchObject({ answer: 'yes', state: 'accepted', yesCount: 1, spotsLeft: 4 });
     await as(b, () => respondRemote(b.db, 'up', rid, 'maybe', depsFor(b)));
     expect(dbA().select().from(invitation).where(eq(invitation.outingId, o.id)).get()?.status).toBe('maybe');
@@ -219,7 +219,7 @@ describe('sorties entre serveurs (#1476)', () => {
     expect(countYes(dbA(), o.id)).toBe(1);
     expect(dbA().select().from(invitation).where(and(eq(invitation.outingId, o.id), eq(invitation.origin, 'remote'))).get()?.status).toBe('pending');
     expect(listRemoteOutings(b.db, 'up')[0]).toMatchObject({ answer: 'yes', state: 'rejected', reason: 'full', spotsLeft: 0 });
-    // « peut-être » reste possible : il ne prend pas de place.
+    // "maybe" is still possible: it takes no seat.
     await as(b, () => respondRemote(b.db, 'up', rid, 'maybe', depsFor(b)));
     expect(listRemoteOutings(b.db, 'up')[0]).toMatchObject({ state: 'accepted', answer: 'maybe' });
   });
@@ -230,7 +230,7 @@ describe('sorties entre serveurs (#1476)', () => {
     expect(await as(a, async () => updateOuting(dbA(), 'ua', o.slug, { title: 'Nouveau titre', maxParticipants: 3 }))).toEqual({ ok: true });
     vi.stubEnv('FEDERATION', 'on');
     await as(a, () => publishOuting(dbA(), o.id, 'Update', depsFor(a)));
-    expect(listRemoteOutings(b.db, 'up')[0]).toMatchObject({ id: rid, title: 'Nouveau titre', maxParticipants: 3 }); // même copie, mise à jour
+    expect(listRemoteOutings(b.db, 'up')[0]).toMatchObject({ id: rid, title: 'Nouveau titre', maxParticipants: 3 }); // same copy, updated
     vi.stubEnv('FEDERATION', 'off');
     await as(a, async () => setStatus(dbA(), 'ua', o.slug, 'cancelled'));
     vi.stubEnv('FEDERATION', 'on');
@@ -274,7 +274,7 @@ describe('sorties entre serveurs (#1476)', () => {
     await as(a, () => onRemoteResponse(dbA(), z.actorUrl, `https://a.example/ap/outings/${pub.id}`, 'yes', 'https://d.example/ap/joins/2', deps));
     expect(dbA().select().from(invitation).where(eq(invitation.remoteActorId, z.id)).get()).toMatchObject({ status: 'yes', origin: 'remote', name: 'zoe' });
     expect(spy).toHaveBeenCalled();
-    // Un objet d’une autre origine n’est jamais une sortie d’ici.
+    // An object from another origin is never an outing from here.
     await as(a, () => onRemoteResponse(dbA(), z.actorUrl, `https://evil.example/ap/outings/${pub.id}`, 'yes', null, deps));
     expect(countYes(dbA(), pub.id)).toBe(1);
   });
@@ -284,8 +284,8 @@ describe('sorties entre serveurs (#1476)', () => {
     const data = (await as(a, () => eventData(dbA(), o)))!;
     const alice = upsertRemoteActor(b.db, { actorUrl: actorUrl('a.example', 'alice'), handle: 'alice', inboxUrl: 'x' });
     const mallory = upsertRemoteActor(b.db, { actorUrl: actorUrl('evil.example', 'mal'), handle: 'mal', inboxUrl: 'x' });
-    expect(onEvent(b.db, mallory.actorUrl, data, [])).toBeNull(); // attribué à Alice, signé par Mallory
-    expect(onEvent(b.db, mallory.actorUrl, { ...data, actorUrl: mallory.actorUrl }, [])).toBeNull(); // objet hébergé chez Alice
+    expect(onEvent(b.db, mallory.actorUrl, data, [])).toBeNull(); // attributed to Alice, signed by Mallory
+    expect(onEvent(b.db, mallory.actorUrl, { ...data, actorUrl: mallory.actorUrl }, [])).toBeNull(); // object hosted at Alice's
     expect(onEvent(b.db, alice.actorUrl, data, [])).toMatchObject({ created: true });
     expect(onEvent(b.db, alice.actorUrl, { ...data, title: 'v2' }, [])).toMatchObject({ created: false });
     onDeleteEvent(b.db, mallory.actorUrl, data.objectUrl);
@@ -368,6 +368,6 @@ describe('envoi Fedify des sorties (#1476)', () => {
     vi.stubEnv('FEDERATION', 'off');
     await as(a, async () => updateOuting(dbA(), 'ua', o.slug, { title: 'Encore' }));
     await new Promise((r) => setTimeout(r, 30));
-    expect(sent.length).toBe(2); // fédération coupée : rien ne part
+    expect(sent.length).toBe(2); // federation off: nothing is sent
   });
 });

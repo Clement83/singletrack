@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { openDb } from '@/db';
 import { isPublicPath, isPublicRead } from '@/lib/public-routes';
 
-// Aucune session : toute route d'écriture/lecture privée de /api doit répondre 401 (#1482).
+// No session: every private read/write route under /api must answer 401 (#1482).
 const state = vi.hoisted(() => ({ db: undefined as unknown }));
 vi.mock('@/db', async (orig) => ({ ...(await orig<typeof import('@/db')>()), getDb: () => state.db }));
 vi.mock('@/lib/current-user', () => {
@@ -36,9 +36,9 @@ describe('routes /api : liste blanche et garde de session', () => {
   it.each(privateRoutes)('%s : 401 sans session, quelle que soit la méthode', async (file) => {
     state.db = openDb(':memory:');
     const mod = (await modules[file]()) as Record<string, unknown>;
-    // Lectures GET publiques de la carte (#1589) : exceptions listées dans public-routes.ts, vérifiées plus bas.
+    // Public GET reads of the map (#1589): exceptions listed in public-routes.ts, checked below.
     const handlers = METHODS.filter((m) => typeof mod[m] === 'function' && !isPublicRead(urlPath(file), m));
-    if (!handlers.length) return expect(isPublicRead(urlPath(file), 'GET')).toBe(true); // seulement des lectures publiques
+    if (!handlers.length) return expect(isPublicRead(urlPath(file), 'GET')).toBe(true); // public reads only
     for (const m of handlers) {
       const req = new Request(`http://localhost${urlPath(file)}`, { method: m, headers: { 'content-type': 'application/json' }, body: m === 'GET' ? undefined : '{}' });
       const res = await (mod[m] as (r: Request, c: unknown) => Promise<Response>)(req, { params: Promise.resolve(params) });
@@ -46,7 +46,7 @@ describe('routes /api : liste blanche et garde de session', () => {
     }
   });
 
-  // Exceptions publiques en lecture (#1589), justifiées une par une : chaque route filtre par visibilité (anonyme = public seul).
+  // Public read exceptions (#1589), justified one by one: each route filters by visibility (anonymous = public only).
   const PUBLIC_READS = ['/api/tracks', '/api/tracks/geometry', '/api/tracks/x', '/api/outings/map', '/api/outings/map/x'];
   it('les seules lectures GET publiques de /api/tracks et /api/outings sont celles de la carte', () => {
     const all = Object.keys(modules).map(urlPath).filter((p) => isPublicRead(p, 'GET'));

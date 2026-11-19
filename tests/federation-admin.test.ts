@@ -102,7 +102,7 @@ describe('garde de la boîte d’entrée (#1477)', () => {
     }
     expect(last).toBe(429);
     logFedifyRefusal('busy.example', 401);
-    logFedifyRefusal('busy.example', 202); // pas un refus
+    logFedifyRefusal('busy.example', 202); // not a rejection
     const reasons = db().select().from(federationLog).all().map((r: { reason: string }) => r.reason);
     expect(reasons).toContain('signature');
     expect(reasons.filter((r: string) => r === 'signature')).toHaveLength(1);

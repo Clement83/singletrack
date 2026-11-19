@@ -3,7 +3,7 @@ import { kmAlongTrack } from '@/lib/geo/along';
 import { lineLength } from '@/lib/geo';
 import type { Position } from '@/lib/geo/types';
 
-// Ligne droite vers l'est, un sommet tous les 0,01° (~0,76 km à 45° N).
+// Straight line eastwards, one vertex every 0.01° (~0.76 km at 45° N).
 const line: Position[] = Array.from({ length: 11 }, (_, i) => [6 + i * 0.01, 45]);
 const km = (n: number) => lineLength(line.slice(0, n + 1)) / 1000;
 

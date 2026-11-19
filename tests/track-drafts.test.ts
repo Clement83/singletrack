@@ -7,7 +7,7 @@ import {
 } from '@/lib/tracks';
 import type { Position } from '@/lib/geo';
 
-// Brouillons de trace enregistrés automatiquement (#1450).
+// Automatically saved track drafts (#1450).
 const NO_IGN = { enrich: false } as const;
 function setup() {
   const { db } = openDb(':memory:');
@@ -21,7 +21,7 @@ const input = (over: Partial<EditorInput> = {}): EditorInput => ({
   waypoints: [[6.14, 43.22], [6.17, 43.22]], modes: ['route'], ...over,
 });
 const draftInput = (over: Partial<EditorInput> = {}) => input({ name: '', status: 'draft', ...over });
-// Premier tronçon : quelques dizaines de mètres seulement.
+// First segment: only a few dozen metres.
 const tiny: EditorInput = draftInput({ geometry: { type: 'LineString', coordinates: [[6.14, 43.22], [6.1402, 43.2201]] } });
 
 async function draft(db: ReturnType<typeof setup>, over: Partial<EditorInput> = {}) {
@@ -38,7 +38,7 @@ describe('brouillons', () => {
     expect(getTrackBySlug(db, r.slug)).toMatchObject({ status: 'draft', name: '', source: 'manual', createdBy: 'u' });
     expect(await createEditedTrack(db, 'u', input({ name: '' }), NO_IGN)).toEqual({ errors: { name: 'nameRequired' } });
     expect(await createEditedTrack(db, 'u', { ...tiny, status: 'published', name: 'x' }, NO_IGN)).toEqual({ errors: { geometry: 'geometryTooShort' } });
-    // Sans statut : publiée (compatibilité avec l'ancien client).
+    // Without a status: published (compatibility with the old client).
     const p = await createEditedTrack(db, 'u', input(), NO_IGN);
     if (!('slug' in p)) throw new Error('refusé');
     expect(getTrackBySlug(db, p.slug)!.status).toBe('published');
@@ -59,7 +59,7 @@ describe('brouillons', () => {
     expect(getTrackBySlug(db, slug)!.status).toBe('draft');
     expect(await updateEditedTrack(db, 'u', slug, input({ name: 'Boucle du col', status: 'published' }), NO_IGN)).toEqual({ slug });
     expect(getTrackBySlug(db, slug)).toMatchObject({ status: 'published', name: 'Boucle du col' });
-    // Autosave d'une trace publiée : reste publiée, le nom reste exigé.
+    // Autosave of a published track: stays published, the name is still required.
     await updateEditedTrack(db, 'u', slug, input({ name: 'Boucle du col', description: 'x', status: 'draft' }), NO_IGN);
     expect(getTrackBySlug(db, slug)!.status).toBe('published');
     expect(await updateEditedTrack(db, 'u', slug, input({ name: '', status: 'draft' }), NO_IGN)).toEqual({ errors: { name: 'nameRequired' } });

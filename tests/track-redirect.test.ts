@@ -4,7 +4,7 @@ import { user } from '@/db/schema';
 import { upsertTrack } from '@/lib/tracks';
 import type { Position } from '@/lib/geo';
 
-// #1593 : /t/<slug> redirige vers la carte avec la trace ouverte ; non visible ⇒ 404, sans redirection.
+// #1593: /t/<slug> redirects to the map with the track open; not visible ⇒ 404, without a redirect.
 const state = vi.hoisted(() => ({ db: null as unknown, userId: undefined as string | undefined }));
 vi.mock('@/db', async (orig) => ({ ...(await orig<typeof import('@/db')>()), getDb: () => ({ db: state.db }) }));
 vi.mock('@/lib/current-user', () => ({ getCurrentUser: async () => (state.userId ? { id: state.userId } : null) }));

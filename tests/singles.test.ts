@@ -6,7 +6,7 @@ import { trailSegment, track } from '@/db/schema';
 import { buildSinglesQuery, fetchSingles, segmentsFromOverpass, toleranceForZoom, wayToSegment, SINGLES_MAX_FEATURES, type OverpassWay } from '@/lib/osm';
 import { parseSegmentsQuery, querySegments, replaceSegments } from '@/lib/osm/singles-store';
 
-// Fixture réelle : ways path/track avec mtb:scale autour de Pierrefeu-du-Var (Overpass, bbox 43.18,6.10,43.24,6.20).
+// Real fixture: path/track ways with mtb:scale around Pierrefeu-du-Var (Overpass, bbox 43.18,6.10,43.24,6.20).
 const fixture = JSON.parse(readFileSync(path.join(__dirname, 'fixtures/osm/singles-pierrefeu.json'), 'utf8')) as { elements: OverpassWay[] };
 
 const way = (id: number, tags: Record<string, string>, pts: [number, number][]): OverpassWay => ({
@@ -40,7 +40,7 @@ describe('singles OSM : logique pure (#1372)', () => {
     expect(wayToSegment(way(1, { highway: 'residential', 'mtb:scale': '0' }, [[6, 43], [6.01, 43]]))).toBeNull();
     expect(wayToSegment(way(2, { highway: 'path' }, [[6, 43], [6.01, 43]]))).toBeNull();
     expect(wayToSegment(way(3, { highway: 'track', 'mtb:scale': '1' }, [[6, 43]]))).toBeNull();
-    // nœuds hors zone d'extraction (null) ignorés
+    // nodes outside the extraction area (null) ignored
     const w = way(4, { highway: 'track', 'mtb:scale': '1' }, [[6, 43], [6.01, 43]]);
     w.geometry!.push(null);
     expect(wayToSegment(w)?.geometry.coordinates).toHaveLength(2);

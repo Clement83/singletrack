@@ -7,7 +7,7 @@ import { LOCALE_COOKIE } from '@/i18n/config';
 import type { OutingRow } from '@/db/schema';
 import type { TrackSnapshot } from '@/lib/outings/snapshot';
 
-// Partages d'une sortie (#1351) : .ics, GPX de la trace figée, aperçu de lien, liens d'itinéraire.
+// Sharing an outing (#1351): .ics, GPX of the frozen track, link preview, directions links.
 
 const snapshot: TrackSnapshot = {
   slug: 'trace-1',
@@ -125,7 +125,7 @@ describe('partage d’une sortie (#1351)', () => {
     expect(ics).toContain('STATUS:CANCELLED');
     expect(ics).toContain('GEO:43.226900;6.146900');
     expect(ics).toContain('LOCATION:Parking de la gare');
-    // la virgule du nombre à la française est échappée par icsEscape
+    // the French decimal comma is escaped by icsEscape
     expect(ics).toContain('DESCRIPTION:RDV : Parking de la gare\\nBoucle (18\\,5 km)');
     expect(ics.split('\r\n').filter((l) => l === 'BEGIN:VEVENT')).toHaveLength(1);
     for (const l of ics.split('\r\n')) expect(bytes(l)).toBeLessThanOrEqual(75);

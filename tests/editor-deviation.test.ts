@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { docFromGeometry, docGeometry, deviateWaypoint, restoreDeviation, addWaypoint, emptyDoc, type LonLat } from '@/lib/editor/doc';
 import { editorReducer, initialState } from '@/lib/editor/state';
 
-/** Trace droite d'environ 12 km vers l'est, un sommet tous les ~110 m, sinueuse pour que la simplification garde des waypoints. */
+/** Straight track of about 12 km eastwards, one vertex every ~110 m, winding so that simplification keeps waypoints. */
 const line = Array.from({ length: 110 }, (_, k) => [6.0 + k * 0.00125, 43.2 + 0.004 * Math.sin(k / 4)] as [number, number]);
 const geom = { type: 'LineString' as const, coordinates: line };
 
@@ -19,7 +19,7 @@ describe('déviation au glisser (#1451)', () => {
     const k = out.waypoints.findIndex((w) => w === p);
     expect(out.segments[k - 1]).toEqual({ mode: 'route', coords: null });
     expect(out.segments[k]).toEqual({ mode: 'route', coords: null });
-    // l'ancien parcours va d'ancre à ancre en passant par l'ancien point
+    // the old route goes from anchor to anchor through the old point
     expect(deviation!.path[0]).toEqual(out.waypoints[k - 1]);
     expect(deviation!.path.at(-1)).toEqual(out.waypoints[k + 1]);
   });

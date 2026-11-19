@@ -7,7 +7,7 @@ import { canViewTrack, createEditedTrack, getVisibleTrack, parseFilters, queryTr
 import { getDefaultTrackVisibility, setDefaultTrackVisibility } from '@/lib/user-profile';
 import type { Position } from '@/lib/geo';
 
-// Visibilité des traces (#1588) : règle unique, version fonction et version SQL sur la même table de cas.
+// Track visibility (#1588): a single rule, function version and SQL version on the same case table.
 const NO_IGN = { enrich: false } as const;
 const coords: Position[] = Array.from({ length: 30 }, (_, i) => [6.14 + i * 0.001, 43.22 + (i % 3) * 0.0005, 100 + i * 2] as Position);
 const geometry = { type: 'LineString' as const, coordinates: coords };
@@ -17,13 +17,13 @@ function setup() {
   const now = new Date();
   for (const id of ['author', 'friend', 'other']) db.insert(user).values({ id, name: id, email: `${id}@x.fr`, emailVerified: true, createdAt: now, updatedAt: now }).run();
   db.insert(friendship).values({ requesterId: 'author', addresseeId: 'friend', pairKey: pairKey('author', 'friend'), status: 'accepted' }).run();
-  // Demande en attente : pas un copain.
+  // Pending request: not a friend.
   db.insert(friendship).values({ requesterId: 'other', addresseeId: 'author', pairKey: pairKey('other', 'author'), status: 'pending' }).run();
   return db;
 }
 
 const VIEWERS = ['anon', 'author', 'friend', 'other'] as const;
-// [statut, visibilité] → qui voit
+// [status, visibility] → who sees it
 const CASES: [string, string, Record<(typeof VIEWERS)[number], boolean>][] = [
   ['published', 'public', { anon: true, author: true, friend: true, other: true }],
   ['published', 'friends', { anon: false, author: true, friend: true, other: false }],
@@ -44,7 +44,7 @@ describe('visibilité des traces (#1588)', () => {
         const uid = v === 'anon' ? null : v;
         expect(canViewTrack(db, t, uid), `fn ${v}`).toBe(expected[v]);
         expect(!!getVisibleTrack(db, r.slug, uid), `getVisibleTrack ${v}`).toBe(expected[v]);
-        // SQL : les brouillons sont écartés à part (statut), puis la visibilité.
+        // SQL: drafts are filtered separately (status), then visibility.
         const sqlRows = db.select({ id: track.id }).from(track).where(and(eq(track.status, 'published'), trackVisibleSql(uid))).all();
         expect(sqlRows.length === 1, `sql ${v}`).toBe(status === 'published' && expected[v]);
         const listed = queryTracks(db, parseFilters(new URLSearchParams()), undefined, { userId: uid ?? undefined }).tracks;

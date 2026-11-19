@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { docFromStoredWithGeometry, docGeometry, moveWaypoint, pendingSegments, type EditorDoc, type LonLat } from '@/lib/editor/doc';
 
-// #1526 : à la réouverture, le tracé enregistré est repris, seule la portion modifiée est recalculée.
+// #1526: on reopening, the saved line is reused, only the modified part is recomputed.
 const A: LonLat = [6, 43], B: LonLat = [6.01, 43], C: LonLat = [6.01, 43.01], D: LonLat = [6, 43];
 const P = (p: number[]): [number, number, number] => [p[0], p[1], 0];
 const line = (a: LonLat, m: LonLat, b: LonLat) => [a, m, b].map(P);

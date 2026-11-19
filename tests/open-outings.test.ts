@@ -15,7 +15,7 @@ async function setup() {
   const mk = async (owner: string, extra: object = {}) => {
     const r = await createOuting(db, owner, { trackSlug: t.slug, title: 'Sortie', date: '2099-05-10', time: '08:30', ...extra });
     if (!('slug' in r)) throw new Error('création');
-    // Ces tests couvrent des sorties « publiques » encore pourvues d'un propriétaire (antérieures à #1455) : on le leur rend.
+    // These tests cover "public" outings that still have an owner (before #1455): it is given back to them.
     db.update(outing).set({ ownerId: owner }).where(eq(outing.slug, r.slug)).run();
     return db.select().from(outing).where(eq(outing.slug, r.slug)).get()!;
   };

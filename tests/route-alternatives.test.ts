@@ -8,7 +8,7 @@ import type { Position } from '@/lib/geo';
 import type { RouteScore } from '@/lib/routing/score';
 
 const sc = (km: number, gainM: number | null, effortKm: number): RouteScore => ({ km, gainM, lossM: gainM, effortKm, score: km + effortKm });
-// Ligne ouest→est à la latitude `lat` (≈ 1,1 km de long)
+// West→east line at latitude `lat` (≈ 1.1 km long)
 const line = (lat: number): Position[] => Array.from({ length: 11 }, (_, i) => [6.14 + i * 0.001, lat] as Position);
 
 describe('étiquettes des alternatives (#1386)', () => {
@@ -87,8 +87,8 @@ describe('choix d’une alternative dans l’éditeur', () => {
     expect(liveAltSets([set], () => alt, 'muscle')[0].active).toBe(1);
     expect(liveAltSets([set], () => [[9, 9]], 'muscle')).toEqual([]);
     const other = { ...set, seg: 1 };
-    expect(upsertAlt([set, other], 1, null, 0)).toEqual([]); // geste suivant (autre génération)
-    expect(liveAlts(set, set.sig, alt)).toBeNull(); // le tracé du tronçon a changé (annuler, etc.)
+    expect(upsertAlt([set, other], 1, null, 0)).toEqual([]); // next gesture (another generation)
+    expect(liveAlts(set, set.sig, alt)).toBeNull(); // the segment's line changed (undo, etc.)
   });
   it('sans alternative : rien à proposer', () => {
     expect(makeAltSet(0, A, B, best, [], 'x')).toBeNull();

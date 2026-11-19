@@ -72,7 +72,7 @@ describe('cache des acteurs distants', () => {
 
 describe('configuration de la fédération', () => {
   it('on par défaut dès que la clé existe (#1477), off sans clé, off et on explicites', () => {
-    expect(federationEnabled(env({}))).toBe(false); // pas de clé
+    expect(federationEnabled(env({}))).toBe(false); // no key
     expect(federationEnabled(env({ FEDERATION_KEY_ENC: 'abc' }))).toBe(true);
     expect(federationEnabled(env({ FEDERATION: 'off', FEDERATION_KEY_ENC: 'abc' }))).toBe(false);
     expect(federationEnabled(env({ FEDERATION: 'off' }))).toBe(false);

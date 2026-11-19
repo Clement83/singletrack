@@ -101,7 +101,7 @@ describe('/api/friends avec copains distants (#1475)', () => {
     expect(out).toHaveLength(1);
     expect(sent.at(-1)?.activity).toBeInstanceOf(Follow);
     const ctx = { params: Promise.resolve({ id: out[0].id }) };
-    expect((await byId.PATCH(new Request('http://x', { method: 'PATCH', body: JSON.stringify({ action: 'accept' }) }), ctx)).status).toBe(404); // pas le destinataire
+    expect((await byId.PATCH(new Request('http://x', { method: 'PATCH', body: JSON.stringify({ action: 'accept' }) }), ctx)).status).toBe(404); // not the recipient
     expect((await byId.DELETE(new Request('http://x', { method: 'DELETE' }), ctx)).status).toBe(200);
     expect(sent.at(-1)?.activity).toBeInstanceOf(Undo);
     expect(listFriends(h.db, 'u1').outgoing).toEqual([]);

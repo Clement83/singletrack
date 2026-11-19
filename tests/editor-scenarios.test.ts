@@ -5,8 +5,8 @@ import { decideClick, moveLineDrag, endLineDrag, resolveRouted, chooseAltResult,
 import { nextAlt } from '@/lib/editor/alts';
 import { EditorSim, FIXTURES, fx, shiftPx, project } from './helpers/editor-sim';
 
-/** Scénarios de l'éditeur (#1522) : gestes → waypoints, tronçons, alternatives, avec les vraies réponses BRouter enregistrées. */
-// Tutu (copie) : fixtures 0..5 chaînées. Points posés exactement sur une route : fixtures 12..14 (sommets du tronçon 0).
+/** Editor scenarios (#1522): gestures → waypoints, segments, alternatives, with the real recorded BRouter answers. */
+// Tutu (copie): fixtures 0..5 chained. Points placed exactly on a road: fixtures 12..14 (vertices of segment 0).
 const W: LonLat[] = [fx(0).from, fx(0).to, fx(1).to, fx(2).to, fx(3).to, fx(4).to, fx(5).to];
 const sameCoords = (a: unknown, b: unknown) => expect(a).toEqual(b);
 
@@ -177,7 +177,7 @@ describe('scénarios éditeur : annuler / rétablir', () => {
   it('#1578 : annuler pendant qu’un tracé est en attente reste cohérent (aucun tronçon orphelin)', () => {
     const s = new EditorSim();
     s.add(W[0]);
-    s.add(W[1]); // tronçon non routé
+    s.add(W[1]); // segment not routed
     s.undo();
     s.settle();
     expect(s.waypoints).toHaveLength(1);
@@ -256,7 +256,7 @@ describe('scénarios éditeur : alternatives', () => {
     expect(s.alts).not.toBeNull();
     s.add(W[2]);
     s.settle();
-    expect(s.alts?.seg).not.toBe(0); // le tronçon 0 n'est plus proposé : le geste suivant remplace la portion
+    expect(s.alts?.seg).not.toBe(0); // segment 0 is no longer offered: the next gesture replaces the portion
   });
   it('#1527 : après un glisser à 2 tronçons, les alternatives des deux sont proposées (aucune n’écrase l’autre), choix, annuler', () => {
     const s = traced(4);
@@ -340,7 +340,7 @@ describe('scénarios éditeur : aimant', () => {
     expect(s.waypoints[0]).toEqual(start);
     expect(s.waypoints[1]).toEqual(end);
     expect(s.alts!.from).toEqual(start);
-    expect(s.alts).not.toBeNull(); // la signature suit le point calé
+    expect(s.alts).not.toBeNull(); // the signature follows the snapped point
   });
   it('un point trop loin du chemin (60 px) reste hors-piste', () => {
     const s = new EditorSim({ snap: true });

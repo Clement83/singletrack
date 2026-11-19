@@ -24,7 +24,7 @@ describe('historique « Nos sorties » (#1411)', () => {
     const d = (s: string) => new Date(s);
     expect(isDone({ status: 'done', startsAt: d('2099-01-01T08:00:00Z') })).toBe(true);
     expect(isDone({ status: 'planned', startsAt: d('2026-11-12T08:00:00Z') }, d('2026-11-12T22:30:00Z'))).toBe(false);
-    expect(isDone({ status: 'planned', startsAt: d('2026-11-12T08:00:00Z') }, d('2026-11-12T23:30:00Z'))).toBe(true); // minuit passé à Paris
+    expect(isDone({ status: 'planned', startsAt: d('2026-11-12T08:00:00Z') }, d('2026-11-12T23:30:00Z'))).toBe(true); // past midnight in Paris
     expect(isDone({ status: 'cancelled', startsAt: d('2020-01-01T08:00:00Z') })).toBe(false);
   });
 
@@ -56,7 +56,7 @@ describe('historique « Nos sorties » (#1411)', () => {
     for (const [slug, ids] of [[a, [paul.id, lea.id]], [b, [paul.id]], [c, [paul.id]]] as const) {
       expect(inviteMany(db, 'u1', slug, { contactIds: [...ids] }).ok).toBe(true);
     }
-    // Les réponses sur sorties passées sont figées : on force le statut en base.
+    // Answers on past outings are frozen: the status is forced in the database.
     db.update(invitation).set({ status: 'yes' }).run();
     const h = listHistory(db, 'u1');
     expect(h.byPal.map((p) => [p.name, p.outings])).toEqual([['Paul', 3], ['Léa', 1]]);

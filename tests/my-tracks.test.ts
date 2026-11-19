@@ -5,7 +5,7 @@ import { parseFilters, queryTracks, serializeFilters, upsertTrack, type Normaliz
 import { activeFilterCount } from '@/lib/tracks/filters';
 import { isPublicPath } from '@/lib/public-routes';
 
-// Filtre « Mes traces » de la carte (#1430, remplace la page /traces de #1410).
+// "My tracks" filter of the map (#1430, replaces the /traces page of #1410).
 const mk = (name: string, createdBy: string | null): NormalizedTrack => ({
   source: createdBy ? 'manual' : 'osm', externalId: createdBy ? null : name, name, license: null, attribution: null, createdBy,
   geometry: { type: 'LineString', coordinates: [[6.1, 43.2, 100], [6.11, 43.21, 180]] }, raw: null,

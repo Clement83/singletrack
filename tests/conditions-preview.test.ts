@@ -4,7 +4,7 @@ import { previewConditions } from '@/lib/conditions-preview';
 import type { TrackGeometry } from '@/lib/geo';
 import type { WeatherOk } from '@/lib/weather';
 
-// Verdict de l'écran d'organisation (#1407) : chaque source manquante est neutre.
+// Verdict of the organisation screen (#1407): every missing source is neutral.
 const geometry: TrackGeometry = { type: 'LineString', coordinates: [[6.14, 43.2, 100], [6.15, 43.21, 150]] };
 const base = { geometry, distanceM: 1500, gainM: 50, lat: 43.2, lon: 6.14 };
 const sunny: WeatherOk = {
