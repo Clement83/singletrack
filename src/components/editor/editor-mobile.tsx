@@ -57,7 +57,7 @@ export function EditorMobileProfile({ ctl }: { ctl: EditorCtl }) {
   };
 
   return (
-    <header className="z-10 flex flex-col gap-1 border-b border-border bg-card px-2 pt-[calc(4px+env(safe-area-inset-top))] pb-2 shadow-sm">
+    <header className="z-10 flex flex-col gap-1 glass border-b border-border px-2 pt-[calc(4px+env(safe-area-inset-top))] pb-2 shadow-sm">
       <div className="flex items-center gap-1">
         <Button asChild variant="ghost" size="icon" aria-label={t('quit')}>
           <Link href={ctl.quitHref} onClick={ctl.requestLeave}>
@@ -141,7 +141,7 @@ export function EditorMobileBottom({ ctl }: { ctl: EditorCtl }) {
     <>
       <nav
         aria-label={sel !== null ? t('pointActions', { n: sel + 1 }) : t('toolsRegion')}
-        className="z-10 border-t border-border bg-card px-2 pt-2 pb-[calc(8px+env(safe-area-inset-bottom))] shadow-md"
+        className="glass z-10 border-t border-border px-2 pt-2 pb-[calc(8px+env(safe-area-inset-bottom))] shadow-md"
       >
         {sel !== null ? (
           <>

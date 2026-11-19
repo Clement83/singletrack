@@ -113,7 +113,7 @@ export function OutingShare({ sharePath, shareText, title, icsHref, gpxHref, lat
       {feedUrl && <CalendarSubscribe feedUrl={feedUrl} />}
       {showDirections && (
         <div className="flex flex-col gap-2">
-          <p className="flex items-center gap-2 text-small font-semibold">
+          <p className="flex items-center gap-2 text-small font-medium">
             <Navigation aria-hidden className="size-4" /> {t('directions')}
           </p>
           <div className="grid grid-cols-3 gap-2">

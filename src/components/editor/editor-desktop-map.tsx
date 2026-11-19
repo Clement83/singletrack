@@ -47,10 +47,10 @@ export function LineMenu({ ctl, menu, onClose }: { ctl: EditorCtl; menu: NonNull
           e.preventDefault();
           stop(e);
         }}
-        className="flex w-64 cursor-default flex-col gap-0.5 rounded-2xl border border-border bg-popover p-1.5 text-popover-foreground shadow-md"
+        className="flex w-64 cursor-default flex-col gap-0.5 glass rounded-2xl border border-border p-1.5 text-popover-foreground shadow-md"
       >
         <div className="flex items-center justify-between pl-2">
-          <span className="text-small font-semibold">{t('lineMenu')}</span>
+          <span className="text-small font-medium">{t('lineMenu')}</span>
           <Button variant="ghost" size="icon" aria-label={t('close')} onClick={onClose}>
             <X />
           </Button>
@@ -83,7 +83,7 @@ export function HoverTip({ tip }: { tip: NonNullable<HoverTipState> }) {
       className="pointer-events-none absolute z-20 flex items-center gap-2 rounded-lg bg-popover px-2.5 py-1.5 text-small whitespace-nowrap text-popover-foreground tabular-nums shadow-md"
       style={{ left: tip.x + 14, top: tip.y + 14 }}
     >
-      <span className="font-semibold">{tip.ele === null ? tp('summaryKm', { km }) : tp('point', { km, ele: format.number(Math.round(tip.ele)) })}</span>
+      <span className="font-medium">{tip.ele === null ? tp('summaryKm', { km }) : tp('point', { km, ele: format.number(Math.round(tip.ele)) })}</span>
       {cls && tip.grade !== null && (
         <span className="flex items-center gap-1.5">
           <i className="size-2.5 rounded-full" style={{ background: slopeCssColor(cls) }} />
@@ -104,7 +104,7 @@ export function RouteNoteMarker({ note }: { note: { p: LonLat; extraKm: number; 
   const km = format.number(note.extraKm, { minimumFractionDigits: 1, maximumFractionDigits: 1, signDisplay: 'always' });
   return (
     <Marker longitude={note.p[0]} latitude={note.p[1]} anchor="bottom" offset={[0, -10]} style={{ pointerEvents: 'none' }}>
-      <span role="status" className="rounded-full bg-popover px-2.5 py-1 text-small font-semibold whitespace-nowrap text-popover-foreground tabular-nums shadow-md">
+      <span role="status" className="rounded-full bg-popover px-2.5 py-1 text-small font-medium whitespace-nowrap text-popover-foreground tabular-nums shadow-md">
         {note.gainSavedM !== null && note.gainSavedM > 0
           ? t('routeNote', { km, gain: format.number(Math.round(note.gainSavedM)) })
           : t('routeNoteKm', { km })}
@@ -143,7 +143,7 @@ export function AltLabels({ alts, onChoose }: { alts: AltSet; onChoose: (i: numb
             onChoose(i);
           }}
           onMouseDown={(e) => e.stopPropagation()}
-          className="min-h-11 rounded-full border border-border bg-popover px-3 text-small font-semibold whitespace-nowrap text-popover-foreground tabular-nums shadow-md hover:bg-accent"
+          className="min-h-11 rounded-full border border-border bg-popover px-3 text-small font-medium whitespace-nowrap text-popover-foreground tabular-nums shadow-md hover:bg-accent"
         >
           {text(i)}
         </button>
@@ -160,7 +160,7 @@ export function AltCard({ alts, onChoose, raised = false }: { alts: AltSet; onCh
     <div
       role="group"
       aria-label={t('alt.title')}
-      className={cn('absolute inset-x-3 z-10 flex gap-1.5 rounded-2xl border border-border bg-card p-1.5 shadow-md', raised ? 'bottom-[4.75rem]' : 'bottom-3')}
+      className={cn('absolute inset-x-3 z-10 flex gap-1.5 glass rounded-2xl border border-border p-1.5 shadow-md', raised ? 'bottom-[4.75rem]' : 'bottom-3')}
     >
       {alts.routes.map((_, i) => (
         <Button
@@ -190,7 +190,7 @@ export function DeviationLabel({ deviation, onRestore }: { deviation: Deviation;
           onRestore();
         }}
         onMouseDown={(e) => e.stopPropagation()}
-        className="min-h-11 rounded-full border border-border bg-popover px-3 text-small font-semibold whitespace-nowrap text-popover-foreground shadow-md hover:bg-accent"
+        className="min-h-11 rounded-full border border-border bg-popover px-3 text-small font-medium whitespace-nowrap text-popover-foreground shadow-md hover:bg-accent"
       >
         {t('deviation.restore')}
       </button>
@@ -202,7 +202,7 @@ export function DeviationLabel({ deviation, onRestore }: { deviation: Deviation;
 export function DeviationCard({ onRestore }: { onRestore: () => void }) {
   const t = useTranslations('editor');
   return (
-    <div role="group" aria-label={t('deviation.title')} className="absolute inset-x-3 bottom-3 z-10 rounded-2xl border border-border bg-card p-1.5 shadow-md">
+    <div role="group" aria-label={t('deviation.title')} className="absolute inset-x-3 bottom-3 z-10 glass rounded-2xl border border-border p-1.5 shadow-md">
       <Button variant="ghost" className="min-h-11 w-full" onClick={onRestore}>
         {t('deviation.restore')}
       </Button>
@@ -239,7 +239,7 @@ export function ChoiceLabels({ choice, onSelect }: { choice: ChoicePair; onSelec
           }}
           onMouseDown={(e) => e.stopPropagation()}
           className={cn(
-            'min-h-11 rounded-full border-2 px-3 text-small font-semibold whitespace-nowrap tabular-nums shadow-md',
+            'min-h-11 rounded-full border-2 px-3 text-small font-medium whitespace-nowrap tabular-nums shadow-md',
             on ? 'border-primary bg-popover text-popover-foreground' : 'border-border bg-popover text-popover-foreground hover:bg-accent',
           )}
         >

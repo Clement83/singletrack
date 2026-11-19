@@ -81,7 +81,7 @@ function Discussion({ id, base, closed }: { id: string; base: string | null; clo
  */
 export function OutingBar({ children, discussion }: { children?: React.ReactNode; discussion: { id: string; base: string | null; closed: boolean } }) {
   return (
-    <div data-outing-bar className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card text-card-foreground shadow-sheet">
+    <div data-outing-bar className="fixed inset-x-0 bottom-0 z-30 glass border-t border-border text-card-foreground shadow-sheet">
       <div className="mx-auto flex w-full max-w-2xl items-center gap-3 px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))]">
         <div className="flex min-w-0 flex-1 items-center">{children}</div>
         <Discussion {...discussion} />

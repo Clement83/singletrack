@@ -70,15 +70,15 @@ export default async function Page({ params }: { params: Promise<{ token: string
         outing={{ ...o, cancelled: o.status === 'cancelled' }}
         track={snap}
         organizerName={organizerName}
-        topLink={<BackToMap className="flex min-h-touch items-center gap-1 text-body font-semibold text-primary underline-offset-4 hover:underline active:opacity-70"><ChevronLeft aria-hidden className="size-5" /> {tv('back')}</BackToMap>}
+        topLink={<BackToMap className="flex min-h-touch items-center gap-1 text-body font-medium text-primary underline-offset-4 hover:underline active:opacity-70"><ChevronLeft aria-hidden className="size-5" /> {tv('back')}</BackToMap>}
         conditionsLine={<ConditionsLine weather={weather} fireInfo={fireInfoValue} />}
         headerAction={groupPath ? <HeaderShareButton sharePath={groupPath} shareText={shareText} title={o.title} /> : undefined}
         notices={
           <>
             {o.status === 'cancelled' && (
-              <p role="status" className="rounded-2xl bg-destructive-soft p-3 font-semibold text-destructive">{tg('cancelled')}</p>
+              <p role="status" className="rounded-lg bg-destructive-soft px-3 py-2.5 text-small font-medium text-destructive">{tg('cancelled')}</p>
             )}
-            {full && <p role="status" className="rounded-2xl bg-warning-soft p-3 font-semibold text-warning">{tg('full', { max: o.maxParticipants ?? 0 })}</p>}
+            {full && <p role="status" className="rounded-lg bg-warning-soft px-3 py-2.5 text-small font-medium text-warning">{tg('full', { max: o.maxParticipants ?? 0 })}</p>}
             {closed && o.status !== 'cancelled' && <p className="text-muted-foreground">{tg('past')}</p>}
           </>
         }

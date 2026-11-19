@@ -31,7 +31,7 @@ export function LinkSignIn() {
     setCreds(email && otp && /^\d{6}$/.test(otp) ? { email, otp, next } : null);
   }, []);
 
-  if (creds === undefined) return <Skeleton className="h-button-lg w-full rounded-xl" />;
+  if (creds === undefined) return <Skeleton className="h-button-lg w-full rounded-md" />;
 
   if (creds === null || error)
     return (

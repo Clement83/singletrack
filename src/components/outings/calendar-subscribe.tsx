@@ -54,7 +54,7 @@ export function CalendarSubscribe({ feedUrl, organizer = false }: Props) {
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="flex items-center gap-2 text-small font-semibold">
+      <p className="flex items-center gap-2 text-small font-medium">
         <CalendarSync aria-hidden className="size-4" /> {t(organizer ? 'feedOrganizerTitle' : 'subscribeTitle')}
       </p>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">

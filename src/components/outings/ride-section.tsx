@@ -103,7 +103,7 @@ export function RideSection({ base, rides, planned, canUpload }: Props) {
                 onClick={() => setPicked(r.id)}
                 className={cn('flex min-h-touch w-full flex-col gap-2 rounded-2xl border p-4 text-left shadow-sm transition-colors active:bg-muted', on ? 'border-primary bg-card' : 'border-border bg-card')}
               >
-                <span className="font-semibold">{r.mine ? t('mine') : r.organizer ? t('organizer') : r.author}</span>
+                <span className="font-medium">{r.mine ? t('mine') : r.organizer ? t('organizer') : r.author}</span>
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-2 tabular-nums sm:grid-cols-4">
                   <Stat label={t('distance')} value={km(r.distanceM)} hint={dKm ? t('vsPlanned', { delta: dKm }) : undefined} />
                   <Stat label={t('gain')} value={r.gainM != null ? formatElevation(r.gainM, locale) : t('unknown')} hint={dGain ? t('vsPlanned', { delta: dGain }) : undefined} />
@@ -151,7 +151,7 @@ function Stat({ label, value, hint }: { label: string; value: string; hint?: str
   return (
     <div className="min-w-0">
       <dt className="text-caption text-muted-foreground">{label}</dt>
-      <dd className="font-semibold">{value}</dd>
+      <dd className="font-medium">{value}</dd>
       {hint && <dd className="text-caption text-muted-foreground">{hint}</dd>}
     </div>
   );

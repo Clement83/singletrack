@@ -29,7 +29,7 @@ export default async function Page() {
     <>
       <main className="mx-auto flex w-full max-w-2xl flex-col gap-5 px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] lg:pt-16 pb-[calc(var(--spacing-nav)+2rem+env(safe-area-inset-bottom))] lg:pl-[calc(var(--spacing-rail)+1rem)]">
         <PageHeader title={t('title')} />
-        <Link href="/sorties" className="flex min-h-touch items-center gap-2 text-body font-semibold text-primary underline-offset-4 hover:underline active:opacity-70">
+        <Link href="/sorties" className="flex min-h-touch items-center gap-2 text-body font-medium text-primary underline-offset-4 hover:underline active:opacity-70">
           <ArrowLeft aria-hidden className="size-5" /> {t('back')}
         </Link>
         {entries.length === 0 ? (
@@ -82,11 +82,11 @@ export default async function Page() {
                     {byPal.map((p) => (
                       <li key={p.contactId} className="flex min-h-touch items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm">
                         <div className="flex min-w-0 flex-col">
-                          <span className="text-body font-semibold break-words">{p.name}</span>
+                          <span className="text-body font-medium break-words">{p.name}</span>
                           <span className="text-small text-muted-foreground">{t('palLast', { date: day(p.lastAt, locale) })}</span>
                         </div>
                         <div className="flex shrink-0 flex-col items-end text-small tabular-nums">
-                          <span className="font-semibold">{t('palOutings', { n: p.outings })}</span>
+                          <span className="font-medium">{t('palOutings', { n: p.outings })}</span>
                           <span className="text-muted-foreground">{formatKm(p.distanceM / 1000, locale)} · {formatElevation(p.gainM, locale)}</span>
                         </div>
                       </li>

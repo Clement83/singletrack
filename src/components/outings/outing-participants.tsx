@@ -59,12 +59,12 @@ export function OutingParticipants({ participants, max, organizer, inline, count
         <div className="flex flex-col gap-4">
           {GROUPS.filter((g) => s.counts[g] > 0).map((g) => (
             <section key={g} aria-label={t(`group.${g}`, { count: s.counts[g] })}>
-              <h4 className="mb-1 text-small font-semibold text-muted-foreground">{t(`group.${g}`, { count: s.counts[g] })}</h4>
+              <h4 className="mb-1 text-small font-medium text-muted-foreground">{t(`group.${g}`, { count: s.counts[g] })}</h4>
               <ul className="divide-y divide-border">
                 {participants.filter((p) => p.status === g).map((p) => (
                   <li key={p.id} className="flex min-h-14 items-center gap-3">
                     <Avatar name={p.name} />
-                    <span className={cn('min-w-0 flex-1 truncate', p.isMe && 'font-semibold')}>{nameOf(p)}</span>
+                    <span className={cn('min-w-0 flex-1 truncate', p.isMe && 'font-medium')}>{nameOf(p)}</span>
                     {p.isOrganizer && <span className="rounded-full bg-muted px-2 py-0.5 text-caption">{t('organizerTag')}</span>}
                     <RsvpBadge status={p.status} />
                   </li>
@@ -93,7 +93,7 @@ export function OutingParticipants({ participants, max, organizer, inline, count
     return (
       <div className={className}>
         {s.needsSheet ? (
-          <button type="button" onClick={() => setOpen(true)} aria-haspopup="dialog" aria-label={t('seeAll', { count: participants.length })} className="flex min-h-touch w-full items-center gap-3 rounded-xl text-left active:opacity-70">{row}</button>
+          <button type="button" onClick={() => setOpen(true)} aria-haspopup="dialog" aria-label={t('seeAll', { count: participants.length })} className="flex min-h-touch w-full items-center gap-3 rounded-lg text-left active:opacity-70">{row}</button>
         ) : (
           <div className="flex min-h-touch items-center gap-3">{row}</div>
         )}

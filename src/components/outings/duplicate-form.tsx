@@ -57,7 +57,7 @@ export function DuplicateForm({ slug, date: d0, time: t0, hasInvitees }: Props) 
         </Field>
       </div>
       <fieldset className="flex flex-col gap-2">
-        <legend className="mb-1 text-body font-semibold">{t('track')}</legend>
+        <legend className="mb-1 text-body font-medium">{t('track')}</legend>
         {(['track', 'snapshot'] as const).map((k) => (
           <label key={k} className={`flex min-h-14 items-center gap-3 rounded-2xl border px-4 py-2 transition-colors duration-150 active:bg-accent/60 ${trackSource === k ? 'border-primary bg-accent' : 'border-border bg-card'}`}>
             <input type="radio" name="trackSource" className="size-6 shrink-0 accent-primary" checked={trackSource === k} onChange={() => setTrackSource(k)} />
@@ -69,7 +69,7 @@ export function DuplicateForm({ slug, date: d0, time: t0, hasInvitees }: Props) 
         <label className="flex min-h-14 items-start gap-3 rounded-2xl border border-border bg-card px-4 py-3">
           <input type="checkbox" className="mt-0.5 size-6 shrink-0 accent-primary" checked={reinvite} onChange={(e) => setReinvite(e.target.checked)} />
           <span className="flex flex-col">
-            <span className="text-body font-semibold">{t('reinvite')}</span>
+            <span className="text-body font-medium">{t('reinvite')}</span>
             <span className="text-small text-muted-foreground">{t('reinviteHint')}</span>
           </span>
         </label>

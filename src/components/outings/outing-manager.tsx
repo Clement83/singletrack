@@ -125,7 +125,7 @@ export function OutingManager({ outingId, isOwner = false, candidates = [], froz
       {showInvite && <>
       <section aria-label={t('inviteRegion')} className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm">
         <h2 className="text-heading">{t('invite')}</h2>
-        {hasReinvite && <p className="rounded-xl bg-accent p-3 text-small">{t('reinviteHint')}</p>}
+        {hasReinvite && <p className="rounded-2xl bg-accent p-3 text-small">{t('reinviteHint')}</p>}
         {(contacts.length > 0 || nameOnly.length > 0) && (
           <fieldset className="flex flex-col gap-2">
             <legend className="text-small text-muted-foreground mb-2">{t('bookHint')}</legend>
@@ -138,7 +138,7 @@ export function OutingManager({ outingId, isOwner = false, candidates = [], froz
                     <label className={`flex min-h-14 items-center gap-3 rounded-2xl border px-4 py-2 transition-colors duration-150 active:bg-accent/60 ${on ? 'border-primary bg-accent' : 'border-border bg-background'} ${already ? 'opacity-60' : ''}`}>
                       <input type="checkbox" className="size-6 shrink-0 accent-primary" checked={on} disabled={already || cancelled} onChange={() => toggle(c.id)} />
                       <span className="flex min-w-0 flex-1 flex-col">
-                        <span className="text-body font-semibold truncate">{c.name}</span>
+                        <span className="text-body font-medium truncate">{c.name}</span>
                         {(already || c.note) && <span className="text-small text-muted-foreground truncate">{already ? t('alreadyIn') : c.note}</span>}
                       </span>
                     </label>
@@ -160,10 +160,10 @@ export function OutingManager({ outingId, isOwner = false, candidates = [], froz
           )}
           <Button type="submit" variant={contacts.length ? 'outline' : 'primary'} size="lg" disabled={busy || !name.trim() || cancelled}><UserPlus aria-hidden /> {t('createLink')}</Button>
         </form>
-        <Link href="/sorties/potes" className="flex min-h-touch items-center text-small font-semibold text-primary underline-offset-4 hover:underline active:opacity-70">{t('manageBook')}</Link>
+        <Link href="/sorties/potes" className="flex min-h-touch items-center text-small font-medium text-primary underline-offset-4 hover:underline active:opacity-70">{t('manageBook')}</Link>
         {batch.length > 1 && (
-          <div className="flex flex-col gap-2 rounded-xl bg-accent p-3">
-            <p className="text-small font-semibold">{t('recapTitle', { n: batch.length })}</p>
+          <div className="flex flex-col gap-2 rounded-2xl bg-accent p-3">
+            <p className="text-small font-medium">{t('recapTitle', { n: batch.length })}</p>
             <Button variant="outline" onClick={() => copy(recap)}><Copy aria-hidden /> {t('copyRecap')}</Button>
             <p className="text-caption text-muted-foreground">{t('linkOnce')}</p>
           </div>
@@ -271,13 +271,13 @@ export function OutingManager({ outingId, isOwner = false, candidates = [], froz
             <span>{t('leaveMakePublic')}</span><span className="text-small font-normal text-muted-foreground">{t('leaveMakePublicHint')}</span>
           </Button>
           <div className="flex flex-col gap-2 rounded-2xl border border-border p-3">
-            <p className="font-semibold">{t('leaveTransfer')}</p>
+            <p className="font-medium">{t('leaveTransfer')}</p>
             <p className="text-small text-muted-foreground">{candidates.length ? t('leaveTransferHint') : t('leaveTransferNone')}</p>
             {candidates.length > 0 && (
               <>
                 <Field label={t('leaveTransferPick')}>
                   {(p) => (
-                    <select {...p} className="min-h-touch w-full rounded-xl border border-border bg-background px-3 text-foreground" value={transferTo} onChange={(e) => setTransferTo(e.target.value)}>
+                    <select {...p} className="min-h-touch w-full rounded-md border border-border bg-background px-3 text-foreground" value={transferTo} onChange={(e) => setTransferTo(e.target.value)}>
                       {candidates.map((c) => <option key={c.userId} value={c.userId}>{c.name}</option>)}
                     </select>
                   )}

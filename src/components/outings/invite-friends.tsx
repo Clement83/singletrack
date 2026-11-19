@@ -57,7 +57,7 @@ export function InviteFriends({ endpoint, friends }: { endpoint: string; friends
                 <li key={f.userId}>
                   <label className={`flex min-h-14 items-center gap-3 rounded-2xl border px-4 py-2 transition-colors duration-150 active:bg-accent/60 ${on ? 'border-primary bg-accent' : 'border-border bg-background'}`}>
                     <input type="checkbox" className="size-6 shrink-0 accent-primary" checked={on} onChange={() => toggle(f.userId)} />
-                    <span className="text-body min-w-0 flex-1 truncate font-semibold">{f.name}</span>
+                    <span className="text-body min-w-0 flex-1 truncate font-medium">{f.name}</span>
                   </label>
                 </li>
               );
@@ -65,7 +65,7 @@ export function InviteFriends({ endpoint, friends }: { endpoint: string; friends
           </ul>
         </>
       )}
-      <Link href="/copains" className="flex min-h-touch items-center text-small font-semibold text-primary underline-offset-4 hover:underline active:opacity-70">{t('friendsLink')}</Link>
+      <Link href="/copains" className="flex min-h-touch items-center text-small font-medium text-primary underline-offset-4 hover:underline active:opacity-70">{t('friendsLink')}</Link>
       {picked.length > 0 && (
         <div className="sticky bottom-0 z-10 -mx-4 -mb-4 rounded-b-2xl border-t border-border bg-background/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur">
           <Button size="lg" className="w-full" disabled={busy} onClick={submit}><Check aria-hidden /> {t('invite', { n: picked.length })}</Button>

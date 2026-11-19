@@ -91,7 +91,7 @@ export default async function Page({ params, searchParams }: { params: Promise<{
         outing={{ ...o, cancelled: o.status === 'cancelled', done: isDone(o) }}
         track={snap}
         organizerName={organizerName}
-        topLink={<BackToMap className="flex min-h-touch items-center gap-1 text-body font-semibold text-primary underline-offset-4 hover:underline active:opacity-70"><ChevronLeft aria-hidden className="size-5" /> {tv('back')}</BackToMap>}
+        topLink={<BackToMap className="flex min-h-touch items-center gap-1 text-body font-medium text-primary underline-offset-4 hover:underline active:opacity-70"><ChevronLeft aria-hidden className="size-5" /> {tv('back')}</BackToMap>}
         headerMenu={
           <OutingMenu
             manage={manager('manage')}
@@ -132,7 +132,7 @@ export default async function Page({ params, searchParams }: { params: Promise<{
               name: snap.name,
               km: formatKm(snap.distanceM / 1000, locale),
               date: new Date(snap.takenAt).toLocaleDateString(locale === 'en' ? 'en-GB' : 'fr-FR', { timeZone: 'Europe/Paris' }),
-              link: (chunks) => <Link href={`/t/${snap.slug}`} className="font-semibold text-primary underline-offset-4 hover:underline active:opacity-70">{chunks}</Link>,
+              link: (chunks) => <Link href={`/t/${snap.slug}`} className="font-medium text-primary underline-offset-4 hover:underline active:opacity-70">{chunks}</Link>,
             })}
           </p>
         }

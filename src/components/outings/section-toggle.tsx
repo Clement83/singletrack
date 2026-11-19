@@ -8,7 +8,7 @@ export function OpenSection({ target, className, children, label }: { target: st
     <button
       type="button"
       aria-label={label}
-      className={cn('flex min-h-touch w-full items-center gap-3 rounded-xl text-left active:opacity-70', className)}
+      className={cn('flex min-h-touch w-full items-center gap-3 rounded-lg text-left active:opacity-70', className)}
       onClick={() => {
         const el = document.getElementById(target);
         if (!(el instanceof HTMLDetailsElement)) return;

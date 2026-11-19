@@ -24,7 +24,7 @@ export function OrganizerWord({ name, text }: { name: string; text: string }) {
           <p id={id} ref={ref} className={cn('whitespace-pre-line break-words', !expanded && 'line-clamp-3')}>{text}</p>
         </blockquote>
         {(overflow || expanded) && (
-          <button type="button" aria-expanded={expanded} aria-controls={id} onClick={() => setExpanded((v) => !v)} className="-mb-2 mt-1 flex min-h-touch items-center text-small font-semibold text-primary underline-offset-4 hover:underline active:opacity-70">
+          <button type="button" aria-expanded={expanded} aria-controls={id} onClick={() => setExpanded((v) => !v)} className="-mb-2 mt-1 flex min-h-touch items-center text-small font-medium text-primary underline-offset-4 hover:underline active:opacity-70">
             {expanded ? t('less') : t('more')}
           </button>
         )}

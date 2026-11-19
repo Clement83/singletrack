@@ -31,7 +31,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   const hasInvitees = listInvitations(db, o.id).some((i) => !i.revokedAt);
   return (
     <main className="mx-auto flex w-full max-w-xl flex-col gap-5 px-4 pt-4">
-      <Link href={`/s/${o.slug}`} className="flex min-h-touch items-center gap-2 text-body font-semibold text-primary underline-offset-4 hover:underline active:opacity-70">
+      <Link href={`/s/${o.slug}`} className="flex min-h-touch items-center gap-2 text-body font-medium text-primary underline-offset-4 hover:underline active:opacity-70">
         <ArrowLeft aria-hidden className="size-5" /> {tp('backToOuting')}
       </Link>
       <h1 className="text-title">{tr('title')}</h1>

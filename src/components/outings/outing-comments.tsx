@@ -23,7 +23,7 @@ function Body({ text }: { text: string }) {
     <p className="break-words whitespace-pre-line text-body">
       {linkify(text).map((p, i) =>
         p.href ? (
-          <a key={i} href={p.href} target="_blank" rel="noopener noreferrer nofollow ugc" className="font-semibold text-primary underline underline-offset-4 active:opacity-70">{p.text}</a>
+          <a key={i} href={p.href} target="_blank" rel="noopener noreferrer nofollow ugc" className="font-medium text-primary underline underline-offset-4 active:opacity-70">{p.text}</a>
         ) : (
           <span key={i}>{p.text}</span>
         ),
@@ -117,7 +117,7 @@ export function OutingComments({ base, closed, live = true, bare = false }: { ba
         {items?.map((c) => (
           <li key={c.id} className={cn('flex flex-col gap-1 rounded-2xl border border-border p-3 shadow-sm', c.mine ? 'bg-accent' : 'bg-card')}>
             <div className="flex items-baseline justify-between gap-2">
-              <span className="min-w-0 truncate font-semibold">
+              <span className="min-w-0 truncate font-medium">
                 {c.mine ? t('you') : c.organizer ? t('organizer') : c.author}
               </span>
               <time dateTime={c.createdAt} className="shrink-0 text-caption text-muted-foreground">

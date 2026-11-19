@@ -54,7 +54,7 @@ export function ConditionsVerdict({ target, date, time, lat, lon }: Props) {
   const v = OVERALL[current.tone];
   return (
     <p aria-live="polite" className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl bg-muted px-3 py-2 text-small">
-      <span className={cn('flex items-center gap-2 font-semibold', v.className)}>
+      <span className={cn('flex items-center gap-2 font-medium', v.className)}>
         <v.icon aria-hidden className="size-5 shrink-0" />
         {t(`overall.${current.tone}`)}
       </span>

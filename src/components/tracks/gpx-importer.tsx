@@ -85,7 +85,7 @@ function ItemForm({ item, onSaved, defaultVisibility }: { item: Item; onSaved: (
       </p>
       {!item.hasElevation && <p className="text-small text-muted-foreground">{t('noEle')}</p>}
       {item.duplicates.length > 0 && (
-        <div role="status" className="flex gap-2 rounded-xl bg-warning-soft p-3 text-small">
+        <div role="status" className="flex gap-2 rounded-lg bg-warning-soft p-3 text-small">
           <AlertTriangle aria-hidden className="mt-0.5 size-5 shrink-0 text-warning" />
           <p>
             {t.rich('duplicates', {
@@ -169,7 +169,7 @@ export function GpxImporter({ defaultVisibility }: { defaultVisibility: TrackVis
       </div>
       {busy && <Skeleton className="h-40 rounded-2xl" />}
       {fileErrors.map((e) => (
-        <p key={e.file} role="alert" className="rounded-xl bg-destructive-soft p-3 text-small text-destructive"><strong>{e.file}</strong> — {errText(e.error)}</p>
+        <p key={e.file} role="alert" className="rounded-lg bg-destructive-soft p-3 text-small text-destructive"><strong>{e.file}</strong> — {errText(e.error)}</p>
       ))}
       {items.map((it) => <ItemForm key={it.key} item={it} onSaved={() => undefined} defaultVisibility={defaultVisibility} />)}
     </div>

@@ -131,7 +131,7 @@ export function OutingForm({ mode, initial, federated = false, trackVisibility =
         lon={v.meetingLon}
       />
       <div className="flex flex-col gap-2">
-        <span className="text-body font-semibold">{t('meeting')}</span>
+        <span className="text-body font-medium">{t('meeting')}</span>
         <p className="text-small text-muted-foreground">{t('meetingHint')}</p>
         <div className="h-56 overflow-hidden rounded-2xl border border-border shadow-sm">
           <LazyMap
@@ -192,7 +192,7 @@ export function OutingForm({ mode, initial, federated = false, trackVisibility =
       <Field label={t('max')} error={errors.maxParticipants && errText(errors.maxParticipants)}>
         {(p) => <Input {...p} type="number" inputMode="numeric" min={1} max={500} value={v.maxParticipants} onChange={set('maxParticipants')} />}
       </Field>
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))]">
+      <div className="fixed inset-x-0 bottom-0 z-30 glass border-t border-border px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))]">
         <Button type="submit" size="lg" disabled={busy}>
           {busy ? t('saving') : mode.kind === 'create' ? t('create') : t('save')}
         </Button>

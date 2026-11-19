@@ -62,7 +62,7 @@ function Keys({ action, className }: { action: ShortcutAction; className?: strin
   );
 }
 
-const panel = 'rounded-2xl border border-border bg-card/95 text-card-foreground shadow-md backdrop-blur-sm';
+const panel = 'glass rounded-2xl border border-border text-card-foreground shadow-md';
 
 /** Bouton de la boîte à outils : icône 44 px, libellé accessible, info-bulle (libellé + raccourci) au survol et au focus. */
 function ToolButton({
@@ -76,7 +76,7 @@ function ToolButton({
         aria-label={label}
         aria-keyshortcuts={shortcut ? ariaShortcut(shortcut) : undefined}
         aria-pressed={pressed}
-        className={cn('rounded-xl', pressed && 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground active:bg-primary')}
+        className={cn('rounded-md', pressed && 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground active:bg-primary')}
         {...p}
       >
         <Icon aria-hidden />
@@ -295,7 +295,7 @@ export function EditorDesktop({ ctl }: { ctl: EditorCtl }) {
 
       {/* Panneau latéral d'enregistrement */}
       {saveOpen && (
-        <aside aria-label={t('savePanel')} className={cn(panel, 'absolute inset-y-3 right-3 z-20 flex w-panel flex-col overflow-hidden bg-card')}>
+        <aside aria-label={t('savePanel')} className={cn(panel, 'absolute inset-y-3 right-3 z-20 flex w-panel flex-col overflow-hidden')}>
           <header className="flex items-start gap-2 p-4 pb-2">
             <h2 className="min-w-0 flex-1 pt-2 text-title">{t(ctl.saveKey === 'publish' ? 'publishPanel' : 'savePanel')}</h2>
             <Button variant="ghost" size="icon" aria-label={t('close')} aria-keyshortcuts="Escape" onClick={() => setSaveOpen(false)}>
@@ -316,7 +316,7 @@ export function EditorDesktop({ ctl }: { ctl: EditorCtl }) {
             role="dialog"
             aria-modal="true"
             aria-labelledby="editor-help-title"
-            className="flex w-full max-w-md flex-col gap-4 rounded-3xl border border-border bg-popover p-5 text-popover-foreground shadow-md"
+            className="flex w-full max-w-md flex-col gap-4 glass rounded-3xl border border-border p-5 text-popover-foreground shadow-md"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-2">
@@ -381,7 +381,7 @@ export function DesktopPointPopover({ ctl }: { ctl: EditorCtl }) {
         onPointerDown={stop}
         onDoubleClick={stop}
         onWheel={stop}
-        className="flex w-64 cursor-default flex-col gap-0.5 rounded-2xl border border-border bg-popover p-1.5 text-popover-foreground shadow-md"
+        className="flex w-64 cursor-default flex-col gap-0.5 glass rounded-2xl border border-border p-1.5 text-popover-foreground shadow-md"
       >
         <div className="flex items-center justify-between pl-2">
           <span className="text-small font-semibold">{t('pointOf', { n: sel + 1, total: doc.waypoints.length })}</span>
