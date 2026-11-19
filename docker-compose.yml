@@ -1,13 +1,12 @@
 name: singletrack
 services:
+  # Production par défaut (#1644) : build `runner` (`next start`).
+  # Une modification de src/ n'est visible qu'après `docker compose up -d --build app`.
   app:
     build:
       context: .
-      # Mode dev (#1464) : `next dev` + rechargement à chaud sur le code monté.
-      # Pour une installation de production (docs/install.md) : activer `runner`, NODE_ENV production, et
-      # retirer les volumes de code (`.:/app`, node_modules, next_cache) ainsi que `links` ci-dessous si besoin.
-      target: dev
-      # target: runner
+      target: runner
+    image: singletrack-app
     restart: unless-stopped
     # Réseau bridge par défaut (sur un hôte au pool d'adresses compose saturé, un réseau dédié est impossible).
     # Sur une installation normale, retirer `network_mode` (et `links`) : compose crée son réseau et le DNS interne.
@@ -16,17 +15,13 @@ services:
     environment:
       PORT: "3000"
       HOSTNAME: 0.0.0.0
-      NODE_ENV: development # production avec la cible `runner`
+      NODE_ENV: production
       DATABASE_URL: /app/data/singletrack.db
       BROUTER_URL: http://brouter:17777
     ports:
       - "${APP_PORT:-3700}:3000"
     volumes:
-      - .:/app
-      # Avec la cible `runner` (sans le montage `.:/app`), garder seulement les données : - ./data:/app/data
-      # node_modules et cache .next propres au conteneur (binaire better-sqlite3 de l'image, pas de conflit avec l'hôte).
-      - node_modules:/app/node_modules
-      - next_cache:/app/.next
+      - ./data:/app/data
     # Réseau bridge par défaut (pas de DNS) : `links` rend `brouter` résolvable depuis `app`.
     links:
       - brouter
@@ -38,7 +33,52 @@ services:
       interval: 30s
       timeout: 5s
       retries: 5
-      # Première compilation de `next dev` plus lente qu'un démarrage de prod.
+      start_period: 30s
+
+  # Serveur de développement ponctuel (#1644) : `next dev`, code monté, rechargement à chaud, LAN seulement.
+  #   docker compose --profile dev up -d app-dev   → http://localhost:3701 ; puis `docker compose stop app-dev`.
+  # Base jetable `data/dev.db`, recopiée depuis `singletrack.db` à chaque lancement (jamais la base de prod).
+  # Fédération coupée (sinon la file d'envoi partagée `data/federation.db` livrerait depuis la copie).
+  app-dev:
+    profiles: [dev]
+    build:
+      context: .
+      target: dev
+    image: singletrack-app-dev
+    restart: "no"
+    network_mode: bridge
+    env_file: .env
+    environment:
+      PORT: "3000"
+      HOSTNAME: 0.0.0.0
+      NODE_ENV: development
+      DATABASE_URL: /app/data/dev.db
+      FEDERATION: "off"
+      BROUTER_URL: http://brouter:17777
+    ports:
+      - "${APP_DEV_PORT:-3701}:3000"
+    volumes:
+      - .:/app
+      # node_modules et cache .next propres au conteneur (binaire better-sqlite3 de l'image, pas de conflit avec l'hôte).
+      - node_modules:/app/node_modules
+      - next_cache_dev:/app/.next
+    links:
+      - brouter
+    depends_on:
+      brouter:
+        condition: service_healthy
+    command:
+      - sh
+      - -c
+      - |
+        rm -f /app/data/dev.db /app/data/dev.db-wal /app/data/dev.db-shm
+        node -e "const D=require('better-sqlite3');new D('/app/data/singletrack.db').backup('/app/data/dev.db').then(()=>process.exit(0))"
+        exec npm run dev
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 30s
+      timeout: 5s
+      retries: 5
       start_period: 90s
 
   # Moteur de routage VTT (#1340) : appelé uniquement par `app`, aucun port publié.
@@ -60,7 +100,7 @@ services:
   # Dossier de build `.next-build` (ignoré par git), même base et même BRouter que `app`.
   app-e2e:
     profiles: [e2e]
-    image: singletrack-app
+    image: singletrack-app-dev
     network_mode: bridge
     env_file: .env
     environment:
@@ -91,8 +131,8 @@ services:
   # Session de test : compte `e2e@singletrack.test` + cookie de session posés en base (aucun vrai mail), écrits dans e2e/.auth/.
   e2e-session:
     profiles: [e2e]
-    # Même image que `app` (pas de second build) : construite avec `docker compose up -d --build`.
-    image: singletrack-app
+    # Image de dev (devDependencies, tsx) : `docker compose --profile dev build app-dev`.
+    image: singletrack-app-dev
     network_mode: bridge
     env_file: .env
     environment:
@@ -102,7 +142,7 @@ services:
     volumes:
       - .:/app
       - node_modules:/app/node_modules
-      - next_cache:/app/.next
+      - next_cache_dev:/app/.next
     command: ["npx", "tsx", "scripts/e2e-session.ts"]
 
   # Playwright (Chromium) dans l'image officielle, version identique à e2e/package.json. Vise l'app du conteneur `app`.
@@ -132,4 +172,4 @@ volumes:
   e2e_node_modules:
   e2e_results:
   node_modules:
-  next_cache:
+  next_cache_dev:

@@ -12,8 +12,9 @@ Next.js 16 (App Router, TypeScript strict), Tailwind 4 + conventions shadcn/ui, 
 
 ```bash
 cp .env.example .env                              # puis renseigner les secrets (BETTER_AUTH_SECRET, INVITE_LINK_KEY…)
-docker compose up -d --build                      # mode dev, rechargement à chaud (badge/menu Next.js masqués, `devIndicators: false` #1640 ; l'overlay d'erreur reste actif)
-docker compose exec app npm test                  # Vitest
+docker compose up -d --build app                  # PRODUCTION (#1644, `next start`) ; en fin de run : rebuild puis healthcheck vert
+docker compose --profile dev up -d app-dev        # dev ponctuel (#1644) : next dev, rechargement à chaud, http://localhost:3701, base jetable data/dev.db ; puis `docker compose stop app-dev` (badge Next.js masqué, `devIndicators: false` #1640)
+docker compose exec app npm test                  # Vitest (code du dernier build ; sinon `exec app-dev`)
 docker compose exec app npm run test:coverage     # couverture + seuils (vitest.config.ts)
 docker compose -f docker-compose.yml --profile e2e run --rm e2e   # e2e Playwright (#1523, Chromium en conteneur, desktop souris ; -f car compose.yml est celui de distribution)
 ./scripts/smoke-docker.sh                         # test de fumée de l'image de prod (hôte, Docker requis)
@@ -25,9 +26,9 @@ docker compose exec app npm run elevation:recompute  # #1519 : recote IGN + reca
 ./scripts/get-brouter-segments.sh                 # segments BRouter (≈ 770 Mo pour la France)
 ```
 
-Toute exécution de code se fait dans les conteneurs. Santé : `GET /api/health`.
+Toute exécution de code se fait dans les conteneurs. **`docker-compose.yml` est le fichier de dev/prod maison, mais `compose.yml` (distribution) prend le pas sans `-f` : utiliser `docker compose -f docker-compose.yml …` ou `export COMPOSE_FILE=docker-compose.yml`.** Santé : `GET /api/health`.
 
-**Dev : page qui se recharge en boucle (#1570)** — « [Fast Refresh] rebuilding » sans modification de code, chunk 404, rechargement permanent. Cause constatée : état Turbopack périmé dans le volume `next_cache` (`/app/.next`), pas les bases de `data/` (écritures SQLite mesurées : aucune recompilation ; une modification de `src/` recharge bien à chaud). Remède : `docker compose stop app && docker run --rm -v singletrack_next_cache:/n alpine sh -c 'rm -rf /n/* /n/.[!.]*' && docker compose start app`. `<body>` porte `suppressHydrationWarning` (extensions navigateur qui y ajoutent classes/attributs).
+**Dev (`app-dev`) : page qui se recharge en boucle (#1570)** — « [Fast Refresh] rebuilding » sans modification de code, chunk 404, rechargement permanent. Cause constatée : état Turbopack périmé dans le volume `next_cache_dev` (`/app/.next` de `app-dev`), pas les bases de `data/` (écritures SQLite mesurées : aucune recompilation ; une modification de `src/` recharge bien à chaud). Remède : `docker compose stop app-dev && docker run --rm -v singletrack_next_cache_dev:/n alpine sh -c 'rm -rf /n/* /n/.[!.]*' && docker compose --profile dev up -d app-dev`. `<body>` porte `suppressHydrationWarning` (extensions navigateur qui y ajoutent classes/attributs).
 
 ## Principes
 
