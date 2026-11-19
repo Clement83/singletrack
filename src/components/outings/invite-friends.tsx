@@ -12,9 +12,9 @@ import { useErrorText } from '@/lib/use-error-text';
 export type FriendOption = { userId: string; name: string };
 
 /**
- * « Inviter des copains » (#1458) : copains acceptés pas encore dans la sortie, cases à cocher de 56 px,
- * bouton « Inviter (n) » collé en bas (même ergonomie que le carnet de potes). L'invitation est liée à leur compte
- * et un mail part ; la sortie apparaît dans leurs « Mes sorties ».
+ * "Invite friends" (#1458): accepted friends not yet in the outing, 56 px checkboxes,
+ * "Invite (n)" button stuck at the bottom (same ergonomics as the buddy book). The invitation is linked to their account
+ * and an email is sent; the outing appears in their "My outings".
  */
 export function InviteFriends({ endpoint, friends }: { endpoint: string; friends: FriendOption[] }) {
   const t = useTranslations('inviteFriends');

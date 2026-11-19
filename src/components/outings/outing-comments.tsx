@@ -17,7 +17,7 @@ type Comment = {
 const MAX = 1000;
 const POLL_MS = 45_000;
 
-/** Texte brut avec liens cliquables : React échappe tout, aucun HTML n'est interprété. */
+/** Raw text with clickable links: React escapes everything, no HTML is interpreted. */
 function Body({ text }: { text: string }) {
   return (
     <p className="break-words whitespace-pre-line text-body">
@@ -33,8 +33,8 @@ function Body({ text }: { text: string }) {
 }
 
 /**
- * Fil de discussion d'une sortie (#1358). `base` = `/api/i/<token>/comments` (invité, identité = lien perso)
- * ou `/api/outings/<slug>/comments` (organisateur). Actualisation par sondage léger + au retour sur l'onglet (`live`, coupé dans le sheet de la vue de sortie, #1622).
+ * Discussion thread of an outing (#1358). `base` = `/api/i/<token>/comments` (guest, identity = personal link)
+ * or `/api/outings/<slug>/comments` (organiser). Refreshed by light polling + when coming back to the tab (`live`, off in the outing view's sheet, #1622).
  */
 export function OutingComments({ base, closed, live = true, bare = false }: { base: string; closed: boolean; live?: boolean; bare?: boolean }) {
   const t = useTranslations('comments');
@@ -69,7 +69,7 @@ export function OutingComments({ base, closed, live = true, bare = false }: { ba
     return () => { clearInterval(id); document.removeEventListener('visibilitychange', tick); window.removeEventListener('focus', tick); };
   }, [load, live]);
 
-  // Un nouveau message que j'ai envoyé ramène le dernier message à l'écran.
+  // A new message I sent brings the last message into view.
   useEffect(() => {
     if (items && items.length > count.current && count.current > 0) endRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     if (items) count.current = items.length;

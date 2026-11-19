@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils';
 
-/** Ouvre une section repliée (`<details id>`) et y amène la vue : la ligne « conditions » de la carte d'identité (#1619). */
+/** Opens a collapsed section (`<details id>`) and scrolls to it: the "conditions" line of the identity card (#1619). */
 export function OpenSection({ target, className, children, label }: { target: string; className?: string; children: React.ReactNode; label?: string }) {
   return (
     <button

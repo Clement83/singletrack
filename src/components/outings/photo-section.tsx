@@ -18,7 +18,7 @@ type Props = { base: string; photos: PhotoView[]; planned: Planned; canUpload: b
 
 const MAX_MB = 10;
 
-/** Photos de la sortie (#1413) : envoi depuis le sélecteur natif (appareil photo ou galerie), galerie, visionneuse, carte. */
+/** Outing photos (#1413): upload from the native picker (camera or gallery), gallery, viewer, map. */
 export function PhotoSection({ base, photos, planned, canUpload }: Props) {
   const t = useTranslations('photos');
   const tc = useTranslations('common');
@@ -95,7 +95,7 @@ export function PhotoSection({ base, photos, planned, canUpload }: Props) {
           {photos.map((p, i) => (
             <li key={p.id}>
               <button type="button" onClick={() => setOpen(i)} aria-label={t('open', { n: i + 1, total: photos.length, author: p.author || t('organizer') })} className="block aspect-square w-full overflow-hidden rounded-2xl border border-border bg-muted shadow-sm active:opacity-80">
-                {/* eslint-disable-next-line @next/next/no-img-element -- fichier privé servi par notre API, déjà réduit */}
+                {/* eslint-disable-next-line @next/next/no-img-element -- private file served by our API, already shrunk */}
                 <img src={url(p.id, true)} alt="" loading="lazy" decoding="async" width={240} height={240} className="size-full object-cover" />
               </button>
             </li>
@@ -172,7 +172,7 @@ function Viewer({ photo, index, total, src, onClose, onMove, onDelete }: { photo
         </div>
       </div>
       <div className="relative flex min-h-0 flex-1 items-center justify-center overscroll-contain p-2">
-        {/* eslint-disable-next-line @next/next/no-img-element -- fichier privé servi par notre API */}
+        {/* eslint-disable-next-line @next/next/no-img-element -- private file served by our API */}
         <img src={src} alt={t('alt', { author: photo.author || t('organizer') })} width={photo.width} height={photo.height} className="max-h-full max-w-full rounded-2xl object-contain" />
         {total > 1 && (
           <>

@@ -1,6 +1,6 @@
 import { ChevronDown } from 'lucide-react';
 
-/** Section repliée de la vue de sortie (#1619) : `<details>` natif, clavier et lecteurs d'écran gratuits, ≥ 44 px. */
+/** Collapsed section of the outing view (#1619): native `<details>`, keyboard and screen readers for free, ≥ 44 px. */
 export function OutingSection({ id, title, summary, children }: { id: string; title: string; summary?: React.ReactNode; children: React.ReactNode }) {
   return (
     <details id={id} className="group rounded-2xl border border-border bg-card text-card-foreground">

@@ -10,7 +10,7 @@ import { Field, Input } from '@/components/ui/field';
 
 type Props = { slug: string; date: string; time: string; hasInvitees: boolean };
 
-/** Dupliquer une sortie (#1360) : nouvelle date obligatoire (+7 jours par défaut), version de la trace, réinviter. */
+/** Duplicate an outing (#1360): new date required (+7 days by default), track version, invite again. */
 export function DuplicateForm({ slug, date: d0, time: t0, hasInvitees }: Props) {
   const t = useTranslations('duplicate');
   const errText = useErrorText();

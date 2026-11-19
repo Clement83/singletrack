@@ -29,8 +29,8 @@ type Props = {
 };
 
 /**
- * Parcours de la vue de sortie (#1621) : aperçu figé de ~200 px (le doigt fait défiler la page), profil synchronisé dans
- * une card, plein écran (dialog natif : Échap, focus piégé) pour déplacer et zoomer. Données du parcours figé uniquement.
+ * Route of the outing view (#1621): frozen ~200 px preview (the finger scrolls the page), synchronised profile in
+ * a card, full screen (native dialog: Escape, trapped focus) to pan and zoom. Frozen-route data only.
  */
 export function OutingRoute({ name, geometry, bbox, start, end, distanceM, elevationGainM, profile }: Props) {
   const t = useTranslations('outingView');

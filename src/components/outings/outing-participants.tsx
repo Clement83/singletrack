@@ -8,7 +8,7 @@ import { ActionSheet } from '@/components/ui/action-sheet';
 import { RsvpBadge } from '@/components/ui/badge';
 import { initialOf, summarizeParticipants, type Participant, type ParticipantStatus } from '@/lib/outings/participants-summary';
 
-// Couleurs douces issues des tokens génériques (jamais difficulté, incendie ou pente), choisies d'après le prénom.
+// Soft colours from the generic tokens (never difficulty, fire or slope), chosen from the first name.
 const TONES = [
   'bg-primary text-primary-foreground',
   'bg-accent text-accent-foreground',
@@ -29,20 +29,20 @@ const GROUPS: ParticipantStatus[] = ['yes', 'maybe', 'pending', 'no'];
 
 type Props = {
   participants: Participant[];
-  /** Places max de la sortie (hors organisateur, comme le décompte des réponses). */
+  /** Maximum seats of the outing (organiser excluded, like the answer count). */
   max?: number | null;
-  /** Vue organisateur : message d'état vide « on relance ? ». */
+  /** Organiser view: empty-state message "remind them?". */
   organizer?: boolean;
-  /** Ligne de la carte d'identité (#1619) : avatars + « Paul, Léa +3 viennent », sans cadre ni titre. */
+  /** Line of the identity card (#1619): avatars + "Paul, Léa +3 are coming", without frame or title. */
   inline?: boolean;
-  /** Lecteur anonyme : le nombre seulement, ni prénoms ni tiroir. */
+  /** Anonymous reader: the number only, neither first names nor drawer. */
   countOnly?: boolean;
   className?: string;
 };
 
 /**
- * Bloc « Qui vient » compact (#1468), sous les conditions : avatars empilés, 3 premiers prénoms « et n autres »,
- * tap ⇒ tiroir avec tout le monde, groupé par réponse. Prénoms seulement.
+ * Compact "Who's coming" block (#1468), under the conditions: stacked avatars, first 3 first names "and n others",
+ * tap ⇒ drawer with everyone, grouped by answer. First names only.
  */
 export function OutingParticipants({ participants, max, organizer, inline, countOnly, className }: Props) {
   const t = useTranslations('participants');

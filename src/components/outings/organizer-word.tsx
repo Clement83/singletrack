@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { Avatar } from '@/components/outings/outing-participants';
 
-/** Le mot de l'organisateur (#1619) : citation sur fond `muted`, 3 lignes puis « Lire plus » / « Réduire ». */
+/** The organiser's note (#1619): quote on a `muted` background, 3 lines then "Read more" / "Show less". */
 export function OrganizerWord({ name, text }: { name: string; text: string }) {
   const t = useTranslations('outingView');
   const id = useId();

@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 
 type Props = { token: string; state: 'anonymous' | 'available' | 'mine' };
 
-/** Rattacher l'invitation à son compte (#1434). Optionnel : le lien marche sans compte. `null` si rien à proposer. */
+/** Attach the invitation to one's account (#1434). Optional: the link works without an account. `null` if there is nothing to offer. */
 export function GuestClaim({ token, state }: Props) {
   const t = useTranslations('claim');
   const router = useRouter();

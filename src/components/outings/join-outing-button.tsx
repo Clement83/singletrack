@@ -8,7 +8,7 @@ import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { useErrorText } from '@/lib/use-error-text';
 
-/** « Je viens » (rejoindre avec son compte, #1444) ou « Ouvrir » (page participant d'une sortie rejointe). */
+/** "I'm in" (join with one's account, #1444) or "Open" (participant page of a joined outing). */
 export function JoinOutingButton({ outingId, mode }: { outingId: string; mode: 'join' | 'open' }) {
   const t = useTranslations('outings');
   const errText = useErrorText();

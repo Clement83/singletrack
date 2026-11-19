@@ -8,7 +8,7 @@ import type { ConditionsPreview } from '@/lib/conditions-preview';
 import { cn } from '@/lib/utils';
 
 type Props = {
-  /** `trace=<slug>` (création) ou `outing=<slug>` (modification). */
+  /** `trace=<slug>` (creation) or `outing=<slug>` (edit). */
   target: { trace: string } | { outing: string };
   date: string;
   time: string;
@@ -17,8 +17,8 @@ type Props = {
 };
 
 /**
- * Verdict des conditions en une ligne pendant qu'on organise une sortie (#1407) : météo, massifs, chasse.
- * Rien de bloquant : sans date ou si le serveur ne répond pas, la ligne reste discrète ou disparaît.
+ * One-line verdict of the conditions while organising an outing (#1407): weather, massifs, hunting.
+ * Nothing blocking: without a date or if the server does not answer, the line stays discreet or disappears.
  */
 export function ConditionsVerdict({ target, date, time, lat, lon }: Props) {
   const t = useTranslations('conditions');
@@ -29,7 +29,7 @@ export function ConditionsVerdict({ target, date, time, lat, lon }: Props) {
   useEffect(() => {
     if (!ready) return;
     const ctl = new AbortController();
-    // On attend la fin de la saisie (date tapée au clavier, RDV déplacé plusieurs fois).
+    // Wait for typing to end (date typed on the keyboard, meeting point moved several times).
     const timer = setTimeout(() => {
       fetch(`/api/outings/conditions?${qs}`, { signal: ctl.signal })
         .then((r) => (r.ok ? r.json() : null))

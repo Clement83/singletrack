@@ -15,7 +15,7 @@ type Props = { contacts: BookEntry[]; archived: BookEntry[]; friends: { userId: 
 /** Valeur d'option : `u:<compte>` (copain local) ou `r:<acteur>` (copain d'un autre serveur, #1475). */
 const optionKey = (f: { userId: string | null; remoteActorId: string | null }) => (f.userId ? `u:${f.userId}` : `r:${f.remoteActorId}`);
 
-/** Écran de gestion du carnet de potes (#1359) : ajouter, renommer, annoter, archiver, historique. */
+/** Buddy-book management screen (#1359): add, rename, annotate, archive, history. */
 export function ContactBook({ contacts, archived, friends }: Props) {
   const t = useTranslations('contacts');
   const locale = useLocale();

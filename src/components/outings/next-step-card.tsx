@@ -10,7 +10,7 @@ export { OPEN_INVITE_EVENT };
 const cls = 'flex min-h-[72px] w-full items-center justify-between gap-3 rounded-2xl bg-accent px-4 py-3 text-left text-accent-foreground shadow-sm active:opacity-80';
 
 /**
- * Encart « Prochaine étape » (#1620) : un seul bouton pleine largeur, piloté par `nextStep()`. Seul son contenu change.
+ * "Next step" card (#1620): a single full-width button, driven by `nextStep()`. Only its content changes.
  * `directionsHref` : cible de « RDV <lieu> ».
  */
 export function NextStepCard({ step, directionsHref }: { step: NextStep; directionsHref: string }) {

@@ -10,15 +10,15 @@ import { Button } from '@/components/ui/button';
 import { subscribeLinks } from '@/lib/outings/links';
 
 type Props = {
-  /** URL https absolue du flux (`/i/<token>/calendar.ics` ou `/cal/<token>/calendar.ics`). */
+  /** Absolute https URL of the feed (`/i/<token>/calendar.ics` or `/cal/<token>/calendar.ics`). */
   feedUrl: string;
-  /** Organisateur : copier le lien et le régénérer (le flux couvre toutes ses sorties). */
+  /** Organiser: copy the link and regenerate it (the feed covers all their outings). */
   organizer?: boolean;
 };
 
 /**
- * Abonnement agenda (#1357) : Google Agenda, agenda iPhone (webcal), et pour l'organisateur copier / régénérer le
- * lien. L'agenda se met à jour tout seul, mais à son rythme : on le dit honnêtement.
+ * Calendar subscription (#1357): Google Calendar, iPhone calendar (webcal), and for the organiser copy / regenerate the
+ * link. The calendar updates itself, but at its own pace: we say so honestly.
  */
 export function CalendarSubscribe({ feedUrl, organizer = false }: Props) {
   const t = useTranslations('share');

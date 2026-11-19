@@ -12,7 +12,7 @@ import { OPEN_INVITE_EVENT, openActivity } from './bar-events';
 
 export type BarActionKind = 'invite' | 'directions' | 'addRide' | 'addPhotos' | 'seePhotos';
 
-/** Action principale non-réponse de la barre : un seul bouton pleine largeur. */
+/** Main non-answer action of the bar: a single full-width button. */
 export function BarAction({ kind, href }: { kind: BarActionKind; href?: string }) {
   const t = useTranslations('outingBar');
   if (kind === 'directions' && href) {
@@ -26,8 +26,8 @@ export function BarAction({ kind, href }: { kind: BarActionKind; href?: string }
 }
 
 /**
- * Bulle de discussion (#1622) : badge des non-lus (messages postérieurs à la dernière ouverture, mémorisée par appareil),
- * fil dans un BottomSheet modal sans actualisation temps réel. `base` = null : lecteur non participant.
+ * Discussion bubble (#1622): unread badge (messages after the last opening, remembered per device),
+ * thread in a modal BottomSheet without real-time refresh. `base` = null: non-participant reader.
  */
 function Discussion({ id, base, closed }: { id: string; base: string | null; closed: boolean }) {
   const t = useTranslations('outingBar');
@@ -42,11 +42,11 @@ function Discussion({ id, base, closed }: { id: string; base: string | null; clo
       if (!res.ok) return;
       const { comments } = (await res.json()) as { comments: { createdAt: string; mine: boolean }[] };
       setUnread(countUnread(comments, readLastOpened(id)));
-    } catch { /* hors ligne : pas de badge */ }
+    } catch { /* offline: no badge */ }
   }, [base, id]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- chargement initial du compteur
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial load of the counter
     void refresh();
   }, [refresh]);
 
@@ -76,8 +76,8 @@ function Discussion({ id, base, closed }: { id: string; base: string | null; clo
 }
 
 /**
- * Barre fixe en bas de la vue de sortie (#1622) : action principale à gauche (`children`), bulle de discussion à droite.
- * La page garde un `padding-bottom` qui compense sa hauteur (voir `OutingView`).
+ * Fixed bar at the bottom of the outing view (#1622): main action on the left (`children`), discussion bubble on the right.
+ * The page keeps a `padding-bottom` that compensates for its height (see `OutingView`).
  */
 export function OutingBar({ children, discussion }: { children?: React.ReactNode; discussion: { id: string; base: string | null; closed: boolean } }) {
   return (

@@ -13,7 +13,7 @@ import { OPEN_RESPOND_EVENT } from './bar-events';
 
 type Status = 'pending' | RsvpAnswer;
 
-/** Envoi d'une réponse d'invité (sans compte : le jeton du lien fait foi). */
+/** Sends a guest's answer (no account: the link's token is the proof). */
 function useGuestSend(token: string) {
   const t = useTranslations('rsvp');
   const router = useRouter();
@@ -42,9 +42,9 @@ function useGuestSend(token: string) {
 }
 
 /**
- * Réponse de l'invité dans la barre fixe (#1622) : « Je viens ? » ⇒ Je viens / Peut-être / Non en place ⇒
- * « ✓ Je viens · Modifier ». Mêmes appels que l'ancien panneau (`POST /api/i/<token>`) ; l'encart « Prochaine étape »
- * ouvre le même choix par `OPEN_RESPOND_EVENT`.
+ * Guest's answer in the fixed bar (#1622): "Coming?" ⇒ I'm in / Maybe / No in place ⇒
+ * "✓ I'm in · Change". Same calls as the old panel (`POST /api/i/<token>`); the "Next step" card
+ * opens the same choice through `OPEN_RESPOND_EVENT`.
  */
 export function GuestAnswerBar({ token, status }: { token: string; status: Status }) {
   const t = useTranslations('outingBar');
@@ -95,7 +95,7 @@ export function GuestAnswerBar({ token, status }: { token: string; status: Statu
   );
 }
 
-/** Nom et mot de l'invité (formulaire replié, hors barre). */
+/** The guest's name and note (collapsed form, outside the bar). */
 export function GuestProfile({ token, name, comment, locked }: { token: string; name: string; comment: string; locked: boolean }) {
   const t = useTranslations('rsvp');
   const { busy, send } = useGuestSend(token);

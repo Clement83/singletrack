@@ -11,16 +11,16 @@ export type RideMapProps = {
   planned: TrackGeometry;
   ride: TrackGeometry | null;
   bbox: [number, number, number, number];
-  /** Photos localisées (#1413) : une pastille ≥ 44 px par photo, un tap l'ouvre. */
+  /** Located photos (#1413): one chip ≥ 44 px per photo, a tap opens it. */
   photos?: { id: string; lat: number; lon: number }[];
   photoLabel?: string;
   onPhoto?: (id: string) => void;
 };
 
-/** Prévu (pointillés, discret) sous le réel (trait plein) : l'écart se voit tout de suite. */
+/** Planned (dashed, discreet) under the actual ride (solid line): the gap shows immediately. */
 export default function RideMapInner({ planned, ride, bbox, photos, photoLabel, onPhoto }: RideMapProps) {
   const colors = useMapColors();
-  // Infobulle « km depuis le départ » (#1535), sur le prévu comme sur le réel.
+  // "km from the start" tooltip (#1535), on the planned route as on the actual one.
   const { tip, onMove, onTap, clear } = useTrackTip((e) => {
     const id = e.features?.[0]?.layer.id;
     return id === 'ride-real-casing' && ride ? { geometry: ride } : id === 'ride-planned-casing' ? { geometry: planned } : null;

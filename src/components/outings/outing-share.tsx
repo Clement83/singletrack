@@ -8,20 +8,20 @@ import { CalendarSubscribe } from '@/components/outings/calendar-subscribe';
 import { MAP_APPS, directionsLinks } from '@/lib/outings/share';
 
 type Props = {
-  /** Chemin du lien à partager (ex. lien ouvert `/s/<token>/join`) ; absent = pas de bouton « Partager ». */
+  /** Path of the link to share (e.g. open link `/s/<token>/join`); absent = no "Share" button. */
   sharePath?: string | null;
-  /** Message préformaté (« 🚵 Sortie VTT <titre> — <date> »), déjà traduit côté serveur. */
+  /** Pre-formatted message ("🚵 Sortie VTT <title> — <date>"), already translated on the server. */
   shareText: string;
   title: string;
   icsHref: string;
   gpxHref: string;
   lat: number;
   lon: number;
-  /** Choix de l'appli de cartes ; masqué quand la page a déjà son bouton « Itinéraire ». */
+  /** Choice of maps app; hidden when the page already has its "Directions" button. */
   showDirections?: boolean;
-  /** URL https du flux d'abonnement de l'invité (#1357) ; absent = pas de bloc d'abonnement. */
+  /** https URL of the guest's subscription feed (#1357); absent = no subscription block. */
   feedUrl?: string;
-  /** Texte d'aide sous le bouton « Partager » (ou à sa place s'il n'y a pas de lien). */
+  /** Help text under the "Share" button (or instead of it when there is no link). */
   hint?: string;
 };
 
@@ -32,14 +32,14 @@ type ShareArgs = {
   t: (key: 'copied' | 'copyFailed') => string;
 };
 
-/** Web Share natif, repli « copier le lien » (#1460). */
+/** Native Web Share, "copy link" fallback (#1460). */
 export async function shareLink({ sharePath, title, shareText, t }: ShareArgs) {
   const url = `${window.location.origin}${sharePath}`;
   if (navigator.share) {
     try {
       await navigator.share({ title, text: shareText, url });
     } catch {
-      /* partage annulé : rien à faire */
+      /* share cancelled: nothing to do */
     }
     return;
   }
@@ -55,7 +55,7 @@ async function copyLink({ sharePath, shareText, t }: ShareArgs) {
   }
 }
 
-/** Icône « Partager » de l'en-tête, mobile seulement (#1460) : partage le lien du groupe quand il est actif. */
+/** Header "Share" icon, mobile only (#1460): shares the group link when it is active. */
 export function HeaderShareButton({ sharePath, shareText, title }: { sharePath: string; shareText: string; title: string }) {
   const t = useTranslations('share');
   return (
@@ -66,9 +66,9 @@ export function HeaderShareButton({ sharePath, shareText, title }: { sharePath: 
 }
 
 /**
- * Partager et préparer une sortie (#1351) : partage natif (Web Share, repli « copier le lien »), agenda (.ics),
- * GPX de la trace figée, itinéraire vers le RDV dans l'appli de cartes au choix. Actions secondaires : sur la page
- * invité, le bouton GO reste l'action principale.
+ * Share and prepare an outing (#1351): native share (Web Share, "copy link" fallback), calendar (.ics),
+ * GPX of the frozen track, directions to the meeting point in the chosen maps app. Secondary actions: on the guest
+ * page, the GO button stays the main action.
  */
 export function OutingShare({ sharePath, shareText, title, icsHref, gpxHref, lat, lon, showDirections = true, feedUrl, hint }: Props) {
   const t = useTranslations('share');

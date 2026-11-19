@@ -10,8 +10,8 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useErrorText } from '@/lib/use-error-text';
 
 /**
- * Archiver / désarchiver (#1459) pour soi seulement, ou quitter une sortie à venir (réponse « non » + masquée).
- * Quitter demande confirmation ; archiver est immédiat et réversible (Archives › Désarchiver).
+ * Archive / un-archive (#1459) for oneself only, or leave an upcoming outing (answer "no" + hidden).
+ * Leaving asks for confirmation; archiving is immediate and reversible (Archives › Un-archive).
  */
 export function ArchiveButton({ outingId, mode, onDone }: { outingId: string; mode: 'archive' | 'unarchive' | 'leave'; onDone?: () => void }) {
   const t = useTranslations('outings');

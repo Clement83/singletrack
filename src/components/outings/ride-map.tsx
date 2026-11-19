@@ -8,7 +8,7 @@ import type { RideMapProps } from './ride-map-inner';
 
 const Inner = dynamic(() => import('./ride-map-inner'), { ssr: false, loading: () => <Skeleton className="size-full" /> });
 
-/** Carte prévu / réel. MapLibre ne se charge qu'à l'approche de la carte (#1371). */
+/** Planned / actual map. MapLibre only loads when the map gets close (#1371). */
 export function RideMap({ label, ...props }: RideMapProps & { label: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const near = useNearViewport(ref);

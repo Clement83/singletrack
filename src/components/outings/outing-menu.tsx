@@ -8,13 +8,13 @@ import { Button } from '@/components/ui/button';
 import { OPEN_INVITE_EVENT } from '@/components/outings/next-step-card';
 
 /**
- * Menu « … » de l'organisateur (#1619) : modifier, dupliquer, annuler (`manage`), inviter (`invite`), partage et
- * exports (`share`). Le contenu est rendu côté serveur par la page et passé en slots.
+ * The organiser's "…" menu (#1619): edit, duplicate, cancel (`manage`), invite (`invite`), share and
+ * exports (`share`). The content is rendered on the server by the page and passed as slots.
  */
 export function OutingMenu({ manage, invite, share }: { manage: React.ReactNode; invite: React.ReactNode; share?: React.ReactNode }) {
   const t = useTranslations('outingView');
   const [open, setOpen] = useState<'menu' | 'invite' | 'share' | null>(null);
-  // « Relancer … » de l'encart Prochaine étape (#1620) ouvre directement l'invitation.
+  // "Remind …" from the Next step card (#1620) opens the invitation directly.
   useEffect(() => {
     const on = () => setOpen('invite');
     window.addEventListener(OPEN_INVITE_EVENT, on);

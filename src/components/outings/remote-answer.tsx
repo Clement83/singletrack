@@ -10,7 +10,7 @@ import { useErrorText } from '@/lib/use-error-text';
 
 type Answer = 'yes' | 'maybe' | 'no';
 
-/** « Je viens » / « Peut-être » / « Non » pour une sortie d'un autre serveur (#1476) : un tap, trois zones tactiles de 44 px et plus. */
+/** "I'm in" / "Maybe" / "No" for an outing on another server (#1476): one tap, three touch areas of 44 px or more. */
 export function RemoteAnswer({ id, current, domain, compact = false }: { id: string; current: 'pending' | Answer; domain: string; compact?: boolean }) {
   const t = useTranslations('remoteOutings');
   const errText = useErrorText();

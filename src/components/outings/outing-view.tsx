@@ -15,7 +15,7 @@ import { profileFor } from '@/lib/outings/profile';
 import type { TrackSnapshot } from '@/lib/outings/snapshot';
 import type { OutingRow } from '@/db/schema';
 
-/** Parcours affiché : jamais le slug de la trace d'origine (#1592). */
+/** Route shown: never the slug of the original track (#1592). */
 export type OutingViewTrack = Pick<TrackSnapshot, 'name' | 'geometry' | 'bbox' | 'start' | 'distanceM' | 'elevationGainM' | 'attribution' | 'license'>;
 
 export type OutingViewRole = 'organizer' | 'guest' | 'visitor' | 'anonymous';
@@ -27,48 +27,48 @@ export type OutingViewOuting = Pick<OutingRow, 'title' | 'startsAt' | 'level' | 
 };
 
 type Props = {
-  /** Qui regarde : ne change que les actions (passées en slots), jamais le visuel. */
+  /** Who is looking: only changes the actions (passed as slots), never the visuals. */
   role: OutingViewRole;
-  /** `page` = page complète ; `panel` = panneau de la carte (sans conditions, roulées, photos, commentaires ni carte embarquée). */
+  /** `page` = full page; `panel` = map panel (no conditions, rides, photos, comments or embedded map). */
   presentation: 'page' | 'panel';
   outing: OutingViewOuting;
-  /** Absent (sortie d'un autre serveur sans parcours) ⇒ bloc parcours masqué. */
+  /** Absent (outing from another server without a route) ⇒ route block hidden. */
   track: OutingViewTrack | null;
-  /** Lien de retour, au-dessus de l'en-tête. */
+  /** Back link, above the header. */
   topLink?: React.ReactNode;
-  /** Bouton de partage du lien de groupe (en-tête). */
+  /** Group-link share button (header). */
   headerAction?: React.ReactNode;
-  /** Menu « … » de l'organisateur (page seulement, #1619). */
+  /** The organiser's "…" menu (page only, #1619). */
   headerMenu?: React.ReactNode;
-  /** Prénom de l'organisateur : « Organisée par X » et avatar du mot de l'organisateur (page seulement). */
+  /** First name of the organiser: "Organised by X" and avatar of the organiser's note (page only). */
   organizerName?: string;
-  /** Ligne « conditions » de la carte d'identité (page) ; un tap ouvre la section Conditions. */
+  /** "Conditions" line of the identity card (page); a tap opens the Conditions section. */
   conditionsLine?: React.ReactNode;
-  /** Bandeaux d'état sous les badges (sortie publique figée, annulée, complète, passée). */
+  /** State banners under the badges (frozen public outing, cancelled, full, past). */
   notices?: React.ReactNode;
-  /** Encart « Prochaine étape » (#1620), sous la carte d'identité (page seulement). */
+  /** "Next step" card (#1620), under the identity card (page only). */
   nextStep?: React.ReactNode;
-  /** Action principale : Répondre / Gérer / Rejoindre / Se connecter. */
+  /** Main action: Answer / Manage / Join / Sign in. */
   primaryAction?: React.ReactNode;
-  /** Phrase sous le titre du parcours (trace d'origine, attribution). */
+  /** Sentence under the route title (original track, attribution). */
   trackNote?: React.ReactNode;
   conditions?: React.ReactNode;
-  /** Verdict affiché à droite du titre de la section Conditions, section fermée comme ouverte (#1638). */
+  /** Verdict shown right of the Conditions section title, section closed or open (#1638). */
   conditionsSummary?: React.ReactNode;
   participants?: React.ReactNode;
-  /** Partage, inviter des copains, gestion. */
+  /** Share, invite friends, management. */
   secondaryActions?: React.ReactNode;
-  /** Sorties roulées et photos. */
+  /** Rides and photos. */
   activity?: React.ReactNode;
-  /** Barre fixe du bas (#1622, page seulement) : action principale + bulle de discussion. */
+  /** Fixed bottom bar (#1622, page only): main action + discussion bubble. */
   bar?: React.ReactNode;
 };
 
 /**
- * Vue unique d'une sortie (#1597) : mêmes blocs, même ordre partout. Le composant ne fait aucun appel réseau ;
- * l'appelant décide des actions selon `outingPermissions` et les passe dans les emplacements.
- * Ordre (`panel`) : en-tête → action principale → RDV + itinéraire → description → parcours → qui vient. La présentation
- * `page` (#1619) est dans `PageView`.
+ * Single view of an outing (#1597): same blocks, same order everywhere. The component makes no network call;
+ * the caller decides the actions according to `outingPermissions` and passes them in the slots.
+ * Order (`panel`): header → main action → meeting point + directions → description → route → who's coming. The `page`
+ * presentation (#1619) is in `PageView`.
  */
 export function OutingView({ role, presentation, outing: o, track: snap, topLink, headerAction, headerMenu, organizerName, conditionsLine, notices, nextStep, primaryAction, trackNote, conditions, conditionsSummary, participants, secondaryActions, activity, bar }: Props) {
   const locale = useLocale();
@@ -129,8 +129,8 @@ type PageProps = Pick<Props, 'role' | 'topLink' | 'headerAction' | 'headerMenu' 
 };
 
 /**
- * Présentation page (#1619) : en-tête → carte d'identité → action principale (emplacement « Prochaine étape », P2) →
- * parcours (P3) → sections repliées (Conditions, Roulées et photos) → actions des invités → barre fixe du bas (#1622 : action principale + bulle ; les commentaires sont dans le sheet).
+ * Page presentation (#1619): header → identity card → main action ("Next step" slot, P2) →
+ * route (P3) → collapsed sections (Conditions, Rides and photos) → guest actions → fixed bottom bar (#1622: main action + bubble; comments are in the sheet).
  */
 function PageView({ role, outing: o, snap, end, topLink, headerAction, headerMenu, organizerName, conditionsLine, notices, nextStep, primaryAction, trackNote, conditions, conditionsSummary, participants, secondaryActions, activity, bar }: PageProps) {
   const locale = useLocale();

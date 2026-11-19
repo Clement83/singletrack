@@ -8,7 +8,7 @@ import type { HistoryRoute } from './history-map-inner';
 
 const Inner = dynamic(() => import('./history-map-inner'), { ssr: false, loading: () => <Skeleton className="size-full" /> });
 
-/** Carte de toutes les traces des sorties terminées. MapLibre ne se charge qu'à l'approche de la carte (#1371). */
+/** Map of all the tracks of completed outings. MapLibre only loads when the map gets close (#1371). */
 export function HistoryMap({ routes, label }: { routes: HistoryRoute[]; label: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const near = useNearViewport(ref);

@@ -3,7 +3,7 @@ import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import type { OutingRow } from '@/db/schema';
 
-/** Niveau requis et VAE : toujours les deux, en badges. */
+/** Required level and e-bike: always both, as badges. */
 export function OutingBadges({ level, ebike, cancelled, done, visibility }: { level: OutingRow['level']; ebike: OutingRow['ebike']; cancelled?: boolean; done?: boolean; visibility?: OutingRow['visibility'] }) {
   const t = useTranslations('outingLabels');
   const tv = useTranslations('outingVisibility');

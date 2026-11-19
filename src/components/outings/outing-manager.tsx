@@ -21,7 +21,7 @@ type Props = { outingId: string; isOwner?: boolean; candidates?: Candidate[]; fr
 
 const json = (body: unknown): RequestInit => ({ method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
 
-/** Gestion de la sortie côté organisateur : invitations nominatives, lien ouvert, annulation. */
+/** Organiser-side outing management: named invitations, open link, cancellation. */
 export function OutingManager({ outingId, isOwner = false, candidates = [], frozen = false, slug, title, cancelled, done = false, openLink, invitations, contacts, reinvite, view = 'all' }: Props) {
   const showInvite = view !== 'manage';
   const showManage = view !== 'invite';
@@ -35,7 +35,7 @@ export function OutingManager({ outingId, isOwner = false, candidates = [], froz
   const [transferTo, setTransferTo] = useState(candidates[0]?.userId ?? '');
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
-  // Réinviter (#1360) : contacts de la sortie d'origine cochés d'office ; sans contact, prénoms proposés (clé « n:<prénom> »).
+  // Invite again (#1360): contacts of the original outing ticked by default; without a contact, first names offered (key "n:<name>").
   const [picked, setPicked] = useState<string[]>(() => [
     ...(reinvite?.contactIds ?? []).filter((id) => contacts.some((c) => c.id === id)),
     ...(reinvite?.names ?? []).map((n) => `n:${n}`),
@@ -43,7 +43,7 @@ export function OutingManager({ outingId, isOwner = false, candidates = [], froz
   const hasReinvite = !!reinvite && (reinvite.contactIds.length > 0 || reinvite.names.length > 0);
   const nameOnly = reinvite?.names ?? [];
   const [addToBook, setAddToBook] = useState(true);
-  /** Dernière fournée d'invitations (liens à envoyer) : le message récapitulatif en est tiré. */
+  /** Last batch of invitations (links to send): the summary message is built from it. */
   const [batch, setBatch] = useState<{ name: string; url: string }[]>([]);
 
   const abs = (path: string) => `${window.location.origin}${path}`;
@@ -61,7 +61,7 @@ export function OutingManager({ outingId, isOwner = false, candidates = [], froz
       setBusy(false);
     }
   }
-  /** Départ du propriétaire (#1459) ou départ simple du créateur d'une publique : retour à la liste. */
+  /** Owner leaving (#1459) or simple leave of the creator of a public outing: back to the list. */
   async function depart(body: unknown | null) {
     const d = body ? await call(`/api/outings/${slug}/depart`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       : await call(`/api/outings/${outingId}/leave`, { method: 'POST' });
@@ -100,14 +100,14 @@ export function OutingManager({ outingId, isOwner = false, candidates = [], froz
       toast.error(t('copyFailed'));
     }
   }
-  /** Lien perso d'une personne (#1456) : déchiffré côté serveur, jamais régénéré. Partage natif, repli copie. */
+  /** A person's personal link (#1456): decrypted on the server, never regenerated. Native share, copy fallback. */
   async function shareGuest(i: Inv) {
     const d = await call(`/api/outings/${slug}/invitations/${i.id}`, { method: 'GET' });
     if (d) await share(abs(d.path), i.name);
   }
   async function share(url: string, who: string) {
     if (navigator.share) {
-      try { await navigator.share({ title, text: t('shareText', { who, title }), url }); } catch { /* annulé */ }
+      try { await navigator.share({ title, text: t('shareText', { who, title }), url }); } catch { /* cancelled */ }
     } else await copy(url);
   }
 

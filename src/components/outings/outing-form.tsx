@@ -31,16 +31,16 @@ export type OutingFormValues = {
 };
 
 type Props = {
-  /** Création : slug de la trace. Modification : slug de la sortie. */
+  /** Creation: slug of the track. Edit: slug of the outing. */
   mode: { kind: 'create'; trackSlug: string } | { kind: 'edit'; outingSlug: string };
   initial: OutingFormValues;
-  /** Fédération active (#1476) : rappelle qu'une annulation envoyée aux autres serveurs n'est pas garantie. */
+  /** Federation on (#1476): reminds that a cancellation sent to other servers is not guaranteed. */
   federated?: boolean;
-  /** Visibilité de la trace d'origine (#1592) : avertit quand la sortie est plus large. */
+  /** Visibility of the original track (#1592): warns when the outing is wider. */
   trackVisibility?: string | null;
 };
 
-/** Formulaire court (charte) : date, heure, titre, RDV (tap sur la carte), niveau, VAE. */
+/** Short form (charter): date, time, title, meeting point (tap on the map), level, e-bike. */
 export function OutingForm({ mode, initial, federated = false, trackVisibility = null }: Props) {
   const t = useTranslations('outingForm');
   const tl = useTranslations('outingLabels');
@@ -51,10 +51,10 @@ export function OutingForm({ mode, initial, federated = false, trackVisibility =
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
-  // Verrou synchrone (#1424) : `busy` ne se propage qu'au rendu suivant, un double tap créait deux sorties.
+  // Synchronous lock (#1424): `busy` only propagates on the next render, a double tap created two outings.
   const locked = useRef(false);
   const dirty = !sent && JSON.stringify(v) !== JSON.stringify(initial);
-  // Avertir avant de fermer ou recharger la page avec des modifications non enregistrées (#1390, skill ui-ux).
+  // Warn before closing or reloading the page with unsaved changes (#1390, ui-ux skill).
   useEffect(() => {
     if (!dirty) return;
     const warn = (e: BeforeUnloadEvent) => e.preventDefault();
@@ -95,7 +95,7 @@ export function OutingForm({ mode, initial, federated = false, trackVisibility =
         setSent(true);
         router.push(`/s/${mode.kind === 'create' ? data.slug : mode.outingSlug}`);
         router.refresh();
-        done = true; // le verrou reste posé : on quitte la page, aucun second envoi possible
+        done = true; // the lock stays on: we leave the page, no second submission possible
         return;
       }
       if (data.errors) setErrors(data.errors);

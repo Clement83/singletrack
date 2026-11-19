@@ -19,7 +19,7 @@ type Props = { base: string; rides: RideView[]; planned: Planned; canUpload: boo
 
 const MAX_MB = 5;
 
-/** Après la sortie (#1412) : « Ma trace roulée » (GPX), superposition prévu / réel et stats réelles. */
+/** After the outing (#1412): "My ridden track" (GPX), planned / actual overlay and real stats. */
 export function RideSection({ base, rides, planned, canUpload }: Props) {
   const t = useTranslations('ride');
   const tc = useTranslations('common');
