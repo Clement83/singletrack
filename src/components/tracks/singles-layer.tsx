@@ -19,7 +19,7 @@ export type SinglesState =
 const PREF_KEY = 'singletrack.singles';
 const PREF_EVENT = 'singletrack:singles-pref';
 
-/** Préférence d'affichage des singles (#1436) : active par défaut, mémorisée en localStorage (pas dans l'URL). */
+/** Singletrack display preference (#1436): on by default, remembered in localStorage (not in the URL). */
 export function useSinglesPref(): [boolean, (v: boolean) => void] {
   const on = useSyncExternalStore(
     (cb) => {
@@ -43,7 +43,7 @@ export function useSinglesPref(): [boolean, (v: boolean) => void] {
     try {
       localStorage.setItem(PREF_KEY, v ? 'on' : 'off');
     } catch {
-      /* stockage indisponible : le réglage vaut pour cet appel seulement */
+      /* storage unavailable: the setting only applies to this call */
     }
     window.dispatchEvent(new Event(PREF_EVENT));
   }, []);
@@ -54,7 +54,7 @@ type Loaded = { status: 'ok'; truncated: boolean; features: SegmentFeature[] };
 const cache = new Map<string, Loaded>();
 const CACHE_MAX = 60;
 
-/** Emprise alignée sur une grille (tuiles) : un petit déplacement retombe sur la même clé, donc sur le cache. */
+/** Extent aligned on a grid (tiles): a small move lands on the same key, hence on the cache. */
 export function snapView(view: View, zoom: number): { key: string; bbox: View } {
   const step = zoom >= 14 ? 0.02 : zoom >= 12.5 ? 0.04 : 0.08;
   const bbox: View = [
@@ -68,9 +68,9 @@ export function snapView(view: View, zoom: number): { key: string; bbox: View } 
 }
 
 /**
- * Calque des singles OSM (#1372, #1436) : quand il est activé, charge les segments de la vue (alignée sur une
- * grille, cache client, debounce 300 ms, requête annulée si la carte rebouge). Sous le zoom minimal : rien n'est
- * demandé ni affiché. Les segments précédents restent affichés pendant le chargement (pas de clignotement).
+ * OSM singletrack layer (#1372, #1436): when on, loads the segments of the view (aligned on a
+ * grid, client cache, 300 ms debounce, request cancelled if the map moves again). Below the minimum zoom: nothing is
+ * requested or shown. The previous segments stay displayed while loading (no flicker).
  */
 export function useSingles(on: boolean, view: View | null, zoom: number): SinglesState | null {
   const [state, setState] = useState<SinglesState | null>(null);
@@ -132,7 +132,7 @@ const LEVELS = ['green', 'blue', 'red', 'black'] as const;
 /** Same colours as the map lines (`map-*` tokens), not the themed UI dots. */
 const MAP_DOT = { green: 'bg-map-diff-green', blue: 'bg-map-diff-blue', red: 'bg-map-diff-red', black: 'bg-map-diff-black' } as const;
 
-/** Légende des difficultés (couleur toujours accompagnée de son libellé), dans le panneau de filtres. */
+/** Difficulty legend (colour always with its label), in the filters panel. */
 export function SinglesLegend({ className }: { className?: string }) {
   const t = useTranslations('singles');
   return (
@@ -154,7 +154,7 @@ export function SinglesLegend({ className }: { className?: string }) {
   );
 }
 
-/** Seules indications utiles sur la carte : erreur et « tronqué ». Rien sous le zoom minimal, ni pendant le chargement. */
+/** The only useful indications on the map: error and "truncated". Nothing below the minimum zoom, nor while loading. */
 export function SinglesStatus({ state, className }: { state: SinglesState | null; className?: string }) {
   const t = useTranslations('singles');
   if (state?.status !== 'error' && !(state?.status === 'ok' && state.truncated)) return null;

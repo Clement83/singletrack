@@ -34,7 +34,7 @@ function read(): MapColors {
   return Object.fromEntries(Object.entries(VARS).map(([k, v]) => [k, cs.getPropertyValue(v).trim() || 'transparent'])) as MapColors;
 }
 
-/** `null` avant le premier rendu client. Couleurs des tokens (MapLibre n'accepte pas `var(--x)`), relues quand le thème change. */
+/** `null` before the first client render. Token colours (MapLibre does not accept `var(--x)`), read again when the theme changes. */
 export function useMapColors(): MapColors | null {
   const [colors, setColors] = useState<MapColors | null>(null);
   useEffect(() => {

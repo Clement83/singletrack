@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { DESKTOP, useMediaQuery } from '@/lib/use-media-query';
 import { Button } from './button';
 
-// Les 3 crans du sheet mobile : replié (poignée + titre + 1 ligne), mi-hauteur, plein.
+// The 3 detents of the mobile sheet: collapsed (handle + title + 1 line), half height, full.
 export const SNAP_POINTS = ['148px', 0.5, 0.92] as const;
 export type Snap = (typeof SNAP_POINTS)[number];
 
@@ -18,20 +18,20 @@ type Props = {
   title: string;
   description?: string;
   children: React.ReactNode;
-  /** Action principale, collée en bas (bouton pleine largeur). */
+  /** Main action, stuck at the bottom (full-width button). */
   footer?: React.ReactNode;
   /** Cran initial sur mobile. */
   initialSnap?: Snap;
-  /** Pied haut (ex. profil + actions, #1582) : réserve plus de place sous le contenu sur mobile. */
+  /** Tall footer (e.g. profile + actions, #1582): reserves more room under the content on mobile. */
   tallFooter?: boolean;
-  /** Modal (#1622) : voile derrière le sheet, un tap dessus le ferme ; la page derrière n'est plus utilisable. */
+  /** Modal (#1622): scrim behind the sheet, a tap on it closes it; the page behind is no longer usable. */
   modal?: boolean;
 };
 
 /**
- * Conteneur des détails : bottom sheet à 3 crans sur mobile (vaul), panneau latéral de 400 px
- * en desktop. Non modal : la carte reste utilisable derrière. Clavier : Échap ferme, le bouton
- * « Agrandir / Réduire » fait passer d'un cran à l'autre.
+ * Details container: 3-detent bottom sheet on mobile (vaul), 400 px side panel
+ * on desktop. Non-modal: the map stays usable behind. Keyboard: Escape closes, the
+ * "Expand / Shrink" button moves from one detent to the next.
  */
 export function BottomSheet({ open, onOpenChange, title, description, children, footer, initialSnap = 0.5, tallFooter = false, modal = false }: Props) {
   const tSheet = useTranslations('sheet');
@@ -78,8 +78,8 @@ export function BottomSheet({ open, onOpenChange, title, description, children, 
         {modal && <Drawer.Overlay className="fade-in fixed inset-0 z-40 bg-foreground/40" />}
         <Drawer.Content
           onInteractOutside={(e) => {
-            // Le pied d'action est hors du Content (portail à part) : le toucher ne doit pas
-            // être pris pour un clic « à l'extérieur » qui fermerait le sheet avant le clic (#1447).
+            // The action footer is outside Content (separate portal): touching it must not
+            // be taken for a click "outside" that would close the sheet before the click (#1447).
             if ((e.target as Element | null)?.closest?.('[data-sheet-footer]')) e.preventDefault();
           }}
           className="fixed inset-x-0 bottom-0 z-40 flex h-full max-h-[96dvh] flex-col rounded-t-2xl border border-b-0 border-border glass text-card-foreground shadow-sheet outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -103,8 +103,8 @@ export function BottomSheet({ open, onOpenChange, title, description, children, 
             {children}
           </div>
         </Drawer.Content>
-        {/* Le contenu du sheet est translaté selon le cran : l'action principale est donc posée
-            à part, collée en bas de l'écran, pour rester visible à tous les crans. */}
+        {/* The sheet content is translated according to the detent: the main action is therefore placed
+            separately, stuck to the bottom of the screen, to stay visible at every detent. */}
         {open && footer && (
           <div data-sheet-footer className="pointer-events-auto fixed inset-x-0 bottom-0 z-50 border-t border-border glass px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))]">
             {footer}

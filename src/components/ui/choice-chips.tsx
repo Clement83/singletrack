@@ -6,8 +6,8 @@ import { cn } from '@/lib/utils';
 export type Choice = { id: string; label: string; icon?: LucideIcon };
 
 /**
- * Choix unique en pastilles (boutons radio) : thème, langue… Zones ≥ 44 px, sélection en `accent`.
- * `value` indéfini = rien de sélectionné (ex. valeur connue seulement après le montage).
+ * Single choice as chips (radio buttons): theme, language… Areas ≥ 44 px, selection in `accent`.
+ * Undefined `value` = nothing selected (e.g. value only known after mount).
  */
 export function ChoiceChips({
   label,

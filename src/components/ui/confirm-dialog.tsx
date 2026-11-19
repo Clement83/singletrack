@@ -12,17 +12,17 @@ type Props = {
   confirmLabel: string;
   cancelLabel: string;
   onConfirm: () => void;
-  /** Envoi en cours : les deux boutons sont désactivés. */
+  /** Submission in progress: both buttons are disabled. */
   busy?: boolean;
   busyLabel?: string;
   destructive?: boolean;
-  /** Le bouton principal est inactif (ex. enregistrement impossible). */
+  /** The main button is inactive (e.g. saving impossible). */
   confirmDisabled?: boolean;
-  /** Troisième choix, sous le bouton principal (ex. « Quitter sans enregistrer »). */
+  /** Third choice, under the main button (e.g. "Leave without saving"). */
   secondary?: { label: string; onClick: () => void; destructive?: boolean };
 };
 
-/** Confirmation d'une action définitive (jamais le `confirm` du navigateur) : tiroir modal, bouton d'action pleine largeur. */
+/** Confirmation of a final action (never the browser's `confirm`): modal drawer, full-width action button. */
 export function ConfirmDialog({ open, onOpenChange, title, description, confirmLabel, cancelLabel, onConfirm, busy, busyLabel, destructive = true, confirmDisabled, secondary }: Props) {
   return (
     <ActionSheet open={open} onOpenChange={(o) => !busy && onOpenChange(o)} title={title}>

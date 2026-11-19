@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { DEM_SOURCE, DEM_SOURCE_ID } from '@/lib/map/terrain';
 import { TerrainToggle } from '@/components/map/terrain-toggle';
 
-// Fond topo OpenTopoMap (secours libre). L'IGN Géoplateforme est à évaluer (licence, quotas) : voir AGENTS.md.
+// OpenTopoMap topo basemap (free fallback). IGN Géoplateforme is still to be assessed (licence, quotas): see AGENTS.md.
 const style: StyleSpecification = {
   version: 8,
   sources: {
@@ -23,7 +23,7 @@ const style: StyleSpecification = {
   layers: [{ id: 'topo', type: 'raster', source: 'topo' }],
 };
 
-/** Même fond + source d'altitude (#1667) : chargée seulement quand la 3D est active. */
+/** Same basemap + elevation source (#1667): only loaded when 3D is on. */
 const styleWithDem: StyleSpecification = { ...style, sources: { ...style.sources, [DEM_SOURCE_ID]: DEM_SOURCE } };
 
 type Props = {
@@ -31,29 +31,29 @@ type Props = {
   lon: number;
   zoom?: number;
   /**
-   * Carte intégrée dans une page qui défile (fiche trace, sortie) : un doigt fait défiler la page,
-   * deux doigts déplacent la carte (cooperativeGestures) — la carte ne « piège » pas le doigt.
-   * Carte plein écran (accueil) : laisser à `false`.
+   * Map embedded in a scrolling page (track sheet, outing): one finger scrolls the page,
+   * two fingers move the map (cooperativeGestures) — the map does not "trap" the finger.
+   * Full-screen map (home): leave `false`.
    */
   embedded?: boolean;
-  /** `false` : carte figée (aperçu dans une page qui défile, #1621) — ni geste ni bouton, le doigt fait défiler la page. */
+  /** `false`: frozen map (preview in a scrolling page, #1621) — no gesture or button, the finger scrolls the page. */
   interactive?: boolean;
   className?: string;
-  /** Calques / marqueurs react-map-gl posés sur la carte. */
+  /** react-map-gl layers / markers placed on the map. */
   children?: React.ReactNode;
   mapRef?: React.Ref<MapRef>;
   /** Emprise initiale (prioritaire sur lat/lon/zoom). */
   bounds?: [number, number, number, number];
   boundsPadding?: number | { top: number; bottom: number; left: number; right: number };
-  /** Relief en 3D disponible (#1667) : bouton « 3D » dans les contrôles (carte interactive seulement). */
+  /** 3D relief available (#1667): "3D" button in the controls (interactive map only). */
   terrain?: boolean;
 } & Pick<MapProps, 'onClick' | 'onMouseMove' | 'onMouseLeave' | 'onMouseDown' | 'onMouseUp' | 'onContextMenu' | 'onMoveEnd' | 'onLoad' | 'interactiveLayerIds' | 'cursor'>;
 
 /**
- * Carte de base, tactile : pinch-zoom, rotation à deux doigts, boutons ≥ 44 px (cf. `.map-touch`
- * dans globals.css), bouton « me localiser » (géolocalisation live).
- * La géolocalisation exige HTTPS (ou localhost) : sur le LAN en HTTP le navigateur la refuse, le
- * bouton affiche alors une erreur sobre — voir AGENTS.md.
+ * Base map, touch-friendly: pinch zoom, two-finger rotation, buttons ≥ 44 px (see `.map-touch`
+ * in globals.css), "locate me" button (live geolocation).
+ * Geolocation requires HTTPS (or localhost): over plain HTTP on the LAN the browser refuses it, the
+ * button then shows a plain error — see AGENTS.md.
  */
 export default function BaseMap({ lat, lon, zoom = 11, embedded = false, interactive = true, className, children, mapRef, bounds, boundsPadding = 40, terrain = false, ...events }: Props) {
   return (

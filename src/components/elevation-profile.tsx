@@ -7,32 +7,32 @@ import { autoKmStep, edgeGrades, slopeClass, slopeCssColor } from '@/lib/geo/slo
 
 type Props = {
   points: ProfilePoint[];
-  /** Appelé quand le curseur bouge (survol souris, glisser au doigt, flèches) avec le point visé, `null` quand il disparaît. */
+  /** Called when the cursor moves (mouse hover, finger drag, arrows) with the targeted point, `null` when it disappears. */
   onScrub?: (point: (ProfilePoint & { index: number }) | null) => void;
-  /** Curseur imposé de l'extérieur (ex. survol de la trace sur la carte), affiché quand le profil lui-même n'est pas visé. */
+  /** Cursor imposed from outside (e.g. hovering the track on the map), shown when the profile itself is not targeted. */
   cursor?: number | null;
-  /** Colore chaque tronçon selon la pente (montée douce / raide, descente) et affiche la légende. */
+  /** Colours each segment by slope (gentle / steep climb, descent) and shows the legend. */
   slopes?: boolean;
-  /** Version basse (éditeur mobile, #1392) : profil de 64 px, sans légende. */
+  /** Low version (mobile editor, #1392): 64 px profile, no legend. */
   compact?: boolean;
-  /** Légende des pentes sous le profil (défaut : oui). La carte des traces la porte sur la carte (#1582). */
+  /** Slope legend under the profile (default: yes). The track map carries it on the map (#1582). */
   legend?: boolean;
   className?: string;
 };
 
-// Classes Tailwind écrites en toutes lettres (le scanner ne voit pas les noms construits).
+// Tailwind classes written out in full (the scanner does not see built names).
 const UP_BG = ['bg-slope-up-1', 'bg-slope-up-2', 'bg-slope-up-3', 'bg-slope-up-4', 'bg-slope-up-5'];
 const DOWN_BG = ['bg-slope-down-1', 'bg-slope-down-2', 'bg-slope-down-3', 'bg-slope-down-4', 'bg-slope-down-5'];
 
-/** Largeur de repli avant la première mesure (rendu serveur). Le SVG est ensuite dessiné à la largeur réelle de son bloc (#1445). */
+/** Fallback width before the first measurement (server rendering). The SVG is then drawn at the real width of its block (#1445). */
 const DEFAULT_W = 320;
 
 /**
- * Profil altimétrique partagé (fiche trace, sorties, éditeur) avec curseur synchronisé avec la carte (#1391) :
- * - souris : le curseur suit le **survol**, sans clic, et disparaît en sortant ;
- * - doigt : on glisse (pointer events, `touch-action: pan-y` pour garder le scroll vertical de la page) ;
- * - clavier : flèches gauche/droite (Maj = 10 points), Début/Fin, Échap.
- * Le curseur montre km, altitude et pente du tronçon (couleur + libellé) ; `onScrub` donne le point à marquer sur la carte.
+ * Shared elevation profile (track sheet, outings, editor) with a cursor synchronised with the map (#1391):
+ * - mouse: the cursor follows the **hover**, no click, and disappears when leaving;
+ * - finger: drag (pointer events, `touch-action: pan-y` to keep the page's vertical scroll);
+ * - keyboard: left/right arrows (Shift = 10 points), Home/End, Escape.
+ * The cursor shows km, elevation and the segment's slope (colour + label); `onScrub` gives the point to mark on the map.
  */
 export function ElevationProfile({ points, onScrub, cursor = null, slopes = false, compact = false, legend = true, className }: Props) {
   const t = useTranslations('profile');
@@ -40,9 +40,9 @@ export function ElevationProfile({ points, onScrub, cursor = null, slopes = fals
   const ref = useRef<SVGSVGElement>(null);
   const [active, setActive] = useState<number | null>(null);
   const [W, setW] = useState(DEFAULT_W);
-  const H = compact ? 64 : 128; // = h-16 / h-32 : 1 unité du viewBox = 1 px, rien n'est déformé ni centré en bandes.
+  const H = compact ? 64 : 128; // = h-16 / h-32: 1 viewBox unit = 1 px, nothing is distorted or letterboxed.
   const ready = points.length >= 2;
-  // Largeur mesurée en continu (ResizeObserver) : le tracé suit le bloc, le curseur reste aligné sur la souris.
+  // Width measured continuously (ResizeObserver): the line follows the block, the cursor stays aligned with the mouse.
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -125,7 +125,7 @@ export function ElevationProfile({ points, onScrub, cursor = null, slopes = fals
       >
         <title id={titleId}>{t('title')}</title>
         <polygon points={area} fill="var(--accent)" />
-        {/* Graduation km (#1382) : mêmes bornes que les pastilles de la carte, pas automatique. */}
+        {/* Km scale (#1382): same markers as the map chips, automatic step. */}
         {ticks.map((k) => (
           <g key={k} pointerEvents="none">
             <line x1={(k / maxKm) * W} x2={(k / maxKm) * W} y1={compact ? 0 : 14} y2={H} stroke="var(--border)" strokeWidth={1} vectorEffect="non-scaling-stroke" />
@@ -156,7 +156,7 @@ export function ElevationProfile({ points, onScrub, cursor = null, slopes = fals
           </g>
         )}
       </svg>
-      {/* Étiquette du curseur : hauteur fixe et chiffres tabulaires, pas de saut de mise en page. */}
+      {/* Cursor label: fixed height and tabular figures, no layout shift. */}
       <figcaption className="mt-1.5 flex min-h-6 min-w-0 items-center gap-2 text-small text-muted-foreground tabular-nums" aria-live="polite">
         {cur ? (
           <>

@@ -9,28 +9,28 @@ import type { Difficulty } from '@/lib/design/scales';
 import { formatElevation, formatKm, formatOutingDate } from '@/lib/format';
 
 type Props = {
-  /** Lien de la carte ; ou bien `onSelect` : la carte devient un bouton (ex. ouvrir la trace dans le panneau, #1582). */
+  /** Link of the card; or `onSelect`: the card becomes a button (e.g. open the track in the panel, #1582). */
   href?: string;
   onSelect?: () => void;
   title: string;
   distanceKm: number;
-  /** `null` : D+ pas encore calculé (altitude IGN à la première ouverture, #1428). */
+  /** `null`: gain not computed yet (IGN elevation on first opening, #1428). */
   elevationM: number | null;
   difficulty?: Difficulty;
   loop?: boolean;
-  /** Attribution de la source (« OpenStreetMap », « UtagawaVTT »…). */
+  /** Source attribution ("OpenStreetMap", "UtagawaVTT"…). */
   source?: string;
-  /** Pour une sortie : date de départ et nombre de participants confirmés. */
+  /** For an outing: start date and number of confirmed participants. */
   date?: Date;
   going?: number;
-  /** Brouillon (#1450) : badge « Brouillon » ; un titre vide devient « Sans titre ». */
+  /** Draft (#1450): "Draft" badge; an empty title becomes "Untitled". */
   draft?: boolean;
-  /** #1590 : visibilité, à fournir seulement pour ses propres traces. */
+  /** #1590: visibility, to provide only for one's own tracks. */
   visibility?: TrackVisibilityValue;
   className?: string;
 };
 
-/** Une trace ou une sortie dans une liste (sur mobile : listes de cartes, pas de tableau). */
+/** A track or an outing in a list (on mobile: lists of cards, no table). */
 export function TrackCard({ href, onSelect, title, distanceKm, elevationM, difficulty, loop, source, date, going, draft, visibility, className }: Props) {
   const t = useTranslations('trackCard');
   const locale = useLocale();
@@ -98,7 +98,7 @@ export function TrackCard({ href, onSelect, title, distanceKm, elevationM, diffi
   );
 }
 
-/** Squelette de TrackCard, pour les listes en chargement. */
+/** TrackCard skeleton, for loading lists. */
 export function TrackCardSkeleton() {
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-3.5" aria-hidden>

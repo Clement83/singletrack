@@ -15,15 +15,15 @@ import { ConditionsTiles, type Tile } from '@/components/conditions-tiles';
 import { HUNTING_MAPS, HUNTING_RULES_URL, type HuntingInfo } from '@/lib/hunting';
 
 type Props = {
-  /** Météo sur le créneau de la sortie (#1350, `outingWeather`). Absente = pas encore branchée. */
+  /** Weather over the outing's slot (#1350, `outingWeather`). Absent = not wired yet. */
   weather?: WeatherInfo;
-  /** Niveau d'accès au massif le plus restrictif du parcours (#1349). */
+  /** Most restrictive massif access level along the route (#1349). */
   fire?: FireLevel;
-  /** Situation incendie complète à la date de la sortie (#1349) : prioritaire sur `fire`. */
+  /** Full fire situation on the outing's date (#1349): takes precedence over `fire`. */
   fireInfo?: FireInfo;
-  /** Saison de chasse et battues possibles à la date de la sortie (#1354, `huntingInfo`). */
+  /** Hunting season and possible driven hunts on the outing's date (#1354, `huntingInfo`). */
   hunting?: HuntingInfo;
-  /** Sortie hors du Var : incendie et chasse n'ont de source que départementale (#1428) → « non disponible ». */
+  /** Outing outside the Var: fire and hunting only have departmental sources (#1428) → "not available". */
   outsideVar?: boolean;
   className?: string;
 };
@@ -37,7 +37,7 @@ function Muted({ children }: { children: React.ReactNode }) {
   return <span className="text-small text-muted-foreground">{children}</span>;
 }
 
-/** Détail météo d'une prévision disponible : ciel et températures, vent, pluie. */
+/** Weather detail of an available forecast: sky and temperatures, wind, rain. */
 function WeatherDetail({ w }: { w: WeatherOk }) {
   const t = useTranslations('weather');
   const format = useFormatter();
@@ -53,7 +53,7 @@ function WeatherDetail({ w }: { w: WeatherOk }) {
   );
 }
 
-/** Alertes météo (orage, pluie, vent, nuit, terrain gras), toujours icône + texte. */
+/** Weather alerts (storm, rain, wind, night, muddy ground), always icon + text. */
 function WeatherFlags({ w }: { w: WeatherOk }) {
   const t = useTranslations('weather');
   const format = useFormatter();
@@ -79,7 +79,7 @@ function WeatherFlags({ w }: { w: WeatherOk }) {
   );
 }
 
-/** Ligne « Chasse » : situation du jour, et jusqu'à quand. */
+/** "Hunting" line: situation of the day, and until when. */
 function HuntingDetail({ h }: { h: HuntingInfo }) {
   const t = useTranslations('hunting');
   const format = useFormatter();
@@ -101,7 +101,7 @@ function ExtLink({ href, children }: { href: string; children: React.ReactNode }
   );
 }
 
-/** Message de prudence et cartes de battues de référence, les jours où la chasse est ouverte. */
+/** Caution message and reference driven-hunt maps, on the days hunting is open. */
 function HuntingCaution() {
   const t = useTranslations('hunting');
   return (
@@ -125,8 +125,8 @@ function HuntingCaution() {
 }
 
 /**
- * Verdict des conditions (météo + incendie), affiché à droite du titre de la section repliée « Conditions » (#1638).
- * La chasse ne change pas le verdict (sinon « À surveiller » sept mois par an).
+ * Verdict of the conditions (weather + fire), shown right of the title of the collapsed "Conditions" section (#1638).
+ * Hunting does not change the verdict (otherwise "To watch" seven months a year).
  */
 export function ConditionsSummary({ weather, fire, fireInfo }: Pick<Props, 'weather' | 'fire' | 'fireInfo'>) {
   const t = useTranslations('conditions');
@@ -145,9 +145,9 @@ export function ConditionsSummary({ weather, fire, fireInfo }: Pick<Props, 'weat
 }
 
 /**
- * Contenu de la section « Conditions » d'une sortie (#1454, #1638) : trois icônes de niveau (météo, incendie, chasse)
- * qui ouvrent chacune leur fiche détaillée. Le titre et le verdict sont portés par la section (`OutingSection`).
- * Chaque rubrique est un fournisseur indépendant : sans donnée, elle est grise et ne casse pas le bloc.
+ * Content of an outing's "Conditions" section (#1454, #1638): three level icons (weather, fire, hunting)
+ * each opening its detailed card. The title and the verdict are carried by the section (`OutingSection`).
+ * Each item is an independent provider: without data it is grey and does not break the block.
  */
 export function ConditionsBlock({ weather, fire, fireInfo, hunting, outsideVar, className }: Props) {
   const t = useTranslations('conditions');
@@ -237,8 +237,8 @@ export function ConditionsBlock({ weather, fire, fireInfo, hunting, outsideVar, 
 }
 
 /**
- * Ligne « conditions » de la carte d'identité de la sortie (#1619) : icône du ciel, ciel · températures et pastille
- * du verdict (météo + incendie). Le détail est dans la section repliée « Conditions ».
+ * "Conditions" line of the outing's identity card (#1619): sky icon, sky · temperatures and verdict
+ * dot (weather + fire). The detail is in the collapsed "Conditions" section.
  */
 export function ConditionsLine({ weather, fire, fireInfo }: Pick<Props, 'weather' | 'fire' | 'fireInfo'>) {
   const t = useTranslations('conditions');

@@ -2,8 +2,8 @@ import { useId } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-// Champs de formulaire : 16 px (pas de zoom iOS), hauteur ≥ 44 px, contour `input` (≥ 3:1).
-// Sélecteur natif (charte : sélecteurs natifs sur mobile).
+// Form fields: 16 px (no iOS zoom), height ≥ 44 px, `input` outline (≥ 3:1).
+// Native select (charter: native selects on mobile).
 const control =
   'w-full min-h-touch rounded-md border border-input bg-card px-3 text-body text-foreground shadow-sm transition-[border-color,box-shadow] duration-150 ease-out hover:border-foreground/30 aria-invalid:border-destructive disabled:pointer-events-none disabled:opacity-50';
 
@@ -35,11 +35,11 @@ type FieldProps = {
   hint?: string;
   error?: string;
   className?: string;
-  /** Reçoit l'id et les attributs ARIA à poser sur le contrôle. */
+  /** Receives the id and the ARIA attributes to set on the control. */
   children: (control: { id: string; 'aria-describedby'?: string; 'aria-invalid'?: boolean }) => React.ReactNode;
 };
 
-/** Libellé + contrôle + aide ou erreur, reliés pour les lecteurs d'écran. */
+/** Label + control + help or error, linked for screen readers. */
 export function Field({ label, hint, error, className, children }: FieldProps) {
   const id = useId();
   const descId = error || hint ? `${id}-desc` : undefined;

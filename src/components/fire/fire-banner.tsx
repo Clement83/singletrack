@@ -3,7 +3,7 @@ import { useTranslations } from 'next-intl';
 import { OFFICIAL_MAP_URL, type FireMessage } from '@/lib/fire';
 import { cn } from '@/lib/utils';
 
-/** Bannière d'accès interdit / déconseillé : couleurs sémantiques, jamais seulement la couleur (icône + texte). */
+/** Banner for forbidden / not advised access: semantic colours, never colour alone (icon + text). */
 export function FireBanner({ message, className }: { message: FireMessage; className?: string }) {
   if (!message.banner) return null;
   const danger = message.tone === 'danger';

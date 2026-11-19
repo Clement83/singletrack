@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Field, Input } from '@/components/ui/field';
 
-/** Adresse fédérée `handle@domaine` (#1474) : bouton copier, et une seule modification de l'identifiant. */
+/** Federated address `handle@domain` (#1474): copy button, and a single change of the identifier. */
 export function FederatedAddress({ handle, address, canChange }: { handle: string; address: string; canChange: boolean }) {
   const t = useTranslations('userMenu');
   const router = useRouter();

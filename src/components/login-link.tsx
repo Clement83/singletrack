@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import { loginHref } from '@/lib/login-href';
 
 /**
- * Lien vers la connexion qui revient ensuite sur la vue courante (#1591). La vue de la carte change par `replaceState`
- * (#1577) : l'adresse de retour est donc lue au clic, pas au rendu.
+ * Link to sign-in that then comes back to the current view (#1591). The map view changes through `replaceState`
+ * (#1577): so the return address is read on click, not on render.
  */
 export function LoginLink({ onClick, ...props }: Omit<React.ComponentProps<typeof Link>, 'href'>) {
   const router = useRouter();

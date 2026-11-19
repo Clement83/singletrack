@@ -5,15 +5,15 @@ import type { MapColors } from '@/components/tracks/use-map-colors';
 import { slopeMatchExpression, type SlopeCollection } from '@/lib/geo/slope-features';
 import { RouteArrows } from './route-arrows';
 
-/** Couleurs MapLibre (valeurs, pas `var(--x)`) de chaque classe de pente, lues sur les tokens. */
+/** MapLibre colours (values, not `var(--x)`) of each slope class, read from the tokens. */
 export function slopeColorsOf(colors: MapColors): Record<string, string> {
   return Object.fromEntries(Object.entries(colors).filter(([k]) => k.startsWith('slope-')));
 }
 
 /**
- * Trace colorée par pente dans son sens de parcours (#1381) : liseré clair dessous, tronçons colorés
- * (montée et descente = deux dégradés), flèches de direction. Réservée au détail d'une trace.
- * À placer dans une carte ; `data` vient de `slopeFeatures` / `slopeFeaturesForRuns` (mémoïsé par l'appelant).
+ * Track coloured by slope in its direction of travel (#1381): light casing underneath, coloured segments
+ * (climb and descent = two gradients), direction arrows. Reserved for the detail of a track.
+ * To place inside a map; `data` comes from `slopeFeatures` / `slopeFeaturesForRuns` (memoised by the caller).
  */
 export function SlopeRouteLayer({ id = 'slope', data, colors, arrows = true, beforeId }: { id?: string; data: SlopeCollection; colors: MapColors; arrows?: boolean; beforeId?: string }) {
   const color = slopeMatchExpression(slopeColorsOf(colors), colors.muted, colors.primary) as never;

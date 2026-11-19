@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { Monitor, Moon, Sun } from 'lucide-react';
 import { ChoiceChips } from '@/components/ui/choice-chips';
 
-// Le thème choisi n'est connu qu'après le montage (localStorage) : rien de sélectionné avant.
+// The chosen theme is only known after mount (localStorage): nothing selected before.
 const useMounted = () =>
   useSyncExternalStore(
     () => () => {},
@@ -14,7 +14,7 @@ const useMounted = () =>
     () => false,
   );
 
-/** Choix du thème : système, clair ou sombre (#1396 : deux thèmes seulement), mémorisé dans le navigateur. */
+/** Theme choice: system, light or dark (#1396: only two themes), remembered in the browser. */
 export function ThemeSwitcher({ className }: { className?: string }) {
   const t = useTranslations('theme');
   const { theme, setTheme } = useTheme();

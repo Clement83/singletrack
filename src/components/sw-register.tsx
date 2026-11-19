@@ -3,9 +3,9 @@
 import { useEffect } from 'react';
 
 /**
- * Enregistre le service worker (production uniquement, contexte sécurisé : HTTPS ou localhost).
- * En développement (#1464), désinscrit tout service worker déjà installé et vide ses caches :
- * sinon son cache-first sur `/_next/static` servirait des modules périmés et casserait le rechargement à chaud.
+ * Registers the service worker (production only, secure context: HTTPS or localhost).
+ * In development (#1464), unregisters any service worker already installed and empties its caches:
+ * otherwise its cache-first on `/_next/static` would serve stale modules and break hot reload.
  */
 export function SwRegister() {
   useEffect(() => {

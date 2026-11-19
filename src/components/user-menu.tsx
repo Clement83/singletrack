@@ -24,7 +24,7 @@ import { VisibilitySwitcher } from '@/components/visibility-switcher';
 
 type User = { id: string; name: string; email: string; profileVisibility: 'private' | 'public'; outingVisibility: OutingVisibilityValue; drawnTrackVisibility: TrackVisibilityValue; importedTrackVisibility: TrackVisibilityValue; charte: string; fed?: { handle: string; address: string; canChange: boolean } | null };
 
-/** Initiale du prénom (avatar). */
+/** Initial of the first name (avatar). */
 export function initialOf(name: string): string {
   const first = [...name.trim()][0];
   return first ? first.toLocaleUpperCase() : '?';
@@ -41,7 +41,7 @@ function Avatar({ name, className }: { name: string; className?: string }) {
   );
 }
 
-/** Contenu du menu : identité, thème, langue, prénom, déconnexion. Commun au tiroir mobile et au panneau desktop. */
+/** Menu content: identity, theme, language, first name, sign-out. Shared by the mobile drawer and the desktop panel. */
 function MenuBody({ user, onDone, sourceUrl, version }: { user: User; onDone: () => void; sourceUrl: string; version: string }) {
   const t = useTranslations('userMenu');
   const tTheme = useTranslations('theme');
@@ -165,11 +165,11 @@ function Identity({ user }: { user: User }) {
 }
 
 /**
- * Menu utilisateur (#1397) : avatar rond (initiale), en haut à gauche sur mobile, en bas de la barre latérale
- * en desktop. Tiroir modal sur mobile (vaul : focus piégé, Échap, glisser pour fermer), panneau flottant à
- * droite de la barre latérale en desktop (Échap, clic dehors, focus rendu à l'avatar).
+ * User menu (#1397): round avatar (initial), top left on mobile, at the bottom of the side bar
+ * on desktop. Modal drawer on mobile (vaul: trapped focus, Escape, drag to close), floating panel to the
+ * right of the side bar on desktop (Escape, click outside, focus given back to the avatar).
  */
-// Écrans plein écran centrés sur une seule tâche : pas d'avatar par-dessus (éditeur de traces, #1392).
+// Full-screen screens focused on a single task: no avatar on top (track editor, #1392).
 const HIDDEN_ON = ['/new'];
 
 export function UserMenu({ user, className, sourceUrl, version }: { user: User; className?: string; sourceUrl: string; version: string }) {
@@ -181,7 +181,7 @@ export function UserMenu({ user, className, sourceUrl, version }: { user: User; 
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Desktop : Échap et clic hors du panneau ferment ; le focus entre dans le panneau puis revient à l'avatar.
+  // Desktop: Escape and a click outside the panel close it; focus enters the panel then goes back to the avatar.
   useEffect(() => {
     if (!desktop || !open) return;
     const trigger = triggerRef.current;

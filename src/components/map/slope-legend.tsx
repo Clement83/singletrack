@@ -19,7 +19,7 @@ function Ramp({ label, colors }: { label: string; colors: string[] }) {
   );
 }
 
-/** Légende repliable « Montée / Descente » ; repliée par défaut (un bouton de 44 px), à poser dans un conteneur `relative`. */
+/** Collapsible "Climb / Descent" legend; collapsed by default (a 44 px button), to place in a `relative` container. */
 export function SlopeLegend({ className }: { className?: string }) {
   const [open, setOpen] = useState(false);
   const t = useTranslations();

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 export type RsvpAnswer = 'yes' | 'maybe' | 'no';
 
 type Props = {
-  /** Nom de l'invité, saisi par l'organisateur. */
+  /** Guest's name, entered by the organiser. */
   name: string;
   value: RsvpAnswer | null;
   onChange: (answer: RsvpAnswer) => void;
@@ -17,8 +17,8 @@ type Props = {
 };
 
 /**
- * Réponse de l'invité. Action principale unique : GO (pleine largeur, 52 px).
- * « Peut-être » et « Non » sont secondaires. La réponse se change avec les mêmes boutons.
+ * Guest's answer. A single main action: GO (full width, 52 px).
+ * "Maybe" and "No" are secondary. The answer is changed with the same buttons.
  */
 export function RsvpPanel({ name, value, onChange, pending = false, className }: Props) {
   const t = useTranslations('rsvp');

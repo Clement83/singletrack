@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { config } from '@/lib/config';
 
-/** Mise en page des écrans d'auth (connexion, inscription, mot de passe) : centrée, une action principale. */
+/** Layout of the auth screens (sign-in, sign-up, password): centred, one main action. */
 export function AuthShell({ subtitle, children }: { subtitle: string; children: React.ReactNode }) {
   const t = useTranslations('common');
   return (

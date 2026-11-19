@@ -4,10 +4,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { ComponentProps } from 'react';
 
-/** Dernière URL (query) de l'explorateur, pour que « Retour » retrouve vue, trace ouverte, filtres (#1577). */
+/** Last explorer URL (query), so that "Back" finds the view, open track and filters again (#1577). */
 export const LAST_EXPLORER_KEY = 'explorer:last';
 
-/** Lien vers la carte qui reprend la dernière position de l'explorateur (sinon vue par défaut). */
+/** Link to the map that restores the explorer's last position (otherwise the default view). */
 export function BackToMap({ onClick, ...props }: Omit<ComponentProps<typeof Link>, 'href'>) {
   const router = useRouter();
   return (

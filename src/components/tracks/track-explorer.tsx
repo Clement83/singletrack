@@ -37,17 +37,17 @@ import { nearestProfileIndex } from '@/lib/elevation';
 import { ElevationProfile } from '@/components/elevation-profile';
 
 type ListPanel = { kind: 'list' } | { kind: 'group'; slugs: string[] };
-/** `from` : la liste ou le groupe d'où la trace a été ouverte (bouton « Retour », #1582). */
+/** `from`: the list or group the track was opened from ("Back" button, #1582). */
 type Panel = ListPanel | { kind: 'filters' } | { kind: 'track'; slug: string; from?: ListPanel } | { kind: 'outing'; id: string } | null;
 type Sort = 'near' | 'short' | 'long' | 'gain' | 'name';
 type View = [number, number, number, number];
 
 const inView = (p: [number, number], v: View) => p[0] >= v[0] && p[0] <= v[2] && p[1] >= v[1] && p[1] <= v[3];
-/** Au-delà, les départs ne se regroupent plus (#1531) : chaque départ est un repère, ceux d'un même parking se superposent. */
+/** Beyond it, start points no longer cluster (#1531): each start is a marker, those of the same car park stack. */
 const CLUSTER_MAX_ZOOM = 16;
 const openSlugOf = (p: Panel) => (p?.kind === 'track' ? p.slug : null);
 
-/** `signedIn=false` : mode visiteur (#1591), sans « Mes traces », import ni création ; les actions réservées mènent à la connexion. */
+/** `signedIn=false`: visitor mode (#1591), without "My tracks", import or creation; restricted actions lead to sign-in. */
 export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; lon: number }; signedIn?: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -56,8 +56,8 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
   const colors = useMapColors();
   const mapRef = useRef<MapRef>(null);
 
-  // Le filtre d'accès aux massifs (`access`, #1349) n'est plus proposé ici (#1407) : ignoré s'il traîne dans un vieux lien.
-  // « Mes traces » n'a pas de sens sans compte (#1591) : un `mine=1` dans le lien d'un visiteur est ignoré.
+  // The massif access filter (`access`, #1349) is no longer offered here (#1407): ignored if left in an old link.
+  // "My tracks" makes no sense without an account (#1591): a `mine=1` in a visitor's link is ignored.
   const filters = useMemo(() => ({ ...parseFilters(new URLSearchParams(sp.toString())), access: undefined, ...(signedIn ? {} : { mine: undefined }) }), [sp, signedIn]);
   const filterKey = useMemo(() => serializeFilters({ ...filters, bbox: undefined }).toString(), [filters]);
 
@@ -68,7 +68,7 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
   const error = errorKey === filterKey;
   const [view, setView] = useState<View | null>(null);
   const [zoom, setZoom] = useState(10);
-  // Calque des singles OSM (#1372) : actif par défaut (#1436), réglage dans les filtres.
+  // OSM singletrack layer (#1372): on by default (#1436), setting in the filters.
   const t = useTranslations('explorer');
   const tTrack = useTranslations('track');
   const locale = useLocale();
@@ -80,12 +80,12 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
   const tm = useTranslations('outings');
   const [panel, setPanel] = useState<Panel>(null);
   const [hover, setHover] = useState<string | null>(null);
-  // Trace survolée sur la carte (#1533) : met en avant sa ligne dans la liste.
+  // Track hovered on the map (#1533): highlights its row in the list.
   const [overSlug, setOverSlug] = useState<string | null>(null);
   const [sort, setSort] = useState<Sort>('near');
   const [draft, setDraft] = useState<string | null>(null);
   const q = draft ?? filters.q ?? '';
-  // URL = source de vérité des filtres (partageable, retour arrière).
+  // URL = source of truth of the filters (shareable, back button).
   const apply = useCallback(
     (next: TrackFilters, mode: 'push' | 'replace' = 'push') => {
       const params = serializeFilters({ ...next, bbox: undefined });
@@ -100,8 +100,8 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
     [router, pathname],
   );
 
-  // « Mes traces » (#1430) : à l'activation, la carte se recadre sur l'ensemble de ses traces (sinon on croit
-  // qu'elles ont disparu). Une seule requête légère (départs seulement), sans emprise.
+  // "My tracks" (#1430): when turned on, the map fits all of one's tracks (otherwise one would think
+  // they disappeared). A single light request (start points only), without extent.
   const mine = !!filters.mine;
   useEffect(() => {
     if (!mine) return;
@@ -120,7 +120,7 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
     return () => ctl.abort();
   }, [mine]);
 
-  // Recherche texte : on attend la fin de la frappe, puis l'URL reprend la main.
+  // Text search: wait for typing to end, then the URL takes over.
   useEffect(() => {
     if (draft === null) return;
     const t = setTimeout(() => {
@@ -130,8 +130,8 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
     return () => clearTimeout(t);
   }, [draft, filters, apply]);
 
-  // Départs légers de toute la France (#1530, #1531), une fois par jeu de filtres : la carte ne dessine que des
-  // repères et des grappes (MapLibre), la géométrie d'une trace se charge à la demande quand on la choisit.
+  // Light start points for the whole of France (#1530, #1531), once per filter set: the map only draws
+  // markers and clusters (MapLibre), a track's geometry loads on demand when it is chosen.
   useEffect(() => {
     const ctl = new AbortController();
     fetch(`/api/tracks?${new URLSearchParams(filterKey)}&starts=1`, { signal: ctl.signal })
@@ -144,12 +144,12 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
     return () => ctl.abort();
   }, [filterKey]);
 
-  // Tests de bout en bout (#1532) : `window.__E2E__` posé avant le chargement expose la carte pour projeter/inspecter.
+  // End-to-end tests (#1532): `window.__E2E__` set before loading exposes the map to project/inspect.
   const onMapLoad = useCallback(() => {
     const w = window as unknown as { __E2E__?: boolean; __explorerMap?: unknown };
     if (w.__E2E__) w.__explorerMap = mapRef.current?.getMap();
   }, []);
-  // Vue de la carte dans l'URL (#1577) : lue une fois à l'arrivée, écrite par replaceState (seuil anti-boucle).
+  // Map view in the URL (#1577): read once on arrival, written through replaceState (anti-loop threshold).
   const [initialView] = useState<MapView | null>(() => parseMapView(new URLSearchParams(sp.toString())));
   const pendingOpen = useRef<string | null>(parseOpenTrack(new URLSearchParams(sp.toString())));
   const [mapView, setMapView] = useState<MapView | null>(initialView);
@@ -161,7 +161,7 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
     window.history.replaceState(window.history.state, '', qs ? `${pathname}?${qs}` : pathname);
     try { sessionStorage.setItem(LAST_EXPLORER_KEY, qs); } catch { /* stockage indisponible */ }
   }, [pathname]);
-  // Ancienne sélection multiple (#1532, retirée par #1584) : un vieux lien `?sel=` s'ouvre normalement, le paramètre est effacé.
+  // Old multi-selection (#1532, removed by #1584): an old `?sel=` link opens normally, the parameter is cleared.
   useEffect(() => writeUrl((p) => p.delete('sel')), [writeUrl]);
   const syncView = useCallback(() => {
     const map = mapRef.current;
@@ -205,7 +205,7 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
   }, [tracks, view, sort, home, locale]);
 
   const newHref = mapView ? `/new?${viewQuery(mapView)}` : '/new';
-  // Trace ouverte (`t`) : rouverte à l'arrivée si elle est encore visible, ignorée sinon ; ensuite l'URL suit le panneau.
+  // Open track (`t`): reopened on arrival if still visible, ignored otherwise; then the URL follows the panel.
   useEffect(() => {
     const slug = pendingOpen.current;
     if (!slug || !tracks) return;
@@ -222,7 +222,7 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
   const selected = panel?.kind === 'track' ? (tracks?.find((t) => t.slug === panel.slug) ?? (pinned?.slug === panel.slug ? pinned : undefined)) : undefined;
   const hl = selected?.slug ?? (hover && hover !== 'pointer' ? hover : overSlug) ?? '';
   const groupTracks = panel?.kind === 'group' ? (tracks ?? []).filter((t) => panel.slugs.includes(t.slug)) : [];
-  // Aperçu terne au survol d'une ligne de liste (#1583), desktop seulement (le tap ouvre directement la trace).
+  // Dimmed preview when hovering a list row (#1583), desktop only (a tap opens the track directly).
   const [preview, setPreview] = useState<string | null>(null);
   const listHover = (slug: string) => ({
     onMouseEnter: () => { setHover(slug); if (desktop) setPreview(slug); },
@@ -231,10 +231,10 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
     onBlur: () => setPreview(null),
   });
 
-  // Trace ouverte (#1582) : fiche complète chargée à la demande, tracé coloré par pente sur la carte, profil synchronisé.
+  // Open track (#1582): full sheet loaded on demand, line coloured by slope on the map, synchronised profile.
   const openSlug = panel?.kind === 'track' ? panel.slug : null;
   const { sheet, loading: sheetLoading, error: sheetError, setVisibility: setSheetVisibility } = useTrackSheet(openSlug);
-  // Sortie ouverte (#1596) : son parcours figé se dessine comme une trace ouverte (un seul tracé à la fois).
+  // Open outing (#1596): its frozen route is drawn like an open track (one line at a time).
   const openOutingId = panel?.kind === 'outing' ? panel.id : null;
   const outingTrack = useOutingTrack(openOutingId);
   const openLine = panel?.kind === 'outing' ? outingTrack : sheet;
@@ -247,7 +247,7 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
     setPinned(tracks?.find((x) => x.slug === slug));
     setPanel({ kind: 'track', slug, from });
   };
-  // À l'ouverture, la carte se cale sur la trace si elle n'est pas entièrement dans la vue (une fois par trace).
+  // On opening, the map fits the track if it is not entirely in view (once per track).
   const fitted = useRef<string | null>(null);
   useEffect(() => {
     const map = mapRef.current;
@@ -260,7 +260,7 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
     map.fitBounds([[w, s], [e, n]], { padding: { top: 90, bottom: desktop ? 60 : window.innerHeight * 0.5, left: 40 + panelW, right: 40 }, maxZoom: 15, duration: 600 });
   }, [openLine, lineKey, desktop]);
 
-  // Géométries à la demande (#1531), pour l'aperçu au survol : seulement celles qu'on n'a pas encore.
+  // Geometries on demand (#1531), for the hover preview: only those not loaded yet.
   const [geoms, setGeoms] = useState<Record<string, NonNullable<TrackSummary['geometry']>>>({});
   const geomsRef = useRef(geoms);
   const zoomRef = useRef(zoom);
@@ -268,7 +268,7 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
     geomsRef.current = geoms;
     zoomRef.current = zoom;
   });
-  // Géométries voulues : traces du groupe ouvert (préchargées pour un aperçu instantané, ≤ 50) et trace survolée.
+  // Wanted geometries: tracks of the open group (preloaded for an instant preview, ≤ 50) and the hovered track.
   const wantedKey = [...new Set([...(panel?.kind === 'group' ? panel.slugs.slice(0, 50) : []), ...(preview ? [preview] : [])])].join(',');
   useEffect(() => {
     const missing = wantedKey ? wantedKey.split(',').filter((s) => !geomsRef.current[s]) : [];
@@ -290,7 +290,7 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
     [previewGeom],
   );
 
-  // Infobulle « km depuis le départ » sur la trace ouverte (#1535), avec l'altitude du profil.
+  // "km from the start" tooltip on the open track (#1535), with the profile's elevation.
   const lineTip = useTrackTip((e) => {
     const f = e.features?.[0];
     if (f?.layer.id !== 'open-casing' || !openLine) return null;
@@ -304,7 +304,7 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
     if (f.layer.id === 'clusters') {
       const id = f.properties?.cluster_id;
       src?.getClusterExpansionZoom(id).then(async (z) => {
-        // La grappe ne s'éclate plus en zoomant (même parking) : on en liste les traces.
+        // The cluster no longer splits when zooming (same car park): its tracks are listed.
         if (z > CLUSTER_MAX_ZOOM) {
           const leaves = await src.getClusterLeaves(id, 50, 0);
           setPanel({ kind: 'group', slugs: leaves.map((l) => l.properties?.slug as string) });
@@ -315,7 +315,7 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
       return;
     }
     if (f.layer.id !== 'start-hit') return;
-    // Repère de départ : toutes les traces qui partent d'ici ; une seule → sa fiche dans le panneau, plusieurs → la liste.
+    // Start marker: every track starting here; a single one → its sheet in the panel, several → the list.
     const at = (f.geometry as GeoJSON.Point).coordinates as [number, number];
     const here = tracksAtStart(tracks ?? [], at);
     if (here.length > 1) setPanel({ kind: 'group', slugs: here.map((t) => t.slug) });
@@ -358,7 +358,7 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
         interactiveLayerIds={['clusters', 'start-hit', 'open-casing']}
         cursor={hover === 'pointer' ? 'pointer' : undefined}
       >
-        {/* Déclarée en premier : les calques ci-dessous ont beforeId="clusters", qui doit exister à leur ajout (#1607). */}
+        {/* Declared first: the layers below have beforeId="clusters", which must exist when they are added (#1607). */}
         <Source id="starts" type="geojson" data={starts} cluster clusterRadius={50} clusterMaxZoom={CLUSTER_MAX_ZOOM}>
           <Layer id="clusters" type="circle" filter={['has', 'point_count']} paint={{ 'circle-color': colors.primary, 'circle-opacity': 0.85, 'circle-stroke-color': colors.card, 'circle-stroke-width': 3, 'circle-radius': ['step', ['get', 'point_count'], 16, 10, 22, 50, 28] }} />
           <Layer id="start-points" type="circle" filter={['!', ['has', 'point_count']]} paint={{ 'circle-color': diffColor as string, 'circle-stroke-color': colors.card, 'circle-stroke-width': 2.5, 'circle-radius': ['case', ['==', ['get', 'slug'], hl], 12, 9] }} />
@@ -375,14 +375,14 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
             onCluster={(lat, lon) => mapRef.current?.easeTo({ center: [lon, lat], zoom: Math.min(zoom + 2, 14) })}
           />
         )}
-        {/* Aperçu terne (#1583), sous la trace ouverte et les départs. */}
+        {/* Dimmed preview (#1583), under the open track and the start points. */}
         <Source id="preview" type="geojson" data={previewLine}>
           <Layer id="preview-line" beforeId="clusters" type="line" layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': colors.preview, 'line-width': 3.5, 'line-opacity': 0.5 }} />
         </Source>
         {openLine && <OpenTrackLayers sheet={openLine} colors={colors} mapRef={mapRef} marked={profileCursor ?? lineCursor} beforeId="clusters" />}
       </BaseMap>
 
-      {/* Barre flottante : recherche + filtres. Décalée à droite du panneau en desktop. */}
+      {/* Floating bar: search + filters. Shifted right of the panel on desktop. */}
       <div className={cn('absolute top-3 right-16 left-16 z-10 flex gap-2 lg:left-3', desktop && sheetOpen && 'left-[calc(var(--spacing-panel)+36px)]')}>
         <div className="relative flex-1 rounded-full border border-border glass shadow-md">
           <Search aria-hidden className="pointer-events-none absolute top-1/2 left-3.5 size-5 -translate-y-1/2 text-muted-foreground" />
@@ -404,7 +404,7 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
         )}
       </div>
 
-      {/* Singles : plus de bouton (#1436), réglage dans les filtres ; seule l'indication « tronqué » reste ici. */}
+      {/* Singletracks: no more button (#1436), setting in the filters; only the "truncated" notice stays here. */}
       <div className={cn('absolute top-[4.5rem] left-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-col items-start gap-2', desktop && sheetOpen && 'left-[calc(var(--spacing-panel)+36px)]')}>
         <div className="flex flex-wrap gap-2">
           {signedIn && (
@@ -417,8 +417,8 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
           </Button>
         </div>
         <SinglesStatus state={singles} />
-        {/* Légende des pentes (#1585) : sur la carte dès qu'une trace colorée est ouverte. Mobile : sous les boutons du haut,
-            hors du sheet ; desktop : en bas à gauche, à droite du panneau. */}
+        {/* Slope legend (#1585): on the map as soon as a coloured track is open. Mobile: under the top buttons,
+            outside the sheet; desktop: bottom left, right of the panel. */}
         {openLine && !desktop && <SlopeLegend className="static" />}
       </div>
       {openLine && desktop && <SlopeLegend className="bottom-8 left-[calc(var(--spacing-panel)+36px)]" />}

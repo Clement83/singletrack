@@ -5,13 +5,13 @@ type Props = {
   icon: LucideIcon;
   title: string;
   children?: React.ReactNode;
-  /** Le bouton qui propose la suite (« On en crée une ? »). */
+  /** The button offering the next step ("Create one?"). */
   action?: React.ReactNode;
   tone?: 'neutral' | 'error';
   className?: string;
 };
 
-/** État vide ou erreur : ton simple et tutoyé, et toujours une suite possible. */
+/** Empty or error state: simple, informal tone, and always a possible next step. */
 export function EmptyState({ icon: Icon, title, children, action, tone = 'neutral', className }: Props) {
   return (
     <div

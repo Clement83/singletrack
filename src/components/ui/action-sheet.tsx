@@ -9,19 +9,19 @@ import { Button } from './button';
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Titre (lu par les lecteurs d'écran) ; `header` le remplace visuellement s'il est fourni. */
+  /** Title (read by screen readers); `header` replaces it visually if provided. */
   title: string;
   header?: React.ReactNode;
   children: React.ReactNode;
-  /** Bouton déclencheur (rendu tel quel, `asChild`). */
+  /** Trigger button (rendered as is, `asChild`). */
   trigger?: React.ReactNode;
   className?: string;
 };
 
 /**
- * Tiroir **modal** du bas (vaul) pour un menu ou un petit formulaire sur mobile : voile, focus piégé, Échap,
- * glisser pour fermer, zone de sécurité. À distinguer de `BottomSheet` (non modal, 3 crans, pour les détails
- * posés sur la carte). Utilisé par le menu utilisateur (#1397) et l'éditeur mobile (#1392).
+ * **Modal** bottom drawer (vaul) for a menu or a small form on mobile: scrim, trapped focus, Escape,
+ * drag to close, safe area. Not to be confused with `BottomSheet` (non-modal, 3 detents, for details
+ * placed on the map). Used by the user menu (#1397) and the mobile editor (#1392).
  */
 export function ActionSheet({ open, onOpenChange, title, header, children, trigger, className }: Props) {
   const t = useTranslations('userMenu');

@@ -12,7 +12,7 @@ export type MapOutingDto = Omit<MapOuting, 'startsAt'> & { startsAt: string };
 type View = [number, number, number, number];
 type Item = MapOutingDto;
 
-/** Sorties à venir de la vue (#1461) : `null` tant que rien n'est chargé ; échec silencieux (la carte reste utilisable). */
+/** Upcoming outings of the view (#1461): `null` until something is loaded; silent failure (the map stays usable). */
 export function useMapOutings(on: boolean, view: View | null) {
   const [data, setData] = useState<MapOutingDto[]>([]);
   const key = view ? view.map((n) => n.toFixed(2)).join(',') : null;
@@ -32,16 +32,16 @@ export function useMapOutings(on: boolean, view: View | null) {
       clearTimeout(timer);
       ctl.abort();
     };
-    // `view` est résumé par `key`.
+    // `view` is summed up by `key`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [on, key]);
   return on ? data : [];
 }
 
 /**
- * Repères des sorties (#1461, réduits en #1538) : une petite pastille abricot à icône calendrier, dans une zone
- * tactile de 44 px. Survol souris ou focus clavier : infobulle avec le détail (titre, date, participants, km · D+).
- * Tap (ou clic) : ouvre la fiche. Une grappe garde la même pastille, avec le nombre, et liste ses sorties au survol.
+ * Outing markers (#1461, shrunk in #1538): a small apricot chip with a calendar icon, in a 44 px touch
+ * area. Mouse hover or keyboard focus: tooltip with the detail (title, date, participants, km · gain).
+ * Tap (or click): opens the card. A cluster keeps the same chip, with the count, and lists its outings on hover.
  */
 export function OutingsLayer({ outings, zoom, onSelect, onCluster }: { outings: MapOutingDto[]; zoom: number; onSelect: (id: string) => void; onCluster: (lat: number, lon: number) => void }) {
   const clusters = useMemo(() => clusterOutings(outings, zoom), [outings, zoom]);

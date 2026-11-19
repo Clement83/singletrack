@@ -4,9 +4,9 @@ import { useEffect, type RefObject } from 'react';
 import { Marker, type MapRef } from 'react-map-gl/maplibre';
 
 /**
- * Marqueur du curseur du profil altimétrique sur la carte (#1391) : point contrasté avec halo, partagé par la
- * fiche trace, les sorties et l'éditeur. Si le point sort de la vue, la carte s'y recentre (sans animation
- * si `prefers-reduced-motion`).
+ * Marker of the elevation profile cursor on the map (#1391): contrasted dot with a halo, shared by the
+ * track sheet, the outings and the editor. If the point leaves the view, the map recentres on it (without animation
+ * under `prefers-reduced-motion`).
  */
 export function ProfileCursorMarker({ mapRef, lon, lat }: { mapRef: RefObject<MapRef | null>; lon: number; lat: number }) {
   useEffect(() => {

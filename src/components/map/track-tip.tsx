@@ -9,9 +9,9 @@ import type { Position, TrackGeometry } from '@/lib/geo/types';
 export type TrackTipState = { x: number; y: number; kms: number[]; ele?: number | null } | null;
 
 /**
- * État de l'infobulle « km depuis le départ » (#1535). Souris : suit le survol de la trace ; toucher : un tap sur
- * la trace l'affiche, le tap suivant (sur la trace, ou ailleurs) la déplace ou la retire. Jamais d'information
- * au seul survol : le tap donne la même chose.
+ * State of the "km from the start" tooltip (#1535). Mouse: follows the hover on the track; touch: a tap on
+ * the track shows it, the next tap (on the track, or elsewhere) moves or removes it. Never information
+ * on hover alone: the tap gives the same thing.
  */
 export function useTrackTip(resolve: (e: MapLayerMouseEvent) => { geometry: TrackGeometry | Position[]; totalKm?: number; ele?: (lon: number, lat: number) => number | null } | null) {
   const [tip, setTip] = useState<TrackTipState>(null);
@@ -27,14 +27,14 @@ export function useTrackTip(resolve: (e: MapLayerMouseEvent) => { geometry: Trac
   return {
     tip,
     clear: useCallback(() => setTip(null), []),
-    /** À brancher sur `onMouseMove` (survol, souris seulement : le tactile n'en émet pas). */
+    /** To wire on `onMouseMove` (hover, mouse only: touch does not emit it). */
     onMove: useCallback((e: MapLayerMouseEvent) => setTip(at(e)), [at]),
-    /** À brancher sur `onClick` : tap sur la trace → infobulle ; tap ailleurs → disparaît. */
+    /** To wire on `onClick`: tap on the track → tooltip; tap elsewhere → disappears. */
     onTap: useCallback((e: MapLayerMouseEvent) => setTip(at(e)), [at]),
   };
 }
 
-/** Infobulle posée près du curseur / du doigt : « km 12,4 » (deux valeurs si la trace repasse ici), altitude si connue. */
+/** Tooltip placed near the cursor / finger: "km 12.4" (two values if the track passes here again), elevation if known. */
 export function TrackTip({ tip }: { tip: TrackTipState }) {
   const t = useTranslations('map');
   const format = useFormatter();

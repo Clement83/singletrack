@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Field, Input, Textarea } from '@/components/ui/field';
 import { useErrorText } from '@/lib/use-error-text';
 
-/** Liste de blocage de serveurs (#1477) : saisie, import CSV (format Mastodon), déblocage. */
+/** Server block list (#1477): entry, CSV import (Mastodon format), unblocking. */
 export function AdminBlocks({ blocks }: { blocks: { domain: string; reason: string | null; source: 'admin' | 'import' }[] }) {
   const t = useTranslations('moderation.admin');
   const errText = useErrorText();

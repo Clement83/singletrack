@@ -34,7 +34,7 @@ function toggle<T>(list: T[] | undefined, v: T): T[] | undefined {
   return next.length ? next : undefined;
 }
 
-/** Formulaire de filtres : courts champs numériques (clavier numérique), pastilles, sélecteur natif. */
+/** Filters form: short numeric fields (numeric keyboard), chips, native select. */
 export function FiltersForm({ value, onChange, onReset }: Props) {
   const tScales = useTranslations('scales');
   const t = useTranslations('filters');

@@ -23,16 +23,16 @@ import { DeleteTrackButton } from './delete-track';
 import { TrackVisibilityBadge, TrackVisibilityChips, type TrackVisibilityValue } from './track-visibility';
 import type { MapColors } from './use-map-colors';
 
-/** Fiche telle que la renvoie `GET /api/tracks/<slug>` (#1581) : dates en texte, sans `updatedAt`. */
+/** Sheet as returned by `GET /api/tracks/<slug>` (#1581): dates as text, without `updatedAt`. */
 export type PanelSheet = Omit<TrackSheet, 'updatedAt' | 'outings'> & { outings: { slug: string; title: string; startsAt: string }[] };
 
-/** Ce qu'il faut pour dessiner un parcours ouvert : une trace (#1582) ou le parcours figé d'une sortie (#1596). */
+/** What is needed to draw an open route: a track (#1582) or an outing's frozen route (#1596). */
 import type { MapOutingTrack } from '@/lib/outings/map';
 export type OpenLine = Pick<PanelSheet, 'geometry' | 'profile' | 'end' | 'bbox'>;
 
 type SheetState = { slug: string; sheet?: PanelSheet; error?: boolean };
 
-/** Fiche complète de la trace ouverte dans le panneau de la carte (#1582), chargée à la demande. */
+/** Full sheet of the track open in the map panel (#1582), loaded on demand. */
 export function useTrackSheet(slug: string | null) {
   const [state, setState] = useState<SheetState | null>(null);
   useEffect(() => {
@@ -45,7 +45,7 @@ export function useTrackSheet(slug: string | null) {
     return () => ctl.abort();
   }, [slug]);
   const current = slug && state?.slug === slug ? state : null;
-  /** Remplace la visibilité affichée après un changement réussi (#1590), sans recharger la fiche. */
+  /** Replaces the displayed visibility after a successful change (#1590), without reloading the sheet. */
   const setVisibility = (visibility: NonNullable<PanelSheet['visibility']>) =>
     setState((s) => (s?.sheet && s.slug === slug ? { ...s, sheet: { ...s.sheet, visibility } } : s));
   return { sheet: current?.sheet, error: !!current?.error, loading: !!slug && !current, setVisibility };
@@ -63,7 +63,7 @@ function Stat({ icon: Icon, label, value }: { icon: React.ComponentType<{ classN
   );
 }
 
-/** Bouton « ? » des sources : s'ouvre au survol (souris) **et** au tap / clavier ; Échap ou un clic ailleurs le ferme. */
+/** Sources "?" button: opens on hover (mouse) **and** on tap / keyboard; Escape or a click elsewhere closes it. */
 function SourceInfo({ sheet }: { sheet: PanelSheet }) {
   const t = useTranslations('track');
   const tp = useTranslations('explorer.panel');
@@ -109,7 +109,7 @@ function SourceInfo({ sheet }: { sheet: PanelSheet }) {
   );
 }
 
-/** Contenu du panneau : retour, badges, sources, stats, description, sorties prévues. */
+/** Panel content: back, badges, sources, stats, description, planned outings. */
 export function TrackPanelBody({ sheet, loading, error, backLabel, onBack }: { sheet?: PanelSheet; loading: boolean; error: boolean; backLabel?: string; onBack?: () => void }) {
   const t = useTranslations('track');
   const tp = useTranslations('explorer.panel');
@@ -173,8 +173,8 @@ export function TrackPanelBody({ sheet, loading, error, backLabel, onBack }: { s
   );
 }
 
-/** Pied du panneau : profil d'altitude synchronisé avec la carte, puis « Préparer une sortie », GPX et menu « … ». */
-/** `signedIn=false` (visiteur, #1591) : « Préparer une sortie » et « Modifier une copie » mènent à la connexion, qui ramène sur la même vue. */
+/** Panel footer: elevation profile synchronised with the map, then "Plan an outing", GPX and the "…" menu. */
+/** `signedIn=false` (visitor, #1591): "Plan an outing" and "Edit a copy" lead to sign-in, which brings back to the same view. */
 export function TrackPanelFooter({ sheet, cursor, onScrub, compact, onVisibility, signedIn = true }: { sheet: PanelSheet; cursor: number | null; onScrub: (i: number | null) => void; compact: boolean; onVisibility?: (v: TrackVisibilityValue) => void; signedIn?: boolean }) {
   const t = useTranslations('track');
   const tp = useTranslations('explorer.panel');
@@ -186,7 +186,7 @@ export function TrackPanelFooter({ sheet, cursor, onScrub, compact, onVisibility
   const draft = sheet.status === 'draft';
   const name = sheet.name || t('untitled');
 
-  /** #1590 : change la visibilité (auteur seulement) par `PATCH /api/tracks/<slug>`. */
+  /** #1590: changes the visibility (author only) through `PATCH /api/tracks/<slug>`. */
   async function changeVisibility(next: TrackVisibilityValue) {
     if (next === sheet.visibility) return;
     setBusy(true);
@@ -231,7 +231,7 @@ export function TrackPanelFooter({ sheet, cursor, onScrub, compact, onVisibility
           {sheet.rights.edit && !draft && (
             <Button asChild variant="outline"><Link href={`/t/${sheet.slug}/edit`}><Pencil aria-hidden /> {t('edit')}</Link></Button>
           )}
-          {/* Visiteur (#1591) : l'API ne lui donne aucun droit ; le bouton reste visible et mène à la connexion. */}
+          {/* Visitor (#1591): the API gives them no rights; the button stays visible and leads to sign-in. */}
           {(sheet.rights.copy || (!signedIn && !draft)) && (
             <Button asChild variant="outline">
               {signedIn ? <Link href={`/t/${sheet.slug}/edit?copie=1`}><Copy aria-hidden /> {t('editCopy')}</Link> : <LoginLink><Copy aria-hidden /> {t('editCopy')}</LoginLink>}
@@ -269,7 +269,7 @@ export function TrackPanelFooter({ sheet, cursor, onScrub, compact, onVisibility
   );
 }
 
-/** Tracé de la trace ouverte sur la carte de l'explorateur : couleurs de pente, bornes km, arrivée, curseur du profil. */
+/** Line of the open track on the explorer map: slope colours, km markers, finish, profile cursor. */
 export function OpenTrackLayers({ sheet, colors, mapRef, marked, beforeId }: { sheet: OpenLine; colors: MapColors; mapRef: RefObject<MapRef | null>; marked: number | null; beforeId?: string }) {
   const t = useTranslations('track');
   const data = useMemo(() => slopeFeatures(sheet.geometry), [sheet.geometry]);
@@ -288,7 +288,7 @@ export function OpenTrackLayers({ sheet, colors, mapRef, marked, beforeId }: { s
 
 type OutingTrackState = { id: string; track?: MapOutingTrack; error?: boolean };
 
-/** Parcours figé de la sortie ouverte dans le panneau (#1596), chargé à la demande (`GET /api/outings/map/<id>`). */
+/** Frozen route of the outing open in the panel (#1596), loaded on demand (`GET /api/outings/map/<id>`). */
 export function useOutingTrack(id: string | null) {
   const [state, setState] = useState<OutingTrackState | null>(null);
   useEffect(() => {

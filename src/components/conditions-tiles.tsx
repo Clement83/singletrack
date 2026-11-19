@@ -10,16 +10,16 @@ import type { TileLevel } from '@/lib/conditions';
 export type Tile = {
   id: 'weather' | 'fire' | 'hunting';
   label: string;
-  /** Icône déjà rendue : un composant (fonction) ne peut pas passer du serveur au client. */
+  /** Icon already rendered: a component (function) cannot be passed from server to client. */
   icon: React.ReactNode;
   level: TileLevel;
-  /** Une ligne : info-bulle (survol) et nom accessible. */
+  /** One line: tooltip (hover) and accessible name. */
   summary: string;
-  /** Fiche complète de la rubrique (rendue côté serveur) : détail, alertes, liens. */
+  /** Full card of the item (rendered on the server): detail, alerts, links. */
   detail: React.ReactNode;
 };
 
-/** Couleurs = tokens d'alerte réservés ; le niveau est aussi dit par une forme (coche, triangle, octogone, tiret). */
+/** Colours = reserved alert tokens; the level is also told by a shape (check, triangle, octagon, dash). */
 const LEVEL: Record<TileLevel, { chip: string; mark: LucideIcon }> = {
   ok: { chip: 'bg-success-soft text-success', mark: Check },
   warn: { chip: 'bg-warning-soft text-warning', mark: TriangleAlert },
@@ -29,8 +29,8 @@ const LEVEL: Record<TileLevel, { chip: string; mark: LucideIcon }> = {
 };
 
 /**
- * Trois icônes de niveau (Météo, Incendie, Chasse), chacune ouvre sa fiche au tap ou au clic (tiroir du bas,
- * modal : fonctionne au doigt, à la souris et au clavier). L'info-bulle de survol n'est qu'un confort (#1454).
+ * Three level icons (Weather, Fire, Hunting), each opens its card on tap or click (bottom drawer,
+ * modal: works with a finger, a mouse and a keyboard). The hover tooltip is only a convenience (#1454).
  */
 export function ConditionsTiles({ tiles }: { tiles: Tile[] }) {
   const t = useTranslations('conditions');

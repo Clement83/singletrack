@@ -2,12 +2,12 @@
 
 import { Toaster as Sonner } from 'sonner';
 
-/** Toasts courts (« Lien copié ») : `import { toast } from 'sonner'`. Styles = tokens uniquement. */
+/** Short toasts ("Link copied"): `import { toast } from 'sonner'`. Styles = tokens only. */
 export function Toaster() {
   return (
     <Sonner
       position="bottom-center"
-      // Au-dessus de la barre du bas sur mobile.
+      // Above the bottom bar on mobile.
       mobileOffset={{ bottom: 'calc(var(--spacing-nav) + env(safe-area-inset-bottom) + 12px)' }}
       toastOptions={{
         unstyled: true,

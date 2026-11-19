@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
 
-// Titre de page des écrans privés (#1426) : sur mobile, il tient dans la même ligne que l'avatar du `UserMenu`
-// (fixe, en haut à gauche, 40 px) au lieu de passer dessous ; en desktop (avatar dans la barre latérale) il n'est pas décalé.
+// Page title of the private screens (#1426): on mobile, it fits on the same line as the `UserMenu` avatar
+// (fixed, top left, 40 px) instead of going under it; on desktop (avatar in the side bar) it is not shifted.
 export const PAGE_TOP_PAD = 'pt-[calc(0.75rem+env(safe-area-inset-top))] lg:pt-16';
 
 export function PageHeader({ title, children, className }: { title: string; children?: React.ReactNode; className?: string }) {

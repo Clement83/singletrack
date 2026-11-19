@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { ChoiceChips } from '@/components/ui/choice-chips';
 
-/** Visibilité de mon profil (#1433) : privé (copains) / public (tout connecté). PUT /api/profile. */
+/** Visibility of my profile (#1433): private (friends) / public (any signed-in account). PUT /api/profile. */
 export function VisibilitySwitcher({ initial }: { initial: 'private' | 'public' }) {
   const t = useTranslations('userProfile');
   const router = useRouter();

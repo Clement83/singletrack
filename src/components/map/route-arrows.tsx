@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Layer, useMap } from 'react-map-gl/maplibre';
 
-/** Petite flèche blanche cernée, dessinée en canvas : le sens de parcours sans police de glyphes. */
+/** Small outlined white arrow, drawn on a canvas: the direction of travel without a glyph font. */
 export function arrowImage(fill: string, stroke: string) {
   const size = 32;
   const c = document.createElement('canvas');
@@ -24,7 +24,7 @@ export function arrowImage(fill: string, stroke: string) {
   return g.getImageData(0, 0, size, size);
 }
 
-/** Flèches de direction le long d'une source de lignes (à placer dans le `<Source>` concerné). */
+/** Direction arrows along a line source (to place inside the relevant `<Source>`). */
 export function RouteArrows({ id = 'route-arrows', source, fill, stroke, spacing = 90, beforeId }: { id?: string; source: string; fill: string; stroke: string; spacing?: number; beforeId?: string }) {
   const { current: ref } = useMap();
   const [ready, setReady] = useState(false);

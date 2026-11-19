@@ -29,7 +29,7 @@ type Item = {
   duplicates: { slug: string; name: string; distanceKm: number }[];
 };
 type Errs = Partial<Record<string, string>>;
-/** Exemple d'adresse, identique dans toutes les langues. */
+/** Example address, identical in every language. */
 const URL_PLACEHOLDER = 'https://…';
 
 function ItemForm({ item, onSaved, defaultVisibility }: { item: Item; onSaved: (slug: string) => void; defaultVisibility: TrackVisibilityValue }) {

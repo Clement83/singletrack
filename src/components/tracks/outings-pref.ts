@@ -5,7 +5,7 @@ import { useCallback, useSyncExternalStore } from 'react';
 const PREF_KEY = 'singletrack.outings-layer';
 const PREF_EVENT = 'singletrack:outings-pref';
 
-/** Couche « Sorties à venir » (#1461) : active par défaut, mémorisée en localStorage (pas dans l'URL). */
+/** "Upcoming outings" layer (#1461): on by default, remembered in localStorage (not in the URL). */
 export function useOutingsPref(): [boolean, (v: boolean) => void] {
   const on = useSyncExternalStore(
     (cb) => {
@@ -29,7 +29,7 @@ export function useOutingsPref(): [boolean, (v: boolean) => void] {
     try {
       localStorage.setItem(PREF_KEY, v ? 'on' : 'off');
     } catch {
-      /* stockage indisponible : la préférence ne survit pas au rechargement */
+      /* storage unavailable: the preference does not survive a reload */
     }
     window.dispatchEvent(new Event(PREF_EVENT));
   }, []);

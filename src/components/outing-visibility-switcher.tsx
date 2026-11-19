@@ -6,13 +6,13 @@ import { OUTING_VISIBILITIES } from '@/db/schema';
 
 export type OutingVisibilityValue = (typeof OUTING_VISIBILITIES)[number];
 
-/** Choix Tous / Amis / Invitation (#1442), partagé par le menu utilisateur (défaut du compte) et le formulaire de sortie (surcharge). */
+/** Everyone / Friends / Invitation choice (#1442), shared by the user menu (account default) and the outing form (override). */
 export function OutingVisibilityChips({ label, value, onChange, disabled, values = OUTING_VISIBILITIES }: {
   label: string;
   value: string;
   onChange: (v: OutingVisibilityValue) => void;
   disabled?: boolean;
-  /** Choix proposés (le défaut du compte exclut « public », qui fige la sortie, #1455). */
+  /** Choices offered (the account default excludes "public", which freezes the outing, #1455). */
   values?: readonly OutingVisibilityValue[];
 }) {
   const t = useTranslations('outingVisibility');

@@ -3,7 +3,7 @@
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
 import { THEMES } from '@/lib/design/themes';
 
-/** Thème clair / sombre / système (+ thèmes de tokens.json), mémorisé dans le navigateur. */
+/** Light / dark / system theme (+ themes from tokens.json), remembered in the browser. */
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   return (
     <NextThemesProvider

@@ -7,7 +7,7 @@ import { CHARTES } from '@/lib/design/themes';
 
 const KEY = 'singletrack-charte';
 
-/** Choix de charte : avec `account` (charte du compte, #1625) enregistrée par `PUT /api/profile` ; sans, démo (#1624, /styleguide) : choisit la charte graphique sans compte (attribut `data-charte`, mémorisé dans le navigateur). */
+/** Charter choice: with `account` (account charter, #1625) saved through `PUT /api/profile`; without it, demo (#1624, /styleguide): picks the visual charter without an account (`data-charte` attribute, remembered in the browser). */
 export function CharteSwitcher({ className, account }: { className?: string; account?: string }) {
   const t = useTranslations('charte');
   const [charte, setCharte] = useState<string | undefined>(account);
@@ -19,7 +19,7 @@ export function CharteSwitcher({ className, account }: { className?: string; acc
     } catch {}
     const id = CHARTES.find((c) => c.id === saved)?.id ?? CHARTES[0].id;
     document.documentElement.dataset.charte = id;
-    // Lecture du stockage navigateur après montage (indisponible au rendu serveur).
+    // Browser storage read after mount (unavailable during server rendering).
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setCharte(id);
   }, [account]);
@@ -28,7 +28,7 @@ export function CharteSwitcher({ className, account }: { className?: string; acc
     document.documentElement.dataset.charte = id;
     setCharte(id);
     if (account !== undefined) {
-      // Compte connecté (#1625) : appliquée tout de suite, puis enregistrée ; échec ⇒ retour à la précédente.
+      // Signed-in account (#1625): applied immediately, then saved; failure ⇒ back to the previous one.
       fetch('/api/profile', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ charte: id }) })
         .then((r) => { if (!r.ok) throw new Error(); })
         .catch(() => { if (before) document.documentElement.dataset.charte = before; setCharte(before); });
@@ -38,7 +38,7 @@ export function CharteSwitcher({ className, account }: { className?: string; acc
       localStorage.setItem(KEY, id);
     } catch {}
   };
-  // Une seule charte déclarée : rien à choisir (le mécanisme reste en place pour de futures chartes).
+  // A single charter declared: nothing to choose (the mechanism stays for future charters).
   if (CHARTES.length < 2) return null;
   return <ChoiceChips label={t('label')} className={className} value={charte} onChange={choose} choices={CHARTES.map((c) => ({ id: c.id, label: c.name }))} />;
 }

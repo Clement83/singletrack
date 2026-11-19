@@ -8,7 +8,7 @@ import type { IControl, Map as MaplibreMap } from 'maplibre-gl';
 import { cn } from '@/lib/utils';
 import { TERRAIN, terrainPitch } from '@/lib/map/terrain';
 
-/** Conteneur de contrôle MapLibre dans lequel React rend son bouton (portail). */
+/** MapLibre control container in which React renders its button (portal). */
 class PortalControl implements IControl {
   readonly container: HTMLDivElement;
   constructor() {
@@ -38,8 +38,8 @@ function apply(map: MaplibreMap, on: boolean) {
 type Props = { position?: ControlPosition };
 
 /**
- * Bouton « 3D » (#1667) dans le groupe de contrôles de la carte : relief (source `dem` du style de
- * `BaseMap terrain`) + inclinaison. Toujours à plat à l'ouverture : la 3D ne s'active qu'au clic.
+ * "3D" button (#1667) in the map's control group: relief (`dem` source of the `BaseMap terrain`
+ * style) + pitch. Always flat on opening: 3D only turns on with a click.
  */
 export function TerrainToggle({ position = 'top-right' }: Props) {
   const t = useTranslations('map');

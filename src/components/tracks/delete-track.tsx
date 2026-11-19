@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
-/** « Supprimer cette trace » (#1449) : confirmation, puis retour sur la carte filtrée sur mes traces. */
+/** "Delete this track" (#1449): confirmation, then back to the map filtered on my tracks. */
 export function DeleteTrackButton({ slug, name, className }: { slug: string; name: string; className?: string }) {
   const t = useTranslations('trackDelete');
   const router = useRouter();

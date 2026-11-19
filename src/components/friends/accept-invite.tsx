@@ -8,7 +8,7 @@ import { useTranslations } from 'next-intl';
 import { useErrorText } from '@/lib/use-error-text';
 import { Button } from '@/components/ui/button';
 
-/** Un tap pour accepter (les antivirus de messagerie ouvrent les liens : jamais d'effet à l'ouverture). */
+/** One tap to accept (mail antivirus software opens links: never any effect on opening). */
 export function AcceptInvite({ token }: { token: string }) {
   const t = useTranslations('friends');
   const errText = useErrorText();

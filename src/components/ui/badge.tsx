@@ -22,12 +22,12 @@ const badgeVariants = cva(
 
 export type BadgeProps = React.ComponentProps<'span'> & VariantProps<typeof badgeVariants>;
 
-/** Pilule générique : niveau, VAE, boucle, source… */
+/** Generic pill: level, e-bike, loop, source… */
 export function Badge({ className, variant, ...props }: BadgeProps) {
   return <span data-slot="badge" className={cn(badgeVariants({ variant }), className)} {...props} />;
 }
 
-/** Pastille de couleur d'échelle. Jamais seule : toujours dans un badge avec libellé. */
+/** Scale colour dot. Never alone: always inside a badge with a label. */
 function Dot({ className }: { className: string }) {
   return <span aria-hidden className={cn('size-2 shrink-0 rounded-full', className)} />;
 }
@@ -48,7 +48,7 @@ export function FireBadge({ level, detailed = false, className }: { level: FireL
   const f = FIRE[level];
   return (
     <Badge variant="outline" className={className}>
-      {/* Le jaune officiel est trop clair sur fond clair : la pastille est cerclée. */}
+      {/* The official yellow is too light on a light background: the dot is outlined. */}
       <Dot className={cn(f.dot, 'ring-1 ring-foreground/40')} />
       {detailed ? `${t(`fire.${level}.label`)} · ${t(`fire.${level}.detail`)}` : t(`fire.${level}.label`)}
     </Badge>

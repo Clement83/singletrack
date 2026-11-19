@@ -12,7 +12,7 @@ import { slopeFeatures } from '@/lib/geo/slope-features';
 import { useNearViewport } from '@/lib/use-near-viewport';
 import { useMapColors } from './use-map-colors';
 
-// Carte chargée à la demande (#1371) : rien de react-map-gl / MapLibre dans le JS initial de la page.
+// Map loaded on demand (#1371): nothing from react-map-gl / MapLibre in the page's initial JS.
 const TrackDetailMap = dynamic(() => import('./track-detail-map'), { ssr: false, loading: () => <Skeleton className="size-full" /> });
 
 type Props = {
@@ -20,18 +20,18 @@ type Props = {
   bbox: [number, number, number, number];
   start: [number, number];
   end: [number, number];
-  /** Profil échantillonné + position de chaque point (pour le marqueur synchronisé). */
+  /** Sampled profile + position of each point (for the synchronised marker). */
   profile: LocatedProfilePoint[];
 };
 
 /**
- * Carte de la fiche (intégrée : deux doigts pour la déplacer) + profil altimétrique synchronisé (#1391) :
- * curseur du profil → marqueur sur la carte ; survol de la trace à la souris → curseur sur le profil.
+ * Sheet map (embedded: two fingers to move it) + synchronised elevation profile (#1391):
+ * profile cursor → marker on the map; mouse hover on the track → cursor on the profile.
  */
 export function TrackDetail({ geometry, bbox, start, end, profile }: Props) {
   const colors = useMapColors();
   const [cursor, setCursor] = useState<number | null>(null);
-  // Survol de la trace sur la carte (souris) : positionne le curseur du profil sans déplacer la carte.
+  // Hovering the track on the map (mouse): places the profile cursor without moving the map.
   const [hover, setHover] = useState<number | null>(null);
   const mapRef = useRef<MapRef>(null);
   const mapBox = useRef<HTMLDivElement>(null);

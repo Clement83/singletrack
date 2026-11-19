@@ -15,7 +15,7 @@ type Entry = { id: string; userId: string | null; name: string; remote?: { actor
 type Blocked = { id: string; handle: string; domain: string; displayName: string | null };
 type Props = { friends: Entry[]; incoming: Entry[]; outgoing: Entry[]; blocked?: Blocked[]; federation?: boolean; myAddress?: string | null };
 
-/** « Mes copains » (#1432) : action principale = demander par email ; lien à usage unique en second. */
+/** "My friends" (#1432): main action = request by email; single-use link second. */
 export function FriendsScreen({ friends, incoming, outgoing, blocked = [], federation = false, myAddress = null }: Props) {
   const t = useTranslations('friends');
   const tm = useTranslations('moderation');
@@ -53,7 +53,7 @@ export function FriendsScreen({ friends, incoming, outgoing, blocked = [], feder
     try {
       if (navigator.share) await navigator.share({ text: t('shareText'), url });
       else { await navigator.clipboard.writeText(url); toast.success(t('linkCopied')); }
-    } catch { /* partage annulé : le lien reste affiché */ }
+    } catch { /* share cancelled: the link stays displayed */ }
   }
 
   const section = (title: string, list: Entry[], actions: (e: Entry) => React.ReactNode, listIsFriends = false) =>

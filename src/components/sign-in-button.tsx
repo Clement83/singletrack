@@ -6,7 +6,7 @@ import { LogIn } from 'lucide-react';
 import { LoginLink } from '@/components/login-link';
 import { cn } from '@/lib/utils';
 
-/** Visiteur sans compte (#1591) : remplace le menu utilisateur, à la même place ; revient sur la même vue après connexion. */
+/** Visitor without an account (#1591): replaces the user menu, at the same place; comes back to the same view after sign-in. */
 export function SignInButton({ className }: { className?: string }) {
   const t = useTranslations('userMenu');
   const pathname = usePathname();

@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { ChoiceChips } from '@/components/ui/choice-chips';
 import { LOCALES, LOCALE_NAMES } from '@/i18n/config';
 
-/** Choix de la langue (#1397) : POST /api/locale (cookie + préférence du compte), puis nouveau rendu serveur. */
+/** Language choice (#1397): POST /api/locale (cookie + account preference), then a new server render. */
 export function LocaleSwitcher({ className }: { className?: string }) {
   const t = useTranslations('userMenu');
   const locale = useLocale();

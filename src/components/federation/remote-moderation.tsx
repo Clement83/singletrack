@@ -11,7 +11,7 @@ import { ActionSheet } from '@/components/ui/action-sheet';
 import { Field, Textarea } from '@/components/ui/field';
 import { useErrorText } from '@/lib/use-error-text';
 
-/** « Signaler » (Flag au serveur d'origine + copie pour l'admin) et « Bloquer l'organisateur » sur une sortie d'un autre serveur (#1477). */
+/** "Report" (Flag to the origin server + copy for the admin) and "Block the organiser" on an outing from another server (#1477). */
 export function RemoteModeration({ id, actorId, domain }: { id: string; actorId: string; domain: string }) {
   const t = useTranslations('moderation');
   const tc = useTranslations('common');

@@ -2,8 +2,8 @@ import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
-// Bouton shadcn/ui adapté à la charte Singletrack (#1646) : zones tactiles ≥ 44 px, rayon de contrôle (6 px), appui en ressort (`press`),
-// icônes 18 px à trait fin ; « lg » = action principale pleine largeur en bas d'écran (52 px).
+// shadcn/ui button adapted to the Singletrack charter (#1646): touch areas ≥ 44 px, control radius (6 px), spring press (`press`),
+// 18 px thin-stroke icons; "lg" = full-width main action at the bottom of the screen (52 px).
 const buttonVariants = cva(
   'inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium press select-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-[18px] [&_svg]:shrink-0 [&_svg]:stroke-[1.75]',
   {

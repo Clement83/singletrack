@@ -6,10 +6,10 @@ import { kmMarkers, kmStepForZoom } from '@/lib/geo/slopes';
 import type { TrackGeometry } from '@/lib/geo/types';
 
 /**
- * Pastilles kilométriques le long de la trace (#1382) : 1, 2, 3… de près, une sur 5 puis une sur 10 en dézoomant
- * (`kmStepForZoom`). Sous les points de l'éditeur (rendues avant eux), jamais cliquables : un tap dessus agit sur
- * la carte. Suit le sens de la trace (inverser renumérote). Le style de carte n'a pas de police (glyphs) :
- * marqueurs HTML, au plus quelques dizaines.
+ * Kilometre chips along the track (#1382): 1, 2, 3… up close, one in 5 then one in 10 when zooming out
+ * (`kmStepForZoom`). Under the editor's points (rendered before them), never clickable: a tap on them acts on
+ * the map. Follows the track's direction (reversing renumbers). The map style has no font (glyphs):
+ * HTML markers, a few dozen at most.
  */
 export function KmMarkers({ geometry }: { geometry: TrackGeometry | null | undefined }) {
   const { current: map } = useMap();

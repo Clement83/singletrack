@@ -13,13 +13,13 @@ export type TrackVisibilityValue = (typeof TRACK_VISIBILITIES)[number];
 
 const ICONS: Record<TrackVisibilityValue, LucideIcon> = { public: Globe, friends: Users, private: Lock };
 
-/** Choix Publique / Copains / Privée d'une trace (#1590), partagé par l'éditeur, l'import, le panneau et le menu utilisateur. */
+/** Public / Friends / Private choice of a track (#1590), shared by the editor, the import, the panel and the user menu. */
 export function TrackVisibilityChips({ value, onChange, disabled, label, hint }: {
   value: TrackVisibilityValue;
   onChange: (v: TrackVisibilityValue) => void;
   disabled?: boolean;
   label?: string;
-  /** Phrase d'explication complémentaire (ex. l'import, qui part en privé). */
+  /** Extra explanatory sentence (e.g. the import, which defaults to private). */
   hint?: string;
 }) {
   const t = useTranslations('trackVisibility');
@@ -38,7 +38,7 @@ export function TrackVisibilityChips({ value, onChange, disabled, label, hint }:
   );
 }
 
-/** Pastille de visibilité : à n'afficher que sur ses propres traces. */
+/** Visibility chip: only to show on one's own tracks. */
 export function TrackVisibilityBadge({ value, className }: { value: TrackVisibilityValue; className?: string }) {
   const t = useTranslations('trackVisibility');
   const Icon = ICONS[value];
@@ -50,7 +50,7 @@ export function TrackVisibilityBadge({ value, className }: { value: TrackVisibil
   );
 }
 
-/** Réglage du compte (#1588/#1590) : visibilité par défaut des traces dessinées ou importées. PUT /api/profile. */
+/** Account setting (#1588/#1590): default visibility of drawn or imported tracks. PUT /api/profile. */
 export function DefaultTrackVisibility({ origin, initial }: { origin: 'drawn' | 'imported'; initial: TrackVisibilityValue }) {
   const t = useTranslations('trackVisibility');
   const router = useRouter();

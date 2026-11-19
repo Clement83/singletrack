@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { OutingVisibilityChips, type OutingVisibilityValue } from '@/components/outing-visibility-switcher';
 
-/** Réglage global (#1442) : visibilité par défaut de mes sorties. PUT /api/profile {outingVisibility}. */
+/** Global setting (#1442): default visibility of my outings. PUT /api/profile {outingVisibility}. */
 export function DefaultOutingVisibility({ initial }: { initial: OutingVisibilityValue }) {
   const t = useTranslations('outingVisibility');
   const router = useRouter();
