@@ -2,13 +2,6 @@ import type { Metadata, Viewport } from 'next';
 import { ClientMessages } from '@/i18n/client-messages';
 // Charte Singletrack (#1645) : Inter 4 avec axes poids + taille optique (coupe Display automatique sur les titres).
 import '@fontsource-variable/inter/opsz.css';
-// Charte « Technique nuit » (#1626) : @font-face seulement ; le navigateur ne télécharge un fichier que si une règle utilise la famille (Classique : jamais).
-import '@fontsource-variable/space-grotesk/wght.css';
-import '@fontsource-variable/jetbrains-mono/wght.css';
-// Charte « Affiche de trail » (#1627) : Anton, sous-ensemble latin seul, `font-display: swap` ; téléchargée seulement si la charte l'utilise.
-import '@fontsource/anton/latin-400.css';
-// Charte « Alpin verre » (#1628) : Manrope variable, téléchargée seulement si la charte l'utilise.
-import '@fontsource-variable/manrope/wght.css';
 import './globals.css';
 import { getLocale, getTranslations } from 'next-intl/server';
 import tokens from '../../design/tokens.json';

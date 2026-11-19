@@ -37,13 +37,13 @@ export function ChoiceChips({
             disabled={disabled}
             onClick={() => onChange(id)}
             className={cn(
-              'flex min-h-touch items-center gap-2 rounded-full border px-4 font-semibold transition-colors duration-150 disabled:opacity-50',
+              'flex min-h-touch items-center gap-2 rounded-md border px-4 font-medium press disabled:opacity-50',
               on
                 ? 'border-primary bg-accent text-accent-foreground'
                 : 'border-border bg-card text-foreground hover:bg-accent active:bg-accent',
             )}
           >
-            {Icon && <Icon aria-hidden className="size-5" strokeWidth={1.75} />}
+            {Icon && <Icon aria-hidden className="size-[18px]" strokeWidth={1.75} />}
             {name}
           </button>
         );

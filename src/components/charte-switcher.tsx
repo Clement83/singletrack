@@ -38,5 +38,7 @@ export function CharteSwitcher({ className, account }: { className?: string; acc
       localStorage.setItem(KEY, id);
     } catch {}
   };
+  // Une seule charte déclarée : rien à choisir (le mécanisme reste en place pour de futures chartes).
+  if (CHARTES.length < 2) return null;
   return <ChoiceChips label={t('label')} className={className} value={charte} onChange={choose} choices={CHARTES.map((c) => ({ id: c.id, label: c.name }))} />;
 }

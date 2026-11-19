@@ -523,6 +523,8 @@ describe('/api/profile : charte du compte (#1625)', () => {
     const bad = await profileRoute.PUT(json('PUT', { charte: 'nope' }));
     expect(bad.status).toBe(422);
     expect((await bad.json()).error).toBe('charteInvalid');
+    // Chartes retirées (#1646) : inconnues, donc refusées ; un compte qui en avait une retombe sur la charte par défaut (getCharte).
+    expect((await profileRoute.PUT(json('PUT', { charte: 'nuit' }))).status).toBe(422);
     const ok = await profileRoute.PUT(json('PUT', { charte: 'classique' }));
     expect(ok.status).toBe(200);
     expect((await ok.json()).charte).toBe('classique');

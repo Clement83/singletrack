@@ -32,7 +32,7 @@ export function ActionSheet({ open, onOpenChange, title, header, children, trigg
         <Drawer.Overlay className="fixed inset-0 z-40 bg-scrim" />
         <Drawer.Content
           className={cn(
-            'fixed inset-x-0 bottom-0 z-50 flex max-h-[92dvh] flex-col rounded-t-3xl border border-b-0 border-border bg-card text-card-foreground shadow-sheet outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            'fixed inset-x-0 bottom-0 z-50 flex max-h-[92dvh] flex-col rounded-t-2xl border border-b-0 border-border glass text-card-foreground shadow-sheet outline-none focus-visible:ring-2 focus-visible:ring-ring',
             className,
           )}
         >

@@ -20,11 +20,11 @@ export function EmptyState({ icon: Icon, title, children, action, tone = 'neutra
     >
       <span
         className={cn(
-          'flex size-14 items-center justify-center rounded-full',
+          'flex size-12 items-center justify-center rounded-xl ring-1 ring-inset ring-border/60',
           tone === 'error' ? 'bg-destructive-soft text-destructive' : 'bg-accent text-accent-foreground',
         )}
       >
-        <Icon aria-hidden className="size-7" strokeWidth={1.75} />
+        <Icon aria-hidden className="size-6" strokeWidth={1.75} />
       </span>
       <p className="text-heading">{title}</p>
       {children && <p className="max-w-sm text-muted-foreground">{children}</p>}

@@ -14,6 +14,7 @@ import { ActionSheet } from '@/components/ui/action-sheet';
 import { Field, Input } from '@/components/ui/field';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { CharteSwitcher } from '@/components/charte-switcher';
+import { CHARTES } from '@/lib/design/themes';
 import { LocaleSwitcher } from '@/components/locale-switcher';
 import { DefaultOutingVisibility } from '@/components/default-outing-visibility';
 import type { OutingVisibilityValue } from '@/components/outing-visibility-switcher';
@@ -73,10 +74,12 @@ function MenuBody({ user, onDone, sourceUrl, version }: { user: User; onDone: ()
         <h3 className="text-label uppercase text-muted-foreground">{tTheme('label')}</h3>
         <ThemeSwitcher />
       </section>
-      <section className="flex flex-col gap-2">
-        <h3 className="text-label uppercase text-muted-foreground">{tCharte('label')}</h3>
-        <CharteSwitcher account={user.charte} />
-      </section>
+      {CHARTES.length > 1 && (
+        <section className="flex flex-col gap-2">
+          <h3 className="text-label uppercase text-muted-foreground">{tCharte('label')}</h3>
+          <CharteSwitcher account={user.charte} />
+        </section>
+      )}
       <section className="flex flex-col gap-2">
         <h3 className="text-label uppercase text-muted-foreground">{t('language')}</h3>
         <LocaleSwitcher />
@@ -207,7 +210,7 @@ export function UserMenu({ user, className, sourceUrl, version }: { user: User; 
       aria-controls={desktop && open ? panelId : undefined}
       onClick={() => setOpen((o) => !o)}
       className={cn(
-        'flex size-touch items-center justify-center rounded-full bg-card shadow-md transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-95',
+        'flex size-touch items-center justify-center rounded-full border border-border bg-card shadow-md press hover:opacity-90',
         className,
       )}
     >
@@ -227,7 +230,7 @@ export function UserMenu({ user, className, sourceUrl, version }: { user: User; 
             id={panelId}
             role="dialog"
             aria-label={t('title')}
-            className="fixed bottom-4 left-[calc(var(--spacing-rail)+12px)] z-50 flex max-h-[calc(100dvh-2rem)] w-panel flex-col gap-4 overflow-y-auto overscroll-contain rounded-3xl border border-border bg-popover p-4 text-popover-foreground shadow-md"
+            className="fixed bottom-4 left-[calc(var(--spacing-rail)+12px)] z-50 flex max-h-[calc(100dvh-2rem)] w-panel flex-col gap-4 overflow-y-auto overscroll-contain rounded-2xl border border-border glass p-4 text-popover-foreground shadow-md"
           >
             <div className="flex items-start justify-between gap-2">
               <Identity user={user} />

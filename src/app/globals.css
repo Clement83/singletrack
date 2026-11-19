@@ -68,7 +68,7 @@
   [role='button'] {
     touch-action: manipulation;
   }
-  /* Polices de charte (ticket 1626) : titres en `display`, chiffres en `figures`. Classique : mêmes familles que `sans`, aucun changement. */
+  /* Polices de charte : titres en `display`, chiffres en `figures` (aujourd'hui les mêmes familles que `sans`). */
   h1,
   h2,
   h3,
@@ -81,17 +81,6 @@
   .tabular-nums {
     font-family: var(--font-figures);
     font-variant-numeric: tabular-nums;
-  }
-  /* Affiche de trail (ticket 1627) : titres Anton en capitales (une seule graisse, pas de gras synthétique), contours épais et ombre pleine. */
-  [data-charte='affiche'] :is(h1, h2, h3, .text-display, .text-title, .text-heading) {
-    text-transform: uppercase;
-    font-weight: 400;
-    letter-spacing: 0.02em;
-  }
-  [data-charte='affiche'] .border,
-  [data-charte='affiche'] .border-b,
-  [data-charte='affiche'] .border-t {
-    border-width: var(--border-width);
   }
   :focus-visible {
     outline: 2px solid var(--ring);

@@ -6,7 +6,7 @@ Ce guide applique la **charte d'interface** de `AGENTS.md` (elle fait foi). Réf
 ## Comment ça marche
 
 ```
-design/tokens.json  ──npm run tokens──▶  src/app/styles/tokens.css  ──▶  Tailwind (bg-primary, text-small, rounded-2xl…)
+design/tokens.json  ──npm run tokens──▶  src/app/styles/tokens.css  ──▶  Tailwind (bg-primary, text-small, rounded-lg…)
    (source unique)                        (GÉNÉRÉ, jamais édité)          shadcn/ui (--background, --primary, --ring…)
 ```
 
@@ -33,10 +33,7 @@ Un second axe, **indépendant du clair/sombre** : la *charte* (`chartes` dans `t
 - Nouveaux tokens : `surface-glass` (+ `-foreground`), `glass-opacity`, `glass-blur` (valeur de `backdrop-filter` : `none` ou `blur(16px)`), `border-width` (variable seule), polices `display` et `mono`.
 - Utilitaire **`glass`** (`globals.css`) : fond `surface-glass` à `glass-opacity` + `glass-blur`, repli opaque sans `backdrop-filter` ou sous `prefers-reduced-transparency`. Posé sur la barre de navigation, le `BottomSheet`, les boutons de carte et les toasts. Singletrack : 72 % (sombre 70 %) + `saturate(180%) blur(20px)`.
 - Contrastes vérifiés pour chaque charte × thème (texte sur verre contre le repli opaque).
-- **Technique nuit (#1626, `nuit`)** : sombre d'abord (fond `#0b0f14`, panneaux `#121821`, primaire vert fluo `#c6f432` avec texte foncé) ; en clair, gris froid et vert olive (`#3d6b00`) pour que texte, liens et focus passent AA. Rayons 2–8 px, ombres plus denses, verre sombre `72 %` (clair `78 %`) + `blur(16px)`. Polices auto-hébergées `@fontsource-variable/space-grotesk` (titres : `h1`–`h3`, `.text-display|title|heading`, token `display`) et `jetbrains-mono` (chiffres : `.text-stat`, `.tabular-nums`, token `figures`) ; charte de base : `display` et `figures` = Inter. Les `@font-face` sont importés partout mais le navigateur ne télécharge un fichier que si la charte l'utilise.
-- **Affiche de trail (#1627, `affiche`)** : clair d'abord, sable `#f2ede4`, texte noir, orange signalisation `#ff4f1a` en `accent` (sélection, texte noir dessus) ; l'action principale (`primary`, liens, nav) est un orange foncé `#c23600` en clair pour passer AA (l'orange vif ne passe pas sur sable). Contours `border-width` 2 px (`.border`, `.border-t`, `.border-b` sous `[data-charte='affiche']`), rayons 0–4 px, ombres décalées pleines (`4px 4px 0`), verre opaque (pas de flou). Sombre : fond brun-noir, contours crème, orange `#ff5a24`. Titres Anton en capitales (`@fontsource/anton/latin-400.css`, une seule graisse), corps Inter.
-- **Alpin verre (#1628, `alpin`)** : blanc givré (fond `#eaf1fb`, texte `#0d1b2a`), bleu outremer `#1f5bff` en `primary` (clair `#7aa2ff` en sombre, texte foncé dessus), accent bleu glacier `#dbe8ff`. Rayons 6–12 px, verre `60 %` (sombre `55 %`) + `blur(20px)` sur les couches flottantes seulement, ombres teintées de bleu. Manrope (`@fontsource-variable/manrope/wght.css`) pour `sans`, `display` et `figures` ; téléchargée seulement si la charte l'utilise.
-- `/styleguide` : `CharteSwitcher` (attribut `data-charte`, sans compte). Le choix par compte (#1625) est dans le menu utilisateur.
+- **Une seule charte aujourd'hui (#1646)** : les essais Technique nuit, Affiche de trail et Alpin verre (#1626 à #1628) sont retirés (tokens, CSS, polices). Le mécanisme reste pour de futures chartes ; tant qu'il n'y en a qu'une, `CharteSwitcher` ne s'affiche pas (menu utilisateur, `/styleguide`). Un compte dont `user.charte` est inconnue retombe sur `classique`, sans erreur (`getCharte`).
 
 ### Garde-fous (verts dans le conteneur, `npm test` et `npm run lint`)
 
@@ -104,7 +101,8 @@ Chiffres à la française via `src/lib/format.ts` : `32,1 km`, `662 m D+`, `3 h 
 ## Espace, formes, mouvement
 
 - Grille de **4 px** (échelle Tailwind : `1` = 4 px). Gouttière `px-gutter` (16 px) sur mobile, `lg:px-gutter-lg` (32 px) ; entre blocs d'une fiche `gap-block` (24 px).
-- Rayons : `rounded-sm` 4 · `rounded-md` 6 · `rounded-lg` 8 (imbriqué) · `rounded-xl` 8 (boutons, champs) · `rounded-2xl` 12 (cartes, panneaux, toasts) · `rounded-3xl` 16 (sheet, dialogues) · `rounded-full` (pilules, boutons ronds). Imbriqué : `concentric` (`--radius-outer` − `--inset`, défaut 12 − 4).
+- Rayons (hiérarchisés, `--radius-*`) : `rounded-sm` 4 (puces, détails) · `rounded-md` 6 (**contrôles** : boutons, champs, pastilles de choix, badges) · `rounded-lg` 8 (éléments de liste, navigation) · `rounded-xl` 8 (toasts, vignettes) · `rounded-2xl` 12 (**cartes et panneaux**, sheet, menus) · `rounded-3xl` 16 (réservé aux grandes surfaces) · `rounded-full` (avatars, points, boutons de carte ronds seulement). Jamais de grand rayon sur un contrôle. Imbriqué : `concentric` (`--radius-outer` − `--inset`, défaut 12 − 4).
+- Composants `ui/` (#1646) : contrôles à 6 px, hairline `border-border` ou `ring-inset ring-border/60`, graisse `font-medium` (pas de `font-semibold` sur les contrôles), icônes 18 px au trait 1,75, appui `press` (jamais d'action au seul survol), verre (`glass`) sur les couches flottantes seulement (nav, sheets, menus, toasts), jamais sur les cartes de contenu.
 - Ombres : `shadow-sm` (contenu au repos), `shadow-md` (couches flottantes), `shadow-sheet`.
 - Tailles : `h-button-lg` (52), `h-nav` (64), `w-rail` (80), `w-panel` (400).
 - Durées `--duration-fast` 120 ms (défaut des transitions), `--duration-base` 200 ms, `--duration-slow` 320 ms (grands déplacements) ; courbes `ease-out` (défaut des transitions), `ease-in-out`, `ease-spring` (tokens `easing`). Utilitaire `press` : enfoncement 0,97 en ressort à l'appui.

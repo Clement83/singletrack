@@ -29,18 +29,18 @@ function Items({ active, vertical }: { active: string; vertical?: boolean }) {
         href={href}
         aria-current={on ? 'page' : undefined}
         className={cn(
-          'flex min-h-touch flex-1 flex-col items-center justify-center gap-1 rounded-2xl text-caption font-semibold transition-colors duration-150',
+          'flex min-h-touch flex-1 flex-col items-center justify-center gap-1 rounded-lg text-caption font-medium press',
           vertical && 'w-16 flex-none py-2',
           on ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
         )}
       >
         <span
           className={cn(
-            'flex h-8 w-14 items-center justify-center rounded-full transition-colors duration-150',
+            'flex h-8 w-14 items-center justify-center rounded-md transition-colors duration-150 ease-out',
             on && 'bg-accent text-accent-foreground',
           )}
         >
-          <Icon aria-hidden className="size-6" strokeWidth={1.75} />
+          <Icon aria-hidden className="size-5" strokeWidth={1.75} />
         </span>
         {t(key)}
       </Link>
@@ -72,8 +72,8 @@ export function SideNavBar({ active, className }: BarProps) {
       className={cn('flex w-rail flex-col items-center gap-2 border-r border-border glass py-4 shadow-md', className)}
     >
       {/* Icône de l'app (ticket 1395, générée par scripts/make-icons.mjs) : ramène à la carte. */}
-      <Link href="/" aria-label={t('home')} className="mb-4 rounded-xl transition-opacity duration-150 hover:opacity-90 active:opacity-80">
-        <Image src="/icons/icon.svg" alt="" width={40} height={40} unoptimized priority className="size-10 rounded-xl shadow-sm" />
+      <Link href="/" aria-label={t('home')} className="mb-4 rounded-lg transition-opacity duration-150 hover:opacity-90 active:opacity-80">
+        <Image src="/icons/icon.svg" alt="" width={40} height={40} unoptimized priority className="size-10 rounded-lg shadow-sm" />
       </Link>
       <Items active={active ?? pathname} vertical />
     </nav>

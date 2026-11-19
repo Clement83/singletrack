@@ -92,43 +92,11 @@ describe('tokens : génération', () => {
       expect(generateCss(e2).split("[data-charte='fille'][data-theme='light']")[1].split('}')[0]).toContain('--radius-xl: 0px;');
     });
 
-    it('Technique nuit (#1626) : verre sombre flouté, rayons 2–8 px, Space Grotesk + JetBrains Mono, vert fluo en sombre', () => {
-      const real = generateCss(tokens);
-      const dark = real.split("[data-charte='nuit'][data-theme='dark']")[1].split('}')[0];
-      expect(dark).toContain('--primary: #c6f432;');
-      expect(dark).toContain('--glass-blur: blur(16px);');
-      expect(dark).toContain('--font-display: "Space Grotesk Variable"');
-      expect(dark).toContain('--font-figures: "JetBrains Mono Variable"');
-      for (const r of tokens.radius) {
-        const px = parseInt(String(r.chartes?.nuit), 10);
-        expect(px).toBeGreaterThanOrEqual(2);
-        expect(px).toBeLessThanOrEqual(8);
-      }
-    });
-
-    it('Affiche de trail (#1627) : Anton, rayons 0–4 px, ombre pleine décalée, contours 2 px, verre opaque', () => {
-      const real = generateCss(tokens);
-      const dark = real.split("[data-charte='affiche'][data-theme='dark']")[1].split('}')[0];
-      expect(dark).toContain('--font-display: Anton');
-      expect(dark).toContain('--elevation-md: 4px 4px 0 rgba(245, 239, 227, 0.5);');
-      expect(dark).toContain('--border-width: 2px;');
-      for (const r of tokens.radius) {
-        const px = parseInt(String(r.chartes?.affiche), 10);
-        expect(px).toBeGreaterThanOrEqual(0);
-        expect(px).toBeLessThanOrEqual(4);
-      }
-    });
-
-    it('Alpin verre (#1628) : Manrope, rayons 6–12 px, verre givré flouté', () => {
-      const real = generateCss(tokens);
-      const light = real.split("[data-charte='alpin'][data-theme='dark']")[1].split('}')[0];
-      expect(light).toContain('--font-display: "Manrope Variable"');
-      expect(light).toContain('--glass-blur: blur(20px);');
-      for (const r of tokens.radius) {
-        const px = parseInt(String(r.chartes?.alpin), 10);
-        expect(px).toBeGreaterThanOrEqual(6);
-        expect(px).toBeLessThanOrEqual(12);
-      }
+    it('une seule charte déclarée (#1646) : nuit, affiche et alpin ont disparu des tokens et du CSS', () => {
+      expect(tokens.chartes.map((c) => c.id)).toEqual(['classique']);
+      const css = generateCss(tokens);
+      expect(css).not.toContain('data-charte');
+      expect(css).not.toMatch(/Space Grotesk|JetBrains|Manrope|Anton/);
     });
 
     it('charte par défaut Singletrack (#1645) : verre flouté + saturé sur les couches flottantes, repli opaque garanti par `glass`', () => {
