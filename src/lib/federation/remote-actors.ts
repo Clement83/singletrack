@@ -12,7 +12,7 @@ export type RemoteActorInput = {
   publicKeyPem?: string | null;
 };
 
-/** Cache d'un compte distant (#1474) : création ou mise à jour par URL d'acteur. Jamais d'email. Le domaine vient de l'URL. */
+/** Cache of a remote account (#1474): creation or update by actor URL. Never an email. The domain comes from the URL. */
 export function upsertRemoteActor(db: Db, input: RemoteActorInput, now = new Date()) {
   const url = new URL(input.actorUrl);
   const values = {

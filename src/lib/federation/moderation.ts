@@ -6,33 +6,33 @@ import {
 import { rateLimit } from '@/lib/outings/rate-limit';
 
 /**
- * Sécurité et modération de la fédération (#1477, docs/federation.md §11). Instance ouverte à tous les serveurs : tout ce qui
- * entre est borné (taille, débit, horloge, signature), tout serveur ou compte peut être coupé, et chaque refus est journalisé
- * (domaine + motif + type d'activité, jamais de contenu). Les blocs valent aussi à l'émission.
+ * Federation security and moderation (#1477, docs/federation.md §11). Instance open to every server: everything coming
+ * in is bounded (size, rate, clock, signature), any server or account can be cut off, and every rejection is logged
+ * (domain + reason + activity type, never content). Blocks also apply to outgoing deliveries.
  */
 
 export const LIMITS = {
-  /** Taille maximale d'une activité reçue (trace comprise). */
+  /** Maximum size of a received activity (track included). */
   maxActivityBytes: 256 * 1024,
-  /** Activités par serveur distant et par minute sur les boîtes d'entrée. */
+  /** Activities per remote server and per minute on the inboxes. */
   ratePerMinute: 60,
-  /** Sorties distantes gardées en cache par serveur d'origine. */
+  /** Remote outings kept in cache per origin server. */
   maxCachedOutingsPerServer: 200,
-  /** Une copie expire 30 jours après le début de la sortie. */
+  /** A copy expires 30 days after the outing starts. */
   cacheExpiryMs: 30 * 86_400_000,
-  /** Demandes de copain d'un serveur jamais vu, par jour et par compte destinataire. */
+  /** Friend requests from a never-seen server, per day and per recipient account. */
   unseenServerRequestsPerDay: 5,
-  /** Tolérance sur la date signée (en-tête `Date`). */
+  /** Tolerance on the signed date (`Date` header). */
   clockSkewHours: 12,
-  /** Entrées conservées dans le journal des refus. */
+  /** Entries kept in the rejection log. */
   logKeep: 1000,
-  /** Lignes lues dans un import de liste de blocage. */
+  /** Lines read in a block-list import. */
   maxImportRows: 5000,
 } as const;
 
 // ───────────────────────── Administrateur ─────────────────────────
 
-/** `ADMIN_EMAILS` (liste séparée par des virgules, insensible à la casse) : seuls ces comptes ouvrent `/admin/federation`. */
+/** `ADMIN_EMAILS` (comma-separated list, case-insensitive): only these accounts open `/admin/federation`. */
 export function adminEmails(env: NodeJS.ProcessEnv = process.env): string[] {
   return (env.ADMIN_EMAILS ?? '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
 }
@@ -40,9 +40,9 @@ export function isAdminEmail(email: string | null | undefined, env: NodeJS.Proce
   return !!email && adminEmails(env).includes(email.trim().toLowerCase());
 }
 
-// ───────────────────────── Serveurs bloqués ─────────────────────────
+// ───────────────────────── Blocked servers ─────────────────────────
 
-/** `Mastodon.Example`, `https://x.org/path`, `x.org:8443` → hôte en minuscules ; null si ce n'est pas un nom d'hôte. */
+/** `Mastodon.Example`, `https://x.org/path`, `x.org:8443` → lower-case host; null if it is not a host name. */
 export function normalizeDomain(input: unknown): string | null {
   if (typeof input !== 'string') return null;
   let v = input.trim().toLowerCase();
@@ -52,7 +52,7 @@ export function normalizeDomain(input: unknown): string | null {
   return /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*(:\d{1,5})?$/.test(v) && v.length <= 253 ? v : null;
 }
 
-/** Bloqué = le domaine ou l'un de ses parents est dans la liste (`evil.example` bloque `x.evil.example`). Le port est ignoré pour les parents. */
+/** Blocked = the domain or one of its parents is in the list (`evil.example` blocks `x.evil.example`). The port is ignored for parents. */
 export function isDomainBlocked(db: Db, domain: string | null | undefined): boolean {
   const d = normalizeDomain(domain);
   if (!d) return false;
@@ -63,7 +63,7 @@ export function isDomainBlocked(db: Db, domain: string | null | undefined): bool
   return !!db.select({ n: count() }).from(federationBlock).where(inArray(federationBlock.domain, [...candidates])).get()?.n;
 }
 
-/** Retire ce que ce serveur nous avait donné : copains, sorties en cache, invitations ; les liens de carnet sont détachés. */
+/** Removes what this server had given us: friends, cached outings, invitations; buddy-book links are detached. */
 export function purgeDomain(db: Db, domain: string): void {
   const ids = db.select({ id: remoteActor.id, host: remoteActor.domain }).from(remoteActor).all()
     .filter((a) => {
@@ -95,8 +95,8 @@ export function unblockDomain(db: Db, input: unknown): boolean {
 export const listBlockedDomains = (db: Db) => db.select().from(federationBlock).orderBy(federationBlock.domain).all();
 
 /**
- * Import d'une liste de blocage partagée, CSV au format Mastodon (`#domain,#severity,#reject_media,#reject_reports,#public_comment,#obfuscate`).
- * Seules les lignes `suspend` (ou sans sévérité) sont retenues : `silence` et `noop` ne coupent pas la fédération. Domaines masqués (`*`) ignorés.
+ * Import of a shared block list, CSV in Mastodon format (`#domain,#severity,#reject_media,#reject_reports,#public_comment,#obfuscate`).
+ * Only `suspend` lines (or without severity) are kept: `silence` and `noop` do not cut federation. Masked domains (`*`) ignored.
  */
 export function importBlockList(db: Db, csv: string): { added: number; skipped: number } {
   let added = 0, skipped = 0;
@@ -118,11 +118,11 @@ export function importBlockList(db: Db, csv: string): { added: number; skipped: 
   return { added, skipped };
 }
 
-// ───────────────────────── Journal des refus ─────────────────────────
+// ───────────────────────── Rejection log ─────────────────────────
 
 export type RefusalReason = 'blocked' | 'blocked_actor' | 'signature' | 'rate_limit' | 'too_large' | 'friend_quota' | 'cache_full' | 'invalid';
 
-/** Une ligne par activité refusée : domaine (ou null), motif, type d'activité. Pas de contenu, pas de compte. Borné à `logKeep` lignes. */
+/** One row per rejected activity: domain (or null), reason, activity type. No content, no account. Bounded to `logKeep` rows. */
 export function logRefusal(db: Db, e: { domain?: string | null; reason: RefusalReason; activity?: string | null }, now = new Date()): void {
   try {
     db.insert(federationLog).values({ domain: e.domain ?? null, reason: e.reason, activity: e.activity?.slice(0, 40) ?? null, at: now }).run();
@@ -137,11 +137,11 @@ export function logRefusal(db: Db, e: { domain?: string | null; reason: RefusalR
 }
 export const listRefusals = (db: Db, limit = 200) => db.select().from(federationLog).orderBy(desc(federationLog.at)).limit(limit).all();
 
-// ───────────────────────── Garde de la boîte d'entrée ─────────────────────────
+// ───────────────────────── Inbox guard ─────────────────────────
 
 export type InboxVerdict = { ok: true; domain: string | null } | { ok: false; status: 202 | 403 | 413 | 429; reason: RefusalReason; domain: string | null };
 
-/** Hôte déclaré par l'activité (`actor`, chaîne ou objet). **Non vérifié** : la signature l'est ensuite par Fedify ; sert au filtrage précoce. */
+/** Host declared by the activity (`actor`, string or object). **Not verified**: the signature is verified next by Fedify; used for early filtering. */
 export function claimedActor(body: unknown): { url: string; domain: string } | null {
   const a = (body as { actor?: unknown } | null)?.actor;
   const url = typeof a === 'string' ? a : typeof (a as { id?: unknown } | null)?.id === 'string' ? (a as { id: string }).id : null;
@@ -149,14 +149,14 @@ export function claimedActor(body: unknown): { url: string; domain: string } | n
 }
 
 /**
- * Filtre précoce d'une activité reçue, avant toute vérification de signature et tout travail coûteux :
- * taille, serveur bloqué, débit par serveur, `Delete` d'un acteur inconnu (ignoré : Mastodon en envoie en masse, rien à retirer).
+ * Early filter of a received activity, before any signature verification and any expensive work:
+ * size, blocked server, rate per server, `Delete` from an unknown actor (ignored: Mastodon sends them in bulk, nothing to remove).
  */
 export function screenInbox(db: Db, input: { size: number; body: unknown }, now = Date.now()): InboxVerdict {
   const claimed = claimedActor(input.body);
   const domain = claimed?.domain ?? null;
   if (input.size > LIMITS.maxActivityBytes) return { ok: false, status: 413, reason: 'too_large', domain };
-  if (!claimed) return { ok: true, domain: null }; // Fedify refusera (signature / acteur manquant) ; pas de domaine à compter
+  if (!claimed) return { ok: true, domain: null }; // Fedify will reject it (missing signature / actor); no domain to count
   if (isDomainBlocked(db, domain)) return { ok: false, status: 403, reason: 'blocked', domain };
   const type = (input.body as { type?: unknown }).type;
   if (type === 'Delete' && !db.select({ id: remoteActor.id }).from(remoteActor).where(eq(remoteActor.actorUrl, claimed.url)).get()) {
@@ -166,12 +166,12 @@ export function screenInbox(db: Db, input: { size: number; body: unknown }, now 
   return { ok: true, domain };
 }
 
-// ───────────────────────── Comptes bloqués par un utilisateur ─────────────────────────
+// ───────────────────────── Accounts blocked by a user ─────────────────────────
 
 export const isActorBlocked = (db: Db, userId: string, remoteActorId: string) =>
   !!db.select({ n: count() }).from(remoteActorBlock).where(and(eq(remoteActorBlock.userId, userId), eq(remoteActorBlock.remoteActorId, remoteActorId))).get()?.n;
 
-/** Bloque un compte distant pour ce compte : amitié retirée, réponses aux sorties de cet acteur effacées. Idempotent. */
+/** Blocks a remote account for this account: friendship removed, answers to this actor's outings erased. Idempotent. */
 export function blockActor(db: Db, userId: string, remoteActorId: string): boolean {
   if (!db.select({ id: remoteActor.id }).from(remoteActor).where(eq(remoteActor.id, remoteActorId)).get()) return false;
   db.insert(remoteActorBlock).values({ userId, remoteActorId }).onConflictDoNothing().run();
@@ -190,15 +190,15 @@ export const listBlockedActors = (db: Db, userId: string) =>
   db.select({ id: remoteActor.id, handle: remoteActor.handle, domain: remoteActor.domain, displayName: remoteActor.displayName })
     .from(remoteActorBlock).innerJoin(remoteActor, eq(remoteActor.id, remoteActorBlock.remoteActorId)).where(eq(remoteActorBlock.userId, userId)).all();
 
-// ───────────────────────── Anti-spam des demandes de copain ─────────────────────────
+// ───────────────────────── Friend request anti-spam ─────────────────────────
 
-/** Un serveur est « connu » dès qu'un de nos comptes a un copain accepté chez lui. */
+/** A server is "known" as soon as one of our accounts has an accepted friend there. */
 function serverSeen(db: Db, domain: string): boolean {
   return !!db.select({ n: count() }).from(friendship).innerJoin(remoteActor, eq(remoteActor.id, friendship.remoteActorId))
     .where(and(eq(friendship.status, 'accepted'), eq(remoteActor.domain, domain))).get()?.n;
 }
 
-/** Une demande de copain d'un serveur jamais vu est limitée à 5 par jour et par compte destinataire. `false` = à refuser (silencieusement). */
+/** A friend request from a never-seen server is limited to 5 per day and per recipient account. `false` = to reject (silently). */
 export function allowFriendRequest(db: Db, userId: string, domain: string, now = new Date()): boolean {
   if (serverSeen(db, domain)) return true;
   const since = new Date(now.getTime() - 86_400_000);
@@ -208,14 +208,14 @@ export function allowFriendRequest(db: Db, userId: string, domain: string, now =
   return fromUnseen < LIMITS.unseenServerRequestsPerDay;
 }
 
-// ───────────────────────── Cache de sorties distantes ─────────────────────────
+// ───────────────────────── Remote outing cache ─────────────────────────
 
-/** Supprime les copies expirées (30 jours après le début de la sortie). Appelé à chaque sortie reçue et au démarrage. */
+/** Deletes expired copies (30 days after the outing starts). Called on every received outing and at start-up. */
 export function pruneRemoteOutings(db: Db, now = new Date()): number {
   return db.delete(remoteOuting).where(lt(remoteOuting.startsAt, new Date(now.getTime() - LIMITS.cacheExpiryMs))).run().changes;
 }
 
-/** Place restante dans le cache de ce serveur d'origine pour **une nouvelle** copie (les mises à jour passent toujours). */
+/** Room left in this origin server's cache for **a new** copy (updates always go through). */
 export function cacheHasRoom(db: Db, remoteActorId: string): boolean {
   const domain = db.select({ d: remoteActor.domain }).from(remoteActor).where(eq(remoteActor.id, remoteActorId)).get()?.d;
   if (!domain) return false;

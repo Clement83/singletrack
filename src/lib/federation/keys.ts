@@ -9,14 +9,14 @@ const toPem = (label: string, der: ArrayBuffer) =>
   `-----BEGIN ${label}-----\n${Buffer.from(der).toString('base64').replace(/(.{64})/g, '$1\n')}\n-----END ${label}-----`;
 const fromPem = (pem: string) => Buffer.from(pem.replace(/-----[A-Z ]+-----|\s/g, ''), 'base64');
 
-/** PEM SPKI d'une clé publique (cache des acteurs distants). */
+/** SPKI PEM of a public key (cache of remote actors). */
 export async function publicKeyPem(key: CryptoKey): Promise<string> {
   return toPem('PUBLIC KEY', await crypto.subtle.exportKey('spki', key));
 }
 
 /**
- * Paire de clés RSA d'un compte, générée à la première demande (#1474). La clé privée est stockée chiffrée
- * (FEDERATION_KEY_ENC) ; une valeur illisible lève : on ne remplace jamais une clé déjà publiée.
+ * RSA key pair of an account, generated on first request (#1474). The private key is stored encrypted
+ * (FEDERATION_KEY_ENC); an unreadable value throws: a key already published is never replaced.
  */
 export async function getUserKeyPair(db: Db, userId: string): Promise<CryptoKeyPair> {
   const row = db.select().from(actorKey).where(eq(actorKey.userId, userId)).get();
@@ -29,7 +29,7 @@ export async function getUserKeyPair(db: Db, userId: string): Promise<CryptoKeyP
   const kp = (await crypto.subtle.generateKey({ ...ALGO, modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]) }, true, ['sign', 'verify'])) as CryptoKeyPair;
   const publicPem = toPem('PUBLIC KEY', await crypto.subtle.exportKey('spki', kp.publicKey));
   const privateEnc = encryptSecret(toPem('PRIVATE KEY', await crypto.subtle.exportKey('pkcs8', kp.privateKey)));
-  // Deux requêtes simultanées : la première gagne, l'autre relit.
+  // Two simultaneous requests: the first one wins, the other reads it back.
   db.insert(actorKey).values({ userId, publicPem, privateEnc }).onConflictDoNothing().run();
   const stored = db.select().from(actorKey).where(eq(actorKey.userId, userId)).get();
   if (stored && stored.publicPem !== publicPem) return getUserKeyPair(db, userId);

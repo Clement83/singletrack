@@ -11,26 +11,26 @@ import { getRemoteActor, upsertRemoteActor } from './remote-actors';
 import { allowFriendRequest, isActorBlocked, isDomainBlocked, logRefusal } from './moderation';
 
 /**
- * Copains entre serveurs (#1475, docs/federation.md §5). L'amitié = **deux `Follow` acceptés** ; en base, une seule ligne
- * `friendship` (un compte local + `remote_actor`) : `pending` tant qu'une moitié manque, `accepted` quand les deux sont acquis.
+ * Friends across servers (#1475, docs/federation.md §5). Friendship = **two accepted `Follow`s**; in the database, a single
+ * `friendship` row (a local account + `remote_actor`): `pending` while a half is missing, `accepted` once both are in.
  *
- * - demander → `Follow` ; accepter → `Accept(Follow)` **et** `Follow` en retour (id `<follow>-back`) ; refuser → `Reject(Follow)` ;
- * - retirer / annuler → `Undo(Follow)` ; le receveur supprime la relation et envoie `Undo` de son propre `Follow` ;
- * - demande croisée (chacun a demandé) = acceptation, comme pour les copains locaux (#1432).
- * La logique est ici sans réseau : elle décrit les activités à envoyer (`Outbound`) à un `Deliver` injectable (tests).
+ * - request → `Follow`; accept → `Accept(Follow)` **and** a `Follow` back (id `<follow>-back`); decline → `Reject(Follow)`;
+ * - remove / cancel → `Undo(Follow)`; the receiver deletes the relation and sends the `Undo` of its own `Follow`;
+ * - crossed request (both asked) = acceptance, as for local friends (#1432).
+ * The logic here has no network: it describes the activities to send (`Outbound`) to an injectable `Deliver` (tests).
  */
 
 export type Outbound =
-  | { t: 'follow'; id: string }                      // mon Follow (id de l'URL `/ap/follows/<id>`), `<friendship>-back` pour le retour
-  | { t: 'accept'; followId: string }                // Accept du Follow reçu (son URL)
+  | { t: 'follow'; id: string }                      // my Follow (id of the URL `/ap/follows/<id>`), `<friendship>-back` for the one back
+  | { t: 'accept'; followId: string }                // Accept of the received Follow (its URL)
   | { t: 'reject'; followId: string }
-  | { t: 'undo'; followId: string };                 // Undo de mon Follow
+  | { t: 'undo'; followId: string };                 // Undo of my Follow
 export type Deliver = (handle: string, to: typeof remoteActor.$inferSelect, msg: Outbound) => Promise<void>;
 
 export const followUrl = (id: string) => `${publicOrigin()}/ap/follows/${id}`;
 const FOLLOW_PATH = /\/ap\/follows\/([A-Za-z0-9-]+?)(-back)?$/;
 
-/** `paul@vtt.chezpaul.fr` (ou `@paul@…`, `acct:paul@…`) → `{ handle, domain }`, sinon null. */
+/** `paul@mtb.example.org` (or `@paul@…`, `acct:paul@…`) → `{ handle, domain }`, otherwise null. */
 export function parseAddress(input: unknown): { handle: string; domain: string } | null {
   if (typeof input !== 'string') return null;
   const m = /^(?:acct:)?@?([a-z0-9_]{1,64})@([a-z0-9.-]+(?::\d{1,5})?)$/i.exec(input.trim());
@@ -39,14 +39,14 @@ export function parseAddress(input: unknown): { handle: string; domain: string }
 
 const accepted = (db: Db, id: string) => db.update(friendship).set({ status: 'accepted', respondedAt: new Date() }).where(eq(friendship.id, id)).run();
 
-/** Ligne d'amitié entre mon compte et cet acteur distant. */
+/** Friendship row between my account and this remote actor. */
 const findRemote = (db: Db, userId: string, remoteActorId: string) =>
   db.select().from(friendship).where(eq(friendship.pairKey, remotePairKey(userId, remoteActorId))).get();
 
-/** Mon `Follow` et mon `Follow` de retour : lequel dépend de qui a demandé. */
+/** My `Follow` and my `Follow` back: which one depends on who asked. */
 const myFollowId = (f: typeof friendship.$inferSelect, userId: string) => (f.requesterId === userId ? f.id : `${f.id}-back`);
 
-// ───────────────────────── Sortant (action de mon compte) ─────────────────────────
+// ───────────────────────── Outbound (action of my account) ─────────────────────────
 
 export type ResolveActor = (address: { handle: string; domain: string }) => Promise<{ actorUrl: string; handle: string; displayName: string | null; inboxUrl: string; sharedInboxUrl: string | null } | null>;
 
@@ -57,11 +57,11 @@ async function devWebfinger(handle: string, domain: string): Promise<URL | null>
   return href ? new URL(href) : null;
 }
 
-/** Résolution WebFinger + acteur par Fedify. Null si introuvable (réseau, 404, pas un acteur) : jamais d'erreur visible. */
+/** WebFinger + actor resolution through Fedify. Null if not found (network, 404, not an actor): never a visible error. */
 export const resolveWithFedify: ResolveActor = async ({ handle, domain }) => {
   try {
     const ctx = getFederation().createContext(new URL(publicOrigin()), undefined);
-    // Dev seulement (`FEDERATION_DEV_HTTP=1`) : le WebFinger de Fedify exige HTTPS, on le fait en HTTP puis Fedify lit l'acteur.
+    // Dev only (`FEDERATION_DEV_HTTP=1`): Fedify's WebFinger requires HTTPS, so it is done over HTTP and Fedify reads the actor.
     const target = process.env.FEDERATION_DEV_HTTP === '1' ? await devWebfinger(handle, domain) : `${handle}@${domain}`;
     if (!target) return null;
     const obj = await Promise.race([
@@ -79,7 +79,7 @@ export const resolveWithFedify: ResolveActor = async ({ handle, domain }) => {
   }
 };
 
-/** Envoi par la file Fedify (réessais ~48 h). */
+/** Delivery through the Fedify queue (retries over ~48 h). */
 export const deliverWithFedify: Deliver = async (handle, to, msg) => {
   const ctx = getFederation().createContext(new URL(publicOrigin()), undefined);
   const me = ctx.getActorUri(handle);
@@ -103,13 +103,13 @@ export const defaultDeps: FedDeps = { resolve: resolveWithFedify, deliver: deliv
 async function safeDeliver(deps: FedDeps, db: Db, userId: string, remoteActorId: string, msg: Outbound) {
   const handle = getHandle(db, userId).handle;
   const to = db.select().from(remoteActor).where(eq(remoteActor.id, remoteActorId)).get();
-  if (!handle || !to || !federationEnabled() || isDomainBlocked(db, to.domain)) return; // un serveur bloqué ne reçoit rien
+  if (!handle || !to || !federationEnabled() || isDomainBlocked(db, to.domain)) return; // a blocked server receives nothing
   try { await deps.deliver(handle, to, msg); } catch (e) { console.warn('[federation] envoi copains', msg.t, e instanceof Error ? e.message : e); }
 }
 
 /**
- * Demande d'amitié par adresse `paul@serveur`. Adresse introuvable ⇒ même réponse que pour un email inconnu (`ok`, rien créé).
- * Une adresse de ce serveur est traitée en local (copain local, sans réseau).
+ * Friend request by address `paul@server`. Address not found ⇒ same answer as for an unknown email (`ok`, nothing created).
+ * An address on this server is handled locally (local friend, no network).
  */
 export async function requestByAddress(db: Db, userId: string, input: unknown, deps: FedDeps = defaultDeps): Promise<FriendResult> {
   const addr = parseAddress(input);
@@ -123,7 +123,7 @@ export async function requestByAddress(db: Db, userId: string, input: unknown, d
     const email = db.select({ e: user.email }).from(user).where(eq(user.id, target)).get()?.e;
     return email ? requestByEmail(db, userId, email) : { ok: true };
   }
-  if (isDomainBlocked(db, addr.domain)) return { ok: true }; // même réponse qu'une adresse introuvable
+  if (isDomainBlocked(db, addr.domain)) return { ok: true }; // same answer as an address not found
   const found = await deps.resolve(addr);
   if (!found || isDomainBlocked(db, new URL(found.actorUrl).host)) return { ok: true };
   const actor = upsertRemoteActor(db, found);
@@ -133,19 +133,19 @@ export async function requestByAddress(db: Db, userId: string, input: unknown, d
     db.insert(friendship).values({ id, requesterId: userId, addresseeId: null, remoteActorId: actor.id, pairKey: remotePairKey(userId, actor.id) }).run();
     await safeDeliver(deps, db, userId, actor.id, { t: 'follow', id });
   } else if (existing.status === 'pending' && existing.addresseeId === userId) {
-    await acceptRemote(db, userId, existing, deps); // demande croisée = acceptation
+    await acceptRemote(db, userId, existing, deps); // crossed request = acceptance
   }
   return { ok: true };
 }
 
-/** Accepter un `Follow` distant : `Accept` + `Follow` en retour (l'amitié est mutuelle). */
+/** Accept a remote `Follow`: `Accept` + `Follow` back (friendship is mutual). */
 async function acceptRemote(db: Db, userId: string, f: typeof friendship.$inferSelect, deps: FedDeps) {
   accepted(db, f.id);
   if (f.remoteFollowId) await safeDeliver(deps, db, userId, f.remoteActorId!, { t: 'accept', followId: f.remoteFollowId });
   await safeDeliver(deps, db, userId, f.remoteActorId!, { t: 'follow', id: `${f.id}-back` });
 }
 
-/** Réponse à une demande reçue (accepter / refuser), locale ou distante : envoie les activités au besoin. */
+/** Answer to a received request (accept / decline), local or remote: sends the activities if needed. */
 export async function respondFederated(db: Db, userId: string, id: string, action: unknown, deps: FedDeps = defaultDeps): Promise<FriendResult> {
   const f = db.select().from(friendship).where(eq(friendship.id, id)).get();
   const r = respondToRequest(db, userId, id, action);
@@ -160,19 +160,19 @@ export async function respondFederated(db: Db, userId: string, id: string, actio
   return { ok: true };
 }
 
-/** Retirer un copain / annuler une demande : `Undo(Follow)` vers l'autre serveur. */
+/** Remove a friend / cancel a request: `Undo(Follow)` to the other server. */
 export async function removeFederated(db: Db, userId: string, id: string, deps: FedDeps = defaultDeps): Promise<FriendResult> {
   const f = db.select().from(friendship).where(eq(friendship.id, id)).get();
   const r = removeFriendship(db, userId, id);
   if (!r.ok || !r.remote || !f) return r.ok ? { ok: true } : r;
-  // Je n'ai émis un Follow que si j'ai demandé, ou si j'ai accepté (Follow de retour).
+  // I only sent a Follow if I asked, or if I accepted (Follow back).
   if (f.requesterId === userId || r.remote.wasAccepted) await safeDeliver(deps, db, userId, r.remote.remoteActorId, { t: 'undo', followId: myFollowId(f, userId) });
   return { ok: true };
 }
 
-// ───────────────────────── Entrant (activités signées, vérifiées par Fedify) ─────────────────────────
+// ───────────────────────── Inbound (signed activities, verified by Fedify) ─────────────────────────
 
-/** `Follow` reçu d'un acteur distant (déjà en cache) visant mon compte `handle`. */
+/** `Follow` received from a remote actor (already cached) targeting my account `handle`. */
 export async function onFollow(db: Db, actorUrl: string, targetHandle: string, followId: string | null, deps: FedDeps = defaultDeps): Promise<void> {
   const actor = getRemoteActor(db, actorUrl);
   const userId = userIdByHandle(db, targetHandle);
@@ -187,16 +187,16 @@ export async function onFollow(db: Db, actorUrl: string, targetHandle: string, f
   if (followId && f.remoteFollowId !== followId) db.update(friendship).set({ remoteFollowId: followId }).where(eq(friendship.id, f.id)).run();
   const fresh = { ...f, remoteFollowId: followId ?? f.remoteFollowId };
   if (f.status === 'accepted') {
-    // Follow de retour d'un copain qui vient d'accepter, ou rejeu : on confirme.
+    // Follow back from a friend who just accepted, or a replay: confirm it.
     if (fresh.remoteFollowId) await safeDeliver(deps, db, userId, actor.id, { t: 'accept', followId: fresh.remoteFollowId });
   } else if (f.requesterId === userId) {
-    // J'avais demandé : demande croisée = acceptation.
+    // I had asked: crossed request = acceptance.
     accepted(db, f.id);
     if (fresh.remoteFollowId) await safeDeliver(deps, db, userId, actor.id, { t: 'accept', followId: fresh.remoteFollowId });
   }
 }
 
-/** URL de mon `Follow` → ligne d'amitié dont j'en suis l'émetteur. */
+/** URL of my `Follow` → friendship row I am the sender of. */
 function myFriendshipForFollow(db: Db, followUrlStr: string | null, actorUrl: string) {
   const m = followUrlStr ? FOLLOW_PATH.exec(new URL(followUrlStr).pathname) : null;
   const actor = getRemoteActor(db, actorUrl);
@@ -205,19 +205,19 @@ function myFriendshipForFollow(db: Db, followUrlStr: string | null, actorUrl: st
   return f ? { f, back: !!m[2] } : null;
 }
 
-/** `Accept(Follow)` de l'acteur distant : mon `Follow` est accepté ⇒ amis (le retour éventuel est déjà acquis). */
+/** `Accept(Follow)` from the remote actor: my `Follow` is accepted ⇒ friends (any Follow back is already in). */
 export function onAccept(db: Db, actorUrl: string, followUrlStr: string | null): void {
   const hit = myFriendshipForFollow(db, followUrlStr, actorUrl);
   if (hit && !hit.back && hit.f.status === 'pending') accepted(db, hit.f.id);
 }
 
-/** `Reject(Follow)` : ma demande est refusée, elle disparaît. */
+/** `Reject(Follow)`: my request is declined, it disappears. */
 export function onReject(db: Db, actorUrl: string, followUrlStr: string | null): void {
   const hit = myFriendshipForFollow(db, followUrlStr, actorUrl);
   if (hit && !hit.back && hit.f.status === 'pending') db.delete(friendship).where(eq(friendship.id, hit.f.id)).run();
 }
 
-/** `Undo(Follow)` : l'autre serveur retire la relation ; je la supprime et j'annule mon propre `Follow`. */
+/** `Undo(Follow)`: the other server removes the relation; I delete it and undo my own `Follow`. */
 export async function onUndoFollow(db: Db, actorUrl: string, targetHandle: string, deps: FedDeps = defaultDeps): Promise<void> {
   const actor = getRemoteActor(db, actorUrl);
   const userId = userIdByHandle(db, targetHandle);

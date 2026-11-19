@@ -23,23 +23,23 @@ import { getRemoteActor } from './remote-actors';
 import { cacheHasRoom, isActorBlocked, isDomainBlocked, logRefusal, pruneRemoteOutings } from './moderation';
 
 /**
- * Sorties entre serveurs (#1476, docs/federation.md §5 « Sorties » et §10). **Le serveur de l'organisateur reste la
- * référence** (réponses, places, statut) ; les autres gardent une copie en cache (`remote_outing`).
+ * Outings across servers (#1476, docs/federation.md §5 "Outings" and §10). **The organiser's server remains the
+ * reference** (answers, seats, status); the others keep a cached copy (`remote_outing`).
  *
- * - objet : `Event` (`name`, `content`, `startTime`, `location` = `Place` lat/lon) + une pièce jointe `singletrack:outing`
- *   (JSON dans une URL `data:`) qui porte ce que le vocabulaire ActivityStreams n'a pas : trace figée (GeoJSON simplifié, stats,
- *   attribution, licence), places, niveau, VAE, statut, nombre de « je viens » ;
- * - adressage : publique = `Public` ; copains = collection privée `friends` (jamais énumérable) ; sur invitation = **seulement**
- *   le serveur de chaque copain distant invité (une activité par invité, jamais de liste des autres) ;
- * - réponses d'un distant : `Join` (je viens) / `TentativeAccept` (peut-être) / `Leave` (non) → `Accept` / `Reject(Join)` (motif en `summary`) ;
- * - ne part jamais : `/i/<token>`, invités sans compte, carnet de potes, emails, brouillons, slug de la trace.
- * La logique est ici sans réseau : elle produit des messages (`OutingMsg`, données brutes) pour un `OutingDeliver` injectable (tests).
+ * - object: `Event` (`name`, `content`, `startTime`, `location` = `Place` lat/lon) + a `singletrack:outing` attachment
+ *   (JSON in a `data:` URL) carrying what the ActivityStreams vocabulary lacks: frozen track (simplified GeoJSON, stats,
+ *   attribution, licence), seats, level, e-bike, status, number of "I'm in";
+ * - addressing: public = `Public`; friends = private `friends` collection (never enumerable); invitation only = **only**
+ *   the server of each invited remote friend (one activity per guest, never the list of the others);
+ * - answers from a remote account: `Join` (I'm in) / `TentativeAccept` (maybe) / `Leave` (no) → `Accept` / `Reject(Join)` (reason in `summary`);
+ * - never sent: `/i/<token>`, guests without an account, buddy book, emails, drafts, the track slug.
+ * The logic here has no network: it produces messages (`OutingMsg`, raw data) for an injectable `OutingDeliver` (tests).
  */
 
 export type Addressing = 'public' | 'friends' | 'invite';
 type ActorRow = typeof remoteActor.$inferSelect;
 
-/** Ce que l'`Event` porte au-delà d'ActivityStreams. */
+/** What the `Event` carries beyond ActivityStreams. */
 export type OutingExt = {
   v: 1;
   level: OutingRow['level'];
@@ -77,7 +77,7 @@ export const friendsCollectionUrl = (handle: string) => `${publicOrigin()}/ap/us
 const OUTING_PATH = /^\/ap\/outings\/([A-Za-z0-9-]+)$/;
 const JOIN_PATH = /^\/ap\/joins\/([A-Za-z0-9-]+)$/;
 
-/** Identifiant d'une sortie **de cette instance** désignée par l'URL de son `Event`, sinon null (autre origine, autre chemin). */
+/** Id of an outing **of this instance** designated by the URL of its `Event`, otherwise null (other origin, other path). */
 export function localOutingId(url: string | null | undefined): string | null {
   try {
     const u = new URL(url ?? '');
@@ -91,16 +91,16 @@ export function localJoinId(url: string | null | undefined): string | null {
   } catch { return null; }
 }
 
-/** Qui organise : le propriétaire, sinon (publique figée) celui qui l'a proposée. */
+/** Who organises: the owner, otherwise (frozen public outing) whoever proposed it. */
 export const organizerOf = (o: Pick<OutingRow, 'ownerId' | 'createdBy'>) => o.ownerId ?? o.createdBy;
 
-// ───────────────────────── Sérialisation de l'Event ─────────────────────────
+// ───────────────────────── Event serialisation ─────────────────────────
 
 const MAX_EXT_BYTES = 600_000;
 const DATA_PREFIX = 'data:application/json;base64,';
 export const EXT_NAME = 'singletrack:outing';
 
-/** Trace pour l'envoi : sans le slug (lien secret `/t/<uuid>` de l'organisateur), simplifiée davantage si la charge est grosse. */
+/** Track for delivery: without the slug (the organiser's secret link `/t/<uuid>`), simplified further if the payload is large. */
 function exportExt(ext: OutingExt): string {
   let json = '';
   for (const tol of [5, 10, 20, 40, 80]) {
@@ -156,7 +156,7 @@ function sanitizeTrack(raw: unknown): TrackSnapshot | null {
   };
 }
 
-/** Lit l'extension `singletrack:outing` ; valeurs hors énumération ramenées au défaut, rien n'est exécuté ni suivi. */
+/** Reads the `singletrack:outing` extension; values outside the enumerations fall back to the default, nothing is run or followed. */
 export function parseExt(href: string | null | undefined): OutingExt | null {
   if (!href || !href.startsWith(DATA_PREFIX) || href.length > MAX_EXT_BYTES * 1.4) return null;
   let raw: Record<string, unknown>;
@@ -175,7 +175,7 @@ export function parseExt(href: string | null | undefined): OutingExt | null {
   };
 }
 
-/** `Event` Fedify → données (null si incomplet : date, lieu ou identifiant manquant). */
+/** Fedify `Event` → data (null if incomplete: date, place or id missing). */
 export async function parseEvent(ev: Event): Promise<EventData | null> {
   const id = ev.id?.href;
   const actor = ev.attributionId?.href;
@@ -196,7 +196,7 @@ export async function parseEvent(ev: Event): Promise<EventData | null> {
   };
 }
 
-// ───────────────────────── Côté organisateur ─────────────────────────
+// ───────────────────────── Organiser side ─────────────────────────
 
 export function eventData(db: Db, o: OutingRow): EventData | null {
   const org = organizerOf(o);
@@ -209,14 +209,14 @@ export function eventData(db: Db, o: OutingRow): EventData | null {
   };
 }
 
-/** Serveurs destinataires : copains distants de l'organisateur (publique, copains) et invités distants (toutes visibilités). */
+/** Recipient servers: the organiser's remote friends (public, friends) and remote guests (every visibility). */
 export function recipientsOf(db: Db, o: OutingRow): ActorRow[] {
   const org = organizerOf(o);
   if (!org) return [];
   const ids = new Set(
     db.select({ r: invitation.remoteActorId }).from(invitation).where(and(eq(invitation.outingId, o.id), isNull(invitation.revokedAt))).all().flatMap((r) => (r.r ? [r.r] : [])),
   );
-  // Sur invitation : **seulement** les invités. Un copain non invité ne reçoit rien.
+  // Invitation only: **only** the guests. A friend who is not invited receives nothing.
   if (o.visibility !== 'invite') for (const id of remoteFriendActorIds(db, org)) ids.add(id);
   return ids.size ? db.select().from(remoteActor).where(inArray(remoteActor.id, [...ids])).all() : [];
 }
@@ -224,11 +224,11 @@ export function recipientsOf(db: Db, o: OutingRow): ActorRow[] {
 export type OutingFedDeps = { deliver: OutingDeliver };
 
 async function send(db: Db, deps: OutingFedDeps, handle: string, to: ActorRow, msg: OutingMsg) {
-  if (!federationEnabled() || isDomainBlocked(db, to.domain)) return; // un serveur bloqué ne reçoit rien
+  if (!federationEnabled() || isDomainBlocked(db, to.domain)) return; // a blocked server receives nothing
   try { await deps.deliver(handle, to, msg); } catch (e) { console.warn('[federation] envoi sortie', msg.t, e instanceof Error ? e.message : e); }
 }
 
-/** `Create` / `Update(Event)` d'une sortie vers tous ses destinataires (adressage selon la visibilité). */
+/** `Create` / `Update(Event)` of an outing to all its recipients (addressing according to visibility). */
 export async function publishOuting(db: Db, outingId: string, verb: 'Create' | 'Update', deps: OutingFedDeps = defaultOutingDeps): Promise<void> {
   const o = db.select().from(outing).where(eq(outing.id, outingId)).get();
   const data = o && eventData(db, o);
@@ -237,7 +237,7 @@ export async function publishOuting(db: Db, outingId: string, verb: 'Create' | '
   for (const to of recipientsOf(db, o)) await send(db, deps, handle, to, { t: 'event', verb, data, addressing: o.visibility });
 }
 
-/** `Create` vers ces copains distants seulement (invitation « sur invitation » : le serveur de chaque invité, personne d'autre). */
+/** `Create` to these remote friends only ("invitation only": each guest's server, nobody else). */
 export async function publishToActors(db: Db, outingId: string, remoteActorIds: string[], deps: OutingFedDeps = defaultOutingDeps): Promise<void> {
   const o = db.select().from(outing).where(eq(outing.id, outingId)).get();
   const data = o && eventData(db, o);
@@ -246,7 +246,7 @@ export async function publishToActors(db: Db, outingId: string, remoteActorIds: 
   for (const to of db.select().from(remoteActor).where(inArray(remoteActor.id, remoteActorIds)).all()) await send(db, deps, handle, to, { t: 'event', verb: 'Create', data, addressing: 'invite' });
 }
 
-/** Retrait d'un invité distant : `Delete(Event)` vers son seul serveur. */
+/** Removal of a remote guest: `Delete(Event)` to their server only. */
 export async function retractFromActor(db: Db, outingId: string, remoteActorId: string, deps: OutingFedDeps = defaultOutingDeps): Promise<void> {
   const o = db.select().from(outing).where(eq(outing.id, outingId)).get();
   const to = db.select().from(remoteActor).where(eq(remoteActor.id, remoteActorId)).get();
@@ -255,9 +255,9 @@ export async function retractFromActor(db: Db, outingId: string, remoteActorId: 
 }
 
 /**
- * `Join` / `TentativeAccept` / `Leave` d'un compte distant sur une sortie de cette instance. Mêmes règles que pour un compte local
- * (visibilité, sortie close, places). Hors droits : silence (on ne confirme pas l'existence de la sortie).
- * Réponse : `Accept` / `Reject` (motif `full` / `closed` / `forbidden`) puis `Update(Event)` à ce seul serveur (état à jour).
+ * `Join` / `TentativeAccept` / `Leave` from a remote account on an outing of this instance. Same rules as for a local account
+ * (visibility, closed outing, seats). Without rights: silence (the outing's existence is not confirmed).
+ * Answer: `Accept` / `Reject` (reason `full` / `closed` / `forbidden`) then `Update(Event)` to that server only (up-to-date state).
  */
 export async function onRemoteResponse(
   db: Db, actorUrl: string, objectUrl: string | null, answer: 'yes' | 'maybe' | 'no', joinUrlStr: string | null, deps: OutingFedDeps = defaultOutingDeps,
@@ -295,14 +295,14 @@ export async function onRemoteResponse(
   await reply(true);
 }
 
-// ───────────────────────── Côté invité (cache de sorties distantes) ─────────────────────────
+// ───────────────────────── Guest side (cache of remote outings) ─────────────────────────
 
 const baseUrl = () => (process.env.BETTER_AUTH_URL ?? '').replace(/\/+$/, '');
 
 /**
- * `Create` / `Update(Event)` reçu : met la copie en cache à jour. Refusé si l'objet n'est pas de l'acteur signataire ou d'un autre
- * hôte que lui. `localHandles` = comptes de cette instance nommés dans `to` : pour une invitation (« sur invitation »), seuls ceux
- * qui sont copains de l'organisateur sont retenus (pas d'invitation d'un inconnu) et reçoivent un mail.
+ * `Create` / `Update(Event)` received: updates the cached copy. Refused if the object is not the signing actor's or is hosted
+ * elsewhere. `localHandles` = accounts of this instance named in `to`: for an invitation ("invitation only"), only those
+ * who are friends of the organiser are kept (no invitation from a stranger) and receive an email.
  */
 export function onEvent(
   db: Db, actorUrl: string, data: EventData, localHandles: string[], mailer: Mailer = sendMail, now = new Date(),
@@ -316,11 +316,11 @@ export function onEvent(
     track: e.track, status: e.status, visibility: e.visibility, maxParticipants: e.maxParticipants, yesCount: e.yesCount, updatedAt: now,
   };
   const existing = db.select().from(remoteOuting).where(eq(remoteOuting.objectUrl, data.objectUrl)).get();
-  // Une sortie appartient à son organisateur : un autre acteur ne la modifie pas.
+  // An outing belongs to its organiser: another actor does not change it.
   if (existing && existing.remoteActorId !== actor.id) return null;
   if (isDomainBlocked(db, actor.domain)) return null;
   pruneRemoteOutings(db, now);
-  // Plafond de copies par serveur : une nouvelle sortie au-delà est refusée (les mises à jour passent).
+  // Cap on copies per server: a new outing beyond it is refused (updates go through).
   if (!existing && !cacheHasRoom(db, actor.id)) { logRefusal(db, { domain: actor.domain, reason: 'cache_full', activity: 'Create' }); return null; }
   let id = existing?.id;
   if (existing) db.update(remoteOuting).set(values).where(eq(remoteOuting.id, existing.id)).run();
@@ -345,14 +345,14 @@ export function onEvent(
   return { id: id!, created: !existing };
 }
 
-/** `Delete(Event)` : l'organisateur retire la sortie (ou m'en retire). Appliqué au mieux, uniquement par son propre acteur. */
+/** `Delete(Event)`: the organiser removes the outing (or removes me from it). Applied best effort, only from its own actor. */
 export function onDeleteEvent(db: Db, actorUrl: string, objectUrl: string | null): void {
   const actor = getRemoteActor(db, actorUrl);
   if (!actor || !objectUrl) return;
   db.delete(remoteOuting).where(and(eq(remoteOuting.objectUrl, objectUrl), eq(remoteOuting.remoteActorId, actor.id))).run();
 }
 
-/** `Accept` / `Reject(Join)` de l'organisateur : l'état de ma réponse (acceptée, ou refusée avec son motif). */
+/** `Accept` / `Reject(Join)` from the organiser: the state of my answer (accepted, or refused with its reason). */
 export function onJoinResult(db: Db, actorUrl: string, joinUrlStr: string | null, accepted: boolean, reason: string | null): boolean {
   const actor = getRemoteActor(db, actorUrl);
   const jid = localJoinId(joinUrlStr);
@@ -373,11 +373,11 @@ export type RemoteOutingView = {
   level: OutingRow['level']; ebike: OutingRow['ebike']; status: OutingRow['status']; visibility: OutingRow['visibility'];
   maxParticipants: number | null; yesCount: number; spotsLeft: number | null; closed: boolean; track: TrackSnapshot | null;
   organizer: { actorId: string; name: string; handle: string; domain: string; profileUrl: string };
-  /** Invité (réponse attendue) / ma réponse / état côté serveur de l'organisateur. */
+  /** Guest (answer expected) / my answer / state on the organiser's server. */
   invited: boolean; answer: 'pending' | 'yes' | 'maybe' | 'no'; state: 'none' | 'sent' | 'accepted' | 'rejected'; reason: string | null;
 };
 
-/** Visible de ce compte : publique ; sinon j'ai une ligne de réponse (invité) ou (copains) je suis copain de l'organisateur. */
+/** Visible to this account: public; otherwise I have an answer row (guest) or (friends) I am a friend of the organiser. */
 export function listRemoteOutings(db: Db, userId: string, opts: { id?: string; now?: Date } = {}): RemoteOutingView[] {
   const now = opts.now ?? new Date();
   const friends = new Set(remoteFriendActorIds(db, userId));
@@ -405,7 +405,7 @@ export function listRemoteOutings(db: Db, userId: string, opts: { id?: string; n
 
 export type RespondRemoteResult = { ok: true } | { ok: false; error: 'not_found' | 'closed' | 'invalid' | 'federationOff' };
 
-/** Mon « je viens » / « peut-être » / « non » à une sortie d'un autre serveur : enregistré puis envoyé à l'organisateur, qui décide (places, clôture). */
+/** My "I'm in" / "maybe" / "no" to an outing on another server: stored then sent to the organiser, who decides (seats, closing). */
 export async function respondRemote(
   db: Db, userId: string, remoteOutingId: string, answer: unknown, deps: OutingFedDeps = defaultOutingDeps, now = new Date(),
 ): Promise<RespondRemoteResult> {
@@ -426,8 +426,8 @@ export async function respondRemote(
 export type ReportResult = { ok: true } | { ok: false; error: 'not_found' | 'invalid' };
 
 /**
- * Signaler une sortie d'un autre serveur (#1477) : copie pour l'admin local (une fois par compte et par sortie) puis `Flag` au serveur
- * d'origine (l'organisateur et l'objet). Le motif est facultatif, 500 caractères au plus.
+ * Report an outing from another server (#1477): copy for the local admin (once per account and per outing) then `Flag` to the origin
+ * server (the organiser and the object). The reason is optional, 500 characters at most.
  */
 export async function reportRemoteOuting(
   db: Db, userId: string, remoteOutingId: string, reason: unknown, deps: OutingFedDeps = defaultOutingDeps,
@@ -445,7 +445,7 @@ export async function reportRemoteOuting(
 
 // ───────────────────────── Envoi Fedify ─────────────────────────
 
-/** Envoi par la file Fedify (réessais ~48 h). Adressage : voir l'en-tête du fichier. */
+/** Delivery through the Fedify queue (retries over ~48 h). Addressing: see the file header. */
 export const deliverOutingWithFedify: OutingDeliver = async (handle, to, msg) => {
   const ctx = getFederation().createContext(new URL(publicOrigin()), undefined);
   const me = ctx.getActorUri(handle);
@@ -456,7 +456,7 @@ export const deliverOutingWithFedify: OutingDeliver = async (handle, to, msg) =>
   if (msg.t === 'event') {
     const addr = msg.addressing === 'public' ? { to: [PUBLIC_COLLECTION], cc: [ctx.getFollowersUri(handle)] }
       : msg.addressing === 'friends' ? { to: [new URL(friendsCollectionUrl(handle))] }
-      : { to: [target] }; // sur invitation : le seul invité de cet envoi, jamais la liste des autres
+      : { to: [target] }; // invitation only: this delivery's single guest, never the list of the others
     const C = msg.verb === 'Create' ? Create : Update;
     activity = new C({ id: aid(msg.verb.toLowerCase()), actor: me, object: buildEvent(msg.data, addr), tos: addr.to, ccs: addr.cc ?? [] });
   } else if (msg.t === 'delete') {

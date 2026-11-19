@@ -1,8 +1,8 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 
 /**
- * Chiffrement des clés privées d'acteur (#1474) : AES-256-GCM, clé d'instance `FEDERATION_KEY_ENC` (32 octets en base64),
- * sur le modèle d'`INVITE_LINK_KEY`. Format : base64url(iv 12 o ‖ tag 16 o ‖ chiffré). À ne jamais changer.
+ * Encryption of the actors' private keys (#1474): AES-256-GCM, instance key `FEDERATION_KEY_ENC` (32 bytes in base64),
+ * modelled on `INVITE_LINK_KEY`. Format: base64url(iv 12 B ‖ tag 16 B ‖ ciphertext). Never change it.
  */
 export class FederationKeyError extends Error {}
 
@@ -21,7 +21,7 @@ export function encryptSecret(plain: string, env: NodeJS.ProcessEnv = process.en
   return Buffer.concat([iv, c.getAuthTag(), enc]).toString('base64url');
 }
 
-/** Lève si la clé est fausse ou la donnée altérée : une clé privée illisible ne doit jamais être remplacée en silence. */
+/** Throws if the key is wrong or the data tampered with: an unreadable private key must never be silently replaced. */
 export function decryptSecret(stored: string, env: NodeJS.ProcessEnv = process.env): string {
   const buf = Buffer.from(stored, 'base64url');
   const d = createDecipheriv('aes-256-gcm', federationKey(env), buf.subarray(0, 12));

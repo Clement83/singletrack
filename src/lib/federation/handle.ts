@@ -3,12 +3,12 @@ import type { Db } from '@/db';
 import { friendship, handleHistory, user } from '@/db/schema';
 
 /**
- * Identifiant fédéré (`handle`, #1474, règle de docs/federation.md §2) : `[a-z0-9_]{3,30}`, minuscules, unique.
- * Adresse = `handle@domaine`. Généré depuis le prénom (jamais l'email), modifiable une seule fois.
+ * Federated identifier (`handle`, #1474, rule of docs/federation.md §2): `[a-z0-9_]{3,30}`, lower case, unique.
+ * Address = `handle@domain`. Generated from the first name (never the email), changeable only once.
  */
 export const HANDLE_RE = /^[a-z0-9_]{3,30}$/;
 
-/** Handles interdits (routes ActivityPub, noms de service) : un compte ne peut pas les prendre. */
+/** Forbidden handles (ActivityPub routes, service names): an account cannot take them. */
 export const RESERVED_HANDLES = new Set([
   'admin', 'administrator', 'root', 'support', 'ap', 'api', 'inbox', 'outbox', 'actor', 'actors', 'instance', 'singletrack',
   'nodeinfo', 'well_known', 'wellknown', 'webfinger', 'users', 'user', 'system', 'moderator', 'mod', 'help', 'info', 'null', 'undefined',
@@ -16,7 +16,7 @@ export const RESERVED_HANDLES = new Set([
 
 export const isReservedHandle = (h: string) => RESERVED_HANDLES.has(h.toLowerCase().replace(/-/g, '_'));
 
-/** Base d'un handle depuis un prénom : minuscules, accents retirés, hors `[a-z0-9_]` supprimé, complété à 3 caractères, tronqué. */
+/** Base of a handle from a first name: lower case, accents removed, anything outside `[a-z0-9_]` dropped, padded to 3 characters, truncated. */
 export function handleBase(name: string): string {
   let base = name.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^a-z0-9_]/g, '');
   if (base.length < 3) base = `user${base}`.length >= 3 ? `user${base}` : 'user';
@@ -41,30 +41,30 @@ export function generateHandle(db: Db, name: string, selfId?: string): string {
   }
 }
 
-/** Donne un handle au compte s'il a un prénom et pas encore de handle. Renvoie le handle (ou null sans prénom). */
+/** Gives the account a handle if it has a first name and no handle yet. Returns the handle (or null without a first name). */
 export function ensureHandle(db: Db, userId: string): string | null {
   const row = db.select({ name: user.name, handle: user.handle }).from(user).where(eq(user.id, userId)).get();
   if (!row) return null;
   if (row.handle) return row.handle;
   if (!row.name.trim()) return null;
-  // Deux créations simultanées : l'index unique tranche, on réessaie avec le suivant.
+  // Two simultaneous creations: the unique index decides, retry with the next one.
   for (let i = 0; i < 5; i++) {
     const handle = generateHandle(db, row.name, userId);
     try {
       db.update(user).set({ handle }).where(and(eq(user.id, userId), isNull(user.handle))).run();
       return db.select({ h: user.handle }).from(user).where(eq(user.id, userId)).get()?.h ?? null;
-    } catch { /* conflit d'unicité : nouveau tirage */ }
+    } catch { /* uniqueness conflict: draw again */ }
   }
   return null;
 }
 
-/** Rattrape les comptes existants (créés avant #1474) ayant un prénom. Appelé au démarrage. */
+/** Catches up existing accounts (created before #1474) that have a first name. Called at start-up. */
 export function backfillHandles(db: Db): number {
   const rows = db.select({ id: user.id }).from(user).where(isNull(user.handle)).all();
   return rows.filter((r) => ensureHandle(db, r.id)).length;
 }
 
-/** Copains distants du compte (demandes comprises) : changer d'adresse les casserait (pas de `Move` en v1, #1475). */
+/** Remote friends of the account (requests included): changing address would break them (no `Move` in v1, #1475). */
 export function hasRemoteFriends(db: Db, userId: string): boolean {
   return !!db.select({ id: friendship.id }).from(friendship)
     .where(and(isNotNull(friendship.remoteActorId), or(eq(friendship.requesterId, userId), eq(friendship.addresseeId, userId)))).get();
@@ -72,7 +72,7 @@ export function hasRemoteFriends(db: Db, userId: string): boolean {
 
 export type ChangeHandleError = 'invalid' | 'reserved' | 'taken' | 'already_changed' | 'remote_friends' | 'no_handle' | 'same';
 
-/** Modification unique du handle (menu utilisateur). */
+/** Single change of the handle (user menu). */
 export function changeHandle(db: Db, userId: string, input: unknown): { ok: true; handle: string } | { ok: false; error: ChangeHandleError } {
   const next = typeof input === 'string' ? input.trim().toLowerCase() : '';
   if (!HANDLE_RE.test(next)) return { ok: false, error: 'invalid' };
