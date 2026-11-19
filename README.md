@@ -38,6 +38,7 @@ The code licence **does not cover** the data displayed, which keeps its original
 | Open-Meteo (weather) | CC BY 4.0 | Attribution required |
 | Var prefecture (fire risk) | Public data from the prefecture | Credit the source |
 | Geotrek (official routes) | Licence not declared by the sources | Check before any reuse or redistribution |
+| DATAtourisme (tourist office circuits) | Etalab Open Licence 2.0 | Credit the producer (shown on each track) and DATAtourisme |
 | UtagawaVTT | CC BY-NC | **Non-commercial use only: forbidden for a commercial instance** |
 | "Ça chasse ?" | No licence | Viewing only, no copying or redistribution |
 | Mapzen Terrain Tiles (3D relief, AWS Open Data) | Per source (SRTM, etc.), attribution required | Keep the map attribution |

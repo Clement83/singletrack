@@ -103,7 +103,7 @@ export const verification = sqliteTable('verification', {
 // Traces VTT (#1345). Une trace peut venir d'une source externe ou être faite maison.
 /** Visibilité d'une trace (#1588) : `public` (tous, même sans session), `friends` (auteur + copains), `private` (auteur seul). */
 export const TRACK_VISIBILITIES = ['public', 'friends', 'private'] as const;
-export const TRACK_SOURCES = ['utagawa', 'osm', 'geotrek', 'gpx', 'manual', 'edited'] as const;
+export const TRACK_SOURCES = ['utagawa', 'osm', 'geotrek', 'gpx', 'manual', 'edited', 'datatourisme'] as const;
 export const DIFFICULTIES = ['green', 'blue', 'red', 'black'] as const;
 
 export const track = sqliteTable(

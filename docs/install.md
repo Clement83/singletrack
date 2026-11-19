@@ -53,7 +53,7 @@ For a first try without HTTPS or a domain name: `BETTER_AUTH_URL=http://IP:3700`
 
 ### Data sources
 
-`DATA_SOURCES` (empty = all): `osm`, `geotrek`, `ign`, `openmeteo`, `fire83`, `hunting83`. Fire risk (`fire83`) and hunting (`hunting83`) only cover the **Var** department: elsewhere these sections show "not available". Respect the data licences (see the [README](../README.md#third-party-data)).
+`DATA_SOURCES` (empty = all): `osm`, `geotrek`, `datatourisme`, `ign`, `openmeteo`, `fire83`, `hunting83`. `datatourisme` also needs a free API key in `DATA_TOURISM_API_KEY` (https://www.datatourisme.fr/utiliser-les-donnees); without it the sync is skipped. Fire risk (`fire83`) and hunting (`hunting83`) only cover the **Var** department: elsewhere these sections show "not available". Respect the data licences (see the [README](../README.md#third-party-data)).
 
 ## 2. Download routing data (BRouter)
 
@@ -93,6 +93,7 @@ Import the tracks of your areas (`SYNC_ZONES`, or as arguments):
 docker compose -f docker-compose.yml run --rm tools npm run sync:osm         # OSM mountain-bike routes (one department after another)
 docker compose -f docker-compose.yml run --rm tools npm run sync:singles     # OSM singletrack layer
 docker compose -f docker-compose.yml run --rm tools npm run sync:geotrek     # official park routes (optional)
+docker compose -f docker-compose.yml run --rm tools npm run sync:datatourisme   # tourist office circuits (optional, DATA_TOURISM_API_KEY; `-- france` for the whole country)
 docker compose -f docker-compose.yml run --rm tools npm run sync:osm -- 83 06   # explicit areas
 ```
 

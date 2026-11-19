@@ -513,7 +513,8 @@
       "geotrek": "Official routes",
       "gpx": "GPX import",
       "manual": "Home-made route",
-      "edited": "Edited route"
+      "edited": "Edited route",
+      "datatourisme": "Tourist offices"
     }
   },
   "outingPage": {

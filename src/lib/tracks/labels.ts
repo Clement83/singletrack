@@ -8,4 +8,5 @@ export const SOURCE_LABEL: Record<TrackSourceId, string> = {
   gpx: 'Import GPX',
   manual: 'Trace maison',
   edited: 'Trace modifiée',
+  datatourisme: 'Offices de tourisme (DATAtourisme)',
 };

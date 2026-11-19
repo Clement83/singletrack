@@ -38,7 +38,7 @@ export type NormalizedTrack = {
 
 /** Contrat commun des sources (OSM, GPX, Utagawa, Geotrek) : le reste de l'appli ne les distingue pas. */
 export interface TrackSource {
-  id: 'utagawa' | 'osm' | 'geotrek' | 'gpx';
+  id: 'utagawa' | 'osm' | 'geotrek' | 'gpx' | 'datatourisme';
   /** Import en masse / mise à jour d'une région. */
   sync(region: RegionConfig): AsyncIterable<NormalizedTrack>;
 }

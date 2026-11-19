@@ -150,7 +150,7 @@ function sanitizeTrack(raw: unknown): TrackSnapshot | null {
     distanceM: t.distanceM as number, elevationGainM: num(t.elevationGainM), elevationLossM: num(t.elevationLossM),
     minEle: num(t.minEle), maxEle: num(t.maxEle),
     difficulty: (['green', 'blue', 'red', 'black'] as const).find((d) => d === t.difficulty) ?? null,
-    loop: t.loop === true, source: oneOf(['utagawa', 'osm', 'geotrek', 'gpx', 'manual', 'edited'] as const, t.source, 'gpx'),
+    loop: t.loop === true, source: oneOf(['utagawa', 'osm', 'geotrek', 'gpx', 'manual', 'edited', 'datatourisme'] as const, t.source, 'gpx'),
     license: str(t.license, 200), attribution: str(t.attribution, 300), author: str(t.author, 120), sourceUrl: str(t.sourceUrl, 500),
     takenAt: str(t.takenAt, 40) ?? new Date().toISOString(),
   };

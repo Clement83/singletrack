@@ -19,6 +19,7 @@
     "sync:osm": "tsx scripts/sync-osm.ts",
     "sync:singles": "tsx scripts/sync-singles.ts",
     "sync:geotrek": "tsx scripts/sync-geotrek.ts",
+    "sync:datatourisme": "tsx scripts/sync-datatourisme.ts",
     "sync:massifs": "tsx scripts/sync-massifs.ts",
     "sync:fire": "tsx scripts/sync-fire.ts",
     "user:create": "tsx scripts/user.ts create"

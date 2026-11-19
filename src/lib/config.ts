@@ -1,5 +1,5 @@
 /** Sources de données activables par instance (`DATA_SOURCES`, #1473). */
-export const DATA_SOURCE_NAMES = ['osm', 'geotrek', 'ign', 'openmeteo', 'fire83', 'hunting83'] as const;
+export const DATA_SOURCE_NAMES = ['osm', 'geotrek', 'datatourisme', 'ign', 'openmeteo', 'fire83', 'hunting83'] as const;
 export type DataSource = (typeof DATA_SOURCE_NAMES)[number];
 
 /** Liste `DATA_SOURCES` (virgules) ; absente ou vide = toutes les sources. Les noms inconnus sont ignorés. */

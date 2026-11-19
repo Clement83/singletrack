@@ -137,7 +137,7 @@ export function TrackPanelBody({ sheet, loading, error, backLabel, onBack }: { s
               {visibility && <TrackVisibilityBadge value={visibility} />}
               {sheet.status === 'draft' && <Badge variant="outline"><PencilLine aria-hidden className="size-4" /> {t('draft')}</Badge>}
               {sheet.difficulty && <DifficultyBadge level={sheet.difficulty} />}
-              {sheet.source === 'geotrek' && <Badge variant="outline"><BadgeCheck aria-hidden className="size-4" /> {t('official')}</Badge>}
+              {(sheet.source === 'geotrek' || sheet.source === 'datatourisme') && <Badge variant="outline"><BadgeCheck aria-hidden className="size-4" /> {t('official')}</Badge>}
               {sheet.loop ? <Badge>{t('loop')}</Badge> : <Badge variant="outline">{t('oneway')}</Badge>}
             </div>
             <SourceInfo sheet={sheet} />

@@ -6,7 +6,7 @@ import { enrichElevation, geometryStats, type EnrichOptions } from '@/lib/geo';
 import type { NormalizedTrack, RegionConfig, TrackSource } from './types';
 
 /** Sources alimentées par synchro : toujours `public` (#1588). */
-export const SYNCED_SOURCES: readonly string[] = ['osm', 'geotrek', 'utagawa'];
+export const SYNCED_SOURCES: readonly string[] = ['osm', 'geotrek', 'utagawa', 'datatourisme'];
 
 export type UpsertResult = { id: string; slug: string; created: boolean };
 
