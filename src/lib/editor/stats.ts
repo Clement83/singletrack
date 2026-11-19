@@ -5,12 +5,12 @@ export type LiveStats = {
   distanceM: number;
   gainM: number | null;
   lossM: number | null;
-  /** Vrai si des lignes droites (sans altitude avant l'enregistrement) ne sont pas comptées dans le dénivelé. */
+  /** True if straight lines (no elevation before saving) are not counted in the elevation. */
   partial: boolean;
   profile: { distKm: number; ele: number; estimated?: boolean }[];
 };
 
-/** Stats et profil « en direct » : l'altitude des lignes droites n'est connue qu'après l'enregistrement (IGN). */
+/** "Live" stats and profile: the elevation of straight lines is only known after saving (IGN). */
 export function liveStats(doc: EditorDoc): LiveStats {
   const g = docGeometry(doc);
   if (!g) return { distanceM: 0, gainM: null, lossM: null, partial: false, profile: [] };
@@ -26,7 +26,7 @@ export function liveStats(doc: EditorDoc): LiveStats {
   };
 }
 
-/** Un point par sommet de la géométrie, altitudes manquantes estimées par interpolation (#1467). */
+/** One point per geometry vertex, missing elevations estimated by interpolation (#1467). */
 function estimatedProfile(coords: Position[]): LiveStats['profile'] {
   const f = fillElevation(coords);
   if (!f) return [];

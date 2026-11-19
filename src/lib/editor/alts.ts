@@ -2,8 +2,8 @@ import type { Position } from '@/lib/geo';
 import type { Quality } from '@/lib/routing/alternatives';
 
 /**
- * Itinéraires alternatifs d'un tronçon (#1386) : `routes[0]` est le recommandé, les suivants les alternatives
- * (avec leur étiquette relative au recommandé). `active` = celui qui est dans le document. Logique pure, testée.
+ * Alternative routes of a segment (#1386): `routes[0]` is the recommended one, the next ones the alternatives
+ * (with their label relative to the recommended one). `active` = the one in the document. Pure logic, tested.
  */
 export type AltSet = {
   seg: number;
@@ -12,9 +12,9 @@ export type AltSet = {
   routes: Position[][];
   labels: ({ deltaKm: number; quality: Quality } | null)[];
   active: number;
-  /** Cycliste du calcul (profil BRouter) : s'il change, le jeu n'est plus valable. */
+  /** Rider used for the computation (BRouter profile): if it changes, the set is no longer valid. */
   sig: string;
-  /** Longueur de l'historique au calcul : les jeux d'un geste précédent sont retirés quand un nouveau arrive. */
+  /** History length at computation time: sets from a previous gesture are removed when a new one arrives. */
   gen?: number;
 };
 
@@ -30,12 +30,12 @@ export function makeAltSet(
   };
 }
 
-/** Prochain itinéraire dans l'ordre (recommandé → alt 1 → alt 2 → recommandé). */
+/** Next route in order (recommended → alt 1 → alt 2 → recommended). */
 export const nextAlt = (s: AltSet): number => (s.active + 1) % s.routes.length;
 
 /**
- * Un jeu par tronçon (#1527) : après un glisser, deux tronçons sont recalculés et chacun garde ses alternatives
- * (avant : le dernier réponse écrasait l'autre). Remplace le jeu du tronçon `seg` (le retire si `set` est `null`).
+ * One set per segment (#1527): after a drag, two segments are recomputed and each keeps its alternatives
+ * (before: the last answer overwrote the other). Replaces the set of segment `seg` (removes it if `set` is `null`).
  */
 export const upsertAlt = (sets: AltSet[], seg: number, set: AltSet | null, gen?: number): AltSet[] => [
   ...sets.filter((s) => s.seg !== seg && (gen === undefined || s.gen === gen)),
@@ -43,20 +43,20 @@ export const upsertAlt = (sets: AltSet[], seg: number, set: AltSet | null, gen?:
 ];
 
 /**
- * Jeux encore valables : chacun reste proposé jusqu'au prochain geste qui touche **son** tronçon (le tracé du
- * tronçon n'est plus l'un des itinéraires du jeu), indépendamment des gestes ailleurs dans la trace.
+ * Sets still valid: each stays offered until the next gesture that touches **its** segment (the segment's line
+ * is no longer one of the set's routes), regardless of gestures elsewhere in the track.
  */
 export const liveAltSets = (sets: AltSet[], coordsOf: (seg: number) => Position[] | undefined, rider: string): AltSet[] =>
   sets.flatMap((s) => {
     const cur = coordsOf(s.seg);
-    const k = cur ? s.routes.indexOf(cur) : -1; // annuler / rétablir ramène l'un des tracés du jeu : l'actif suit
+    const k = cur ? s.routes.indexOf(cur) : -1; // undo / redo brings back one of the set's lines: the active one follows
     return s.sig === rider && k >= 0 ? [k === s.active ? s : { ...s, active: k }] : [];
   });
 
-/** Un jeu reste proposé tant que le cycliste est le même et que le tronçon porte bien l'un des tracés. */
+/** A set stays offered as long as the rider is the same and the segment carries one of its lines. */
 export function liveAlts(s: AltSet | null, sig: string, current: Position[] | undefined): AltSet | null {
   return s && s.sig === sig && current === s.routes[s.active] ? s : null;
 }
 
-/** Signature du document pour détecter « le geste suivant » (les tracés calculés n'en font pas partie). */
+/** Document signature to detect "the next gesture" (computed lines are not part of it). */
 export const docSig = (waypoints: [number, number][], modes: string[], rider: string) => `${rider}|${modes.join()}|${waypoints.join(';')}`;

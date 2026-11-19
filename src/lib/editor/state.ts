@@ -5,19 +5,19 @@ import {
 } from './doc';
 import type { ChoicePair, ChoiceWhich, PendingDeviation, WidenResult } from './choice';
 
-/** Historique annuler / rétablir : seuls les gestes de l'utilisateur sont empilés, pas les tracés calculés. */
+/** Undo / redo history: only user gestures are stacked, not computed lines. */
 export type EditorState = {
   past: EditorDoc[];
   present: EditorDoc;
   future: EditorDoc[];
-  /** Mode appliqué aux nouveaux segments. */
+  /** Mode applied to new segments. */
   newMode: SegmentMode;
   selected: number | null;
-  /** Parcours d'origine de la dernière déviation (#1451), proposé en alternative jusqu'au geste suivant. */
+  /** Original route of the last detour (#1451), offered as an alternative until the next gesture. */
   deviation: Deviation | null;
-  /** Dernier glisser, en attente d'être élargi aux points posés à la main (#1641). */
+  /** Last drag, waiting to be widened to hand-placed points (#1641). */
   pending: PendingDeviation | null;
-  /** Paire « nouveau / ancien chemin » (#1641) : `present` est l'option sélectionnée, l'historique n'a pas encore d'entrée. */
+  /** "New / old path" pair (#1641): `present` is the selected option, the history has no entry yet. */
   choice: ChoicePair | null;
 };
 
@@ -31,14 +31,14 @@ export type EditorAction =
   | { type: 'add'; p: LonLat }
   | { type: 'insert'; seg: number; p: LonLat }
   | { type: 'move'; i: number; p: LonLat }
-  /** Glisser un point (ou la ligne, `seg` donné) = déviation (#1451) : retire les points d'origine voisins. */
+  /** Dragging a point (or the line, `seg` given) = detour (#1451): removes the neighbouring original points. */
   | { type: 'deviate'; i: number; p: LonLat; seg?: number }
   | { type: 'restoreDeviation' }
-  /** Résultat du calcul élargi (`buildWiden`) : ouvre la paire de choix, sans entrée d'historique. */
+  /** Result of the widened computation (`buildWiden`): opens the choice pair, without a history entry. */
   | { type: 'widen'; result: WidenResult }
-  /** Aperçu d'une option : ne touche pas à l'historique. */
+  /** Preview of an option: does not touch the history. */
   | { type: 'selectChoice'; which: ChoiceWhich }
-  /** Valide l'option sélectionnée : une seule entrée d'historique (annuler = avant le glisser). */
+  /** Validates the selected option: a single history entry (undo = before the drag). */
   | { type: 'commitChoice' }
   | { type: 'remove'; i: number }
   | { type: 'segmentMode'; seg: number; mode: SegmentMode }
@@ -52,15 +52,15 @@ export type EditorAction =
   | { type: 'select'; i: number | null }
   | { type: 'undo' }
   | { type: 'redo' }
-  // Résultats du routage : modifient le document courant sans entrer dans l'historique.
+  // Routing results: change the current document without entering the history.
   | { type: 'resolved'; seg: number; from: LonLat; to: LonLat; coords: Position[] }
-  /** Choix d'un itinéraire alternatif (#1386) : contrairement à `resolved`, c'est un geste, donc dans l'historique. */
+  /** Choice of an alternative route (#1386): unlike `resolved`, it is a gesture, so it goes in the history. */
   | { type: 'chooseRoute'; seg: number; from: LonLat; to: LonLat; coords: Position[] }
-  /** Aimant BRouter (#1437) : le waypoint se cale sur le début/la fin du tracé calculé, sans historique. */
+  /** BRouter magnet (#1437): the waypoint snaps onto the start/end of the computed line, without history. */
   | { type: 'snapEnd'; i: number; from: LonLat; p: LonLat }
   | { type: 'routeFailed'; seg: number; from: LonLat; to: LonLat };
 
-/** Valide la paire de choix active : l'état d'avant le glisser entre dans l'historique, l'option sélectionnée devient définitive. */
+/** Validates the active choice pair: the pre-drag state enters the history, the selected option becomes final. */
 function settleChoice(s: EditorState): EditorState {
   const c = s.choice;
   if (!c) return s;
@@ -68,12 +68,12 @@ function settleChoice(s: EditorState): EditorState {
 }
 
 function commit(s: EditorState, next: EditorDoc, selected: number | null = null): EditorState {
-  const b = settleChoice(s); // un nouveau geste valide implicitement l'option sélectionnée
+  const b = settleChoice(s); // a new gesture implicitly validates the selected option
   if (next === b.present) return s;
   return { ...b, past: [...b.past, b.present].slice(-HISTORY_LIMIT), present: next, future: [], selected, deviation: null, pending: null };
 }
 
-/** Les résultats de routage mettent aussi à jour le document de la paire de choix qui correspond à l'option appliquée. */
+/** Routing results also update the choice pair's document that matches the applied option. */
 export function editorReducer(s: EditorState, a: EditorAction): EditorState {
   const r = reduce(s, a);
   const c = r.choice;
@@ -96,12 +96,12 @@ function reduce(s: EditorState, a: EditorAction): EditorState {
       const base = a.seg === undefined ? d : insertWaypoint(d, a.seg, a.p);
       const i = a.seg === undefined ? a.i : a.seg + 1;
       const r = deviateWaypoint(base, i, a.p);
-      const next = commit(s, r.doc, null); // glisser ne sélectionne pas (#1465)
+      const next = commit(s, r.doc, null); // dragging does not select (#1465)
       if (next === s) return s;
       return { ...next, deviation: r.deviation, pending: { before: d, base, i, p: a.p, inserted: base !== d } };
     }
     case 'widen': {
-      // Valable seulement juste après le glisser (l'entrée d'historique du glisser est reprise par la paire de choix).
+      // Only valid right after the drag (the drag's history entry is taken over by the choice pair).
       const pd = s.pending;
       if (!pd || s.choice || s.past.at(-1) !== pd.before) return s;
       return {
@@ -141,7 +141,7 @@ function reduce(s: EditorState, a: EditorAction): EditorState {
     case 'select':
       return { ...s, selected: a.i };
     case 'undo': {
-      // Paire de choix active : annuler = retour exact à l'avant-glisser (l'historique n'a pas encore d'entrée).
+      // Active choice pair: undo = exact return to before the drag (the history has no entry yet).
       if (s.choice) return { ...s, present: s.choice.old, choice: null, pending: null, selected: null, deviation: null };
       const prev = s.past.at(-1);
       return prev ? { ...s, past: s.past.slice(0, -1), present: prev, future: [d, ...s.future], selected: null, deviation: null, pending: null } : s;
@@ -159,12 +159,12 @@ function reduce(s: EditorState, a: EditorAction): EditorState {
       return next === d ? s : { ...commit(s, next, s.selected), deviation: s.deviation };
     }
     case 'snapEnd': {
-      // Seulement si le point n'a pas bougé depuis le calcul.
+      // Only if the point has not moved since the computation.
       const w = d.waypoints[a.i];
       return w && w[0] === a.from[0] && w[1] === a.from[1] ? { ...s, present: snapWaypoint(d, a.i, a.p) } : s;
     }
     case 'routeFailed': {
-      // Pas de chemin entre ces deux points : on bascule ce segment en ligne droite.
+      // No path between these two points: this segment switches to a straight line.
       const same = d.waypoints[a.seg]?.join() === a.from.join() && d.waypoints[a.seg + 1]?.join() === a.to.join();
       return same ? { ...s, present: setSegmentMode(d, a.seg, 'line') } : s;
     }

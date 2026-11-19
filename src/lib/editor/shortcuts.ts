@@ -1,4 +1,4 @@
-// Raccourcis clavier de l'éditeur desktop (#1393, complétés en #1384 : M, I, B, Maj+R). Logique pure, testée dans tests/editor-shortcuts.test.ts.
+// Keyboard shortcuts of the desktop editor (#1393, completed in #1384: M, I, B, Shift+R). Pure logic, tested in tests/editor-shortcuts.test.ts.
 
 export type ShortcutAction =
   | 'undo' | 'redo' | 'delete' | 'escape' | 'modeRoute' | 'modeLine' | 'toggleMode' | 'reverse' | 'close' | 'snapAll' | 'altRoute' | 'keepChoice' | 'save' | 'help';
@@ -6,8 +6,8 @@ export type ShortcutAction =
 export type KeyLike = { key: string; ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean; altKey?: boolean };
 
 /**
- * Liste affichée dans l'aide « ? » et dans les info-bulles (`keys` = touches à afficher, traduites via
- * `editor.keys.*` quand ce sont des noms ; `aria` = valeur de `aria-keyshortcuts`). `mod` = Ctrl (Cmd sur Mac).
+ * List shown in the "?" help and in the tooltips (`keys` = keys to display, translated via
+ * `editor.keys.*` when they are names; `aria` = value of `aria-keyshortcuts`). `mod` = Ctrl (Cmd on Mac).
  */
 export const SHORTCUTS: { action: ShortcutAction; keys: string[]; aria: string }[] = [
   { action: 'modeRoute', keys: ['R'], aria: 'R' },
@@ -28,7 +28,7 @@ export const SHORTCUTS: { action: ShortcutAction; keys: string[]; aria: string }
 
 export const ariaShortcut = (a: ShortcutAction) => SHORTCUTS.find((s) => s.action === a)?.aria;
 
-/** Vrai si le focus est dans un champ de saisie : les raccourcis à une touche ne doivent pas s'y déclencher. */
+/** True if the focus is in an input field: single-key shortcuts must not fire there. */
 export function isTypingTarget(el: EventTarget | null): boolean {
   if (!el || typeof el !== 'object' || !('tagName' in el)) return false;
   const e = el as { tagName: string; isContentEditable?: boolean; type?: string };
@@ -40,8 +40,8 @@ export function isTypingTarget(el: EventTarget | null): boolean {
 }
 
 /**
- * Action correspondant à une touche, ou `null`. `typing` = focus dans un champ : seuls Échap et Mod+S restent
- * actifs (on peut enregistrer depuis le champ « nom ») ; annuler/rétablir reviennent au champ.
+ * Action for a key, or `null`. `typing` = focus in a field: only Escape and Mod+S stay
+ * active (saving from the "name" field is allowed); undo/redo go back to the field.
  */
 export function shortcutFor(e: KeyLike, typing = false): ShortcutAction | null {
   const mod = !!(e.ctrlKey || e.metaKey);

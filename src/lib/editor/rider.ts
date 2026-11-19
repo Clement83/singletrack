@@ -3,7 +3,7 @@
 import { useSyncExternalStore } from 'react';
 import type { Rider } from '@/lib/routing/score';
 
-// Choix « Musculaire / VAE » du routage (#1385), mémorisé dans le navigateur (préférence de confort, pas de compte).
+// "Muscle / e-bike" routing choice (#1385), remembered in the browser (comfort preference, no account).
 const KEY = 'singletrack.editor.rider';
 const EVENT = 'singletrack:editor-rider';
 const read = (): Rider => {
@@ -17,7 +17,7 @@ export function setRider(r: Rider) {
   try {
     localStorage.setItem(KEY, r);
   } catch {
-    /* non mémorisé, sans conséquence */
+    /* not remembered, no consequence */
   }
   window.dispatchEvent(new Event(EVENT));
 }

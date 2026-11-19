@@ -2,22 +2,22 @@ import type { Position } from '@/lib/geo';
 import type { LonLat } from './doc';
 
 /**
- * Aimant de l'éditeur (#1437) : un point posé près d'un single ou de la trace en cours s'y accroche.
- * Logique pure : la projection écran est injectée (`project`/`unproject` de MapLibre), donc la tolérance est
- * en **pixels écran** (un doigt est imprécis, quel que soit le zoom).
+ * Editor magnet (#1437): a point placed near a singletrack or the current track attaches to it.
+ * Pure logic: the screen projection is injected (`project`/`unproject` from MapLibre), so the tolerance is
+ * in **screen pixels** (a finger is imprecise, whatever the zoom).
  */
 
-/** Tolérance au doigt et à la souris (px écran), décision de Clément (#1437). */
+/** Finger and mouse tolerance (screen px), maintainer's decision (#1437). */
 export const SNAP_TOLERANCE_TOUCH_PX = 24;
 export const SNAP_TOLERANCE_MOUSE_PX = 10;
 
 export type Px = { x: number; y: number };
 export type SnapLine = { coordinates: Position[] };
-/** Groupes par priorité décroissante (singles, puis trace en cours) : le premier groupe à portée gagne. */
+/** Groups by decreasing priority (singletracks, then current track): the first group within reach wins. */
 export type SnapGroup = { id: string; lines: SnapLine[] };
 export type SnapHit = { point: LonLat; distPx: number; group: string };
 
-/** Projette le point écran `p` sur le segment [a, b] : coordonnée paramétrique t ∈ [0, 1] et distance. */
+/** Projects screen point `p` onto segment [a, b]: parametric coordinate t ∈ [0, 1] and distance. */
 export function projectOnSegment(p: Px, a: Px, b: Px): { t: number; dist: number } {
   const dx = b.x - a.x;
   const dy = b.y - a.y;
@@ -27,13 +27,13 @@ export function projectOnSegment(p: Px, a: Px, b: Px): { t: number; dist: number
 }
 
 /**
- * Point le plus proche de `at` (position écran) sur les lignes de `groups`, à moins de `tolPx`. On projette sur le
- * **segment** le plus proche, pas sur le sommet : sinon une longue ligne droite aimante n'importe où (#1437).
- * Le point renvoyé est interpolé entre les deux sommets du segment (en lon/lat, exact à cette échelle).
+ * Closest point to `at` (screen position) on the lines of `groups`, within `tolPx`. It projects onto the
+ * closest **segment**, not onto the vertex: otherwise a long straight line attracts anywhere (#1437).
+ * The returned point is interpolated between the two vertices of the segment (in lon/lat, exact at this scale).
  */
 export function snapToGroups(
   at: Px, groups: SnapGroup[], project: (p: Position) => Px, tolPx: number,
-  /** Emprise lon/lat de la zone de tolérance : évite de projeter les milliers de sommets hors de portée (glisser fluide). */
+  /** Lon/lat extent of the tolerance area: avoids projecting thousands of out-of-reach vertices (smooth drag). */
   box?: [number, number, number, number],
 ): SnapHit | null {
   const out = (a: Position, b: Position) =>
@@ -51,7 +51,7 @@ export function snapToGroups(
         }
         prev ??= project(c[i - 1]);
         const cur = project(c[i]);
-        // Rejet rapide : le segment est loin de la boîte de tolérance.
+        // Quick rejection: the segment is far from the tolerance box.
         if (
           !(Math.max(prev.x, cur.x) < at.x - tolPx || Math.min(prev.x, cur.x) > at.x + tolPx ||
             Math.max(prev.y, cur.y) < at.y - tolPx || Math.min(prev.y, cur.y) > at.y + tolPx)
@@ -70,9 +70,9 @@ export function snapToGroups(
 }
 
 /**
- * Aimant BRouter : une fois le tronçon calculé, le waypoint `from`/`to` est ramené sur le début/la fin du tracé
- * si l'écart est sous la tolérance (le routeur a accroché au chemin le plus proche). Renvoie `null` si rien à faire
- * (déjà dessus à ~1 px, ou trop loin : point hors-piste laissé libre).
+ * BRouter magnet: once the segment is computed, waypoint `from`/`to` is brought back onto the start/end of the line
+ * if the gap is under the tolerance (the router attached to the nearest path). Returns `null` if there is nothing to do
+ * (already on it within ~1 px, or too far: off-trail point left free).
  */
 export function snapEndpoint(waypoint: LonLat, routeEnd: Position, project: (p: Position) => Px, tolPx: number): LonLat | null {
   const a = project(waypoint);
@@ -81,7 +81,7 @@ export function snapEndpoint(waypoint: LonLat, routeEnd: Position, project: (p: 
   return d > 0.5 && d <= tolPx ? [routeEnd[0], routeEnd[1]] : null;
 }
 
-/** Largeur (px) des zones de clic de la trace et des alternatives (#1524) : étroite à la souris pour qu'un clic sur une route voisine ajoute un point au lieu d'en insérer un sur la trace. */
+/** Width (px) of the click areas of the track and the alternatives (#1524): narrow with a mouse so that a click on a nearby road adds a point instead of inserting one on the track. */
 export const HIT_WIDTH_TOUCH_PX = 28;
 export const HIT_WIDTH_MOUSE_PX = 8;
 export const hitWidth = (finePointer: boolean) => (finePointer ? HIT_WIDTH_MOUSE_PX : HIT_WIDTH_TOUCH_PX);

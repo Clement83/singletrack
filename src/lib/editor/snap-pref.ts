@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from 'react';
 
-// Réglage « Aimant » (#1437) : actif par défaut, mémorisé dans le navigateur (préférence de confort).
+// "Magnet" setting (#1437): on by default, remembered in the browser (comfort preference).
 const KEY = 'singletrack.editor.snap';
 const EVENT = 'singletrack:editor-snap';
 const read = () => {
@@ -16,7 +16,7 @@ export function setSnapPref(on: boolean) {
   try {
     localStorage.setItem(KEY, on ? 'on' : 'off');
   } catch {
-    /* non mémorisé, sans conséquence */
+    /* not remembered, no consequence */
   }
   window.dispatchEvent(new Event(EVENT));
 }

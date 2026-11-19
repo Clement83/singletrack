@@ -2,9 +2,9 @@ import { haversine, type LineString, type Position, type TrackGeometry } from '@
 import { simplifyLine } from '@/lib/geo/simplify';
 
 /**
- * Modèle de l'éditeur de traces (#1340) : des waypoints reliés deux à deux par des segments.
- * Chaque segment suit les chemins (BRouter) ou va en ligne droite ; ses `coords` sont le tracé calculé
- * (`null` = à calculer). Fonctions pures, sans React : tout est testable.
+ * Model of the track editor (#1340): waypoints joined two by two by segments.
+ * Each segment follows the paths (BRouter) or goes in a straight line; its `coords` are the computed line
+ * (`null` = to compute). Pure functions, no React: everything is testable.
  */
 export type LonLat = [number, number];
 export type SegmentMode = 'route' | 'line';
@@ -23,7 +23,7 @@ export function addWaypoint(doc: EditorDoc, p: LonLat, mode: SegmentMode): Edito
   };
 }
 
-/** Insère un point sur le segment `i` (clic sur la ligne). Le tracé déjà calculé est coupé, pas recalculé. */
+/** Inserts a point on segment `i` (click on the line). The already computed line is cut, not recomputed. */
 export function insertWaypoint(doc: EditorDoc, i: number, p: LonLat): EditorDoc {
   const s = doc.segments[i];
   if (!s) return doc;
@@ -32,7 +32,7 @@ export function insertWaypoint(doc: EditorDoc, i: number, p: LonLat): EditorDoc 
   let right = seg(s.mode);
   const c = s.coords;
   if (c && c.length > 2) {
-    // Accroche le point au sommet le plus proche (intérieur au tracé) : la géométrie existante est conservée.
+    // Attaches the point to the closest vertex (inside the line): the existing geometry is kept.
     let k = 1;
     let best = Infinity;
     for (let j = 1; j < c.length - 1; j++) {
@@ -53,7 +53,7 @@ export function insertWaypoint(doc: EditorDoc, i: number, p: LonLat): EditorDoc 
   return { waypoints, segments };
 }
 
-/** Déplace un point : les deux segments voisins sont à recalculer. */
+/** Moves a point: the two neighbouring segments have to be recomputed. */
 export function moveWaypoint(doc: EditorDoc, i: number, p: LonLat): EditorDoc {
   if (!doc.waypoints[i]) return doc;
   const waypoints = doc.waypoints.map((w, k) => (k === i ? p : w));
@@ -61,7 +61,7 @@ export function moveWaypoint(doc: EditorDoc, i: number, p: LonLat): EditorDoc {
   return { waypoints, segments };
 }
 
-/** Ramène un waypoint sur le tracé calculé (aimant BRouter, #1437) sans invalider les tronçons voisins. */
+/** Brings a waypoint back onto the computed line (BRouter magnet, #1437) without invalidating the neighbouring segments. */
 export function snapWaypoint(doc: EditorDoc, i: number, p: LonLat): EditorDoc {
   if (!doc.waypoints[i]) return doc;
   return { ...doc, waypoints: doc.waypoints.map((w, k) => (k === i ? p : w)) };
@@ -74,7 +74,7 @@ export function removeWaypoint(doc: EditorDoc, i: number): EditorDoc {
   const segments = [...doc.segments];
   if (i === 0) segments.splice(0, 1);
   else if (i === doc.waypoints.length - 1) segments.splice(i - 1, 1);
-  else segments.splice(i - 1, 2, seg(doc.segments[i - 1].mode)); // les deux voisins fusionnent
+  else segments.splice(i - 1, 2, seg(doc.segments[i - 1].mode)); // the two neighbours merge
   return { waypoints, segments };
 }
 
@@ -84,7 +84,7 @@ export function setSegmentMode(doc: EditorDoc, i: number, mode: SegmentMode): Ed
   return { ...doc, segments: doc.segments.map((x, k) => (k === i ? seg(mode) : x)) };
 }
 
-/** « Recaler » : tous les segments passent dans le même mode (ex. tout suivre les chemins). */
+/** "Snap": every segment switches to the same mode (e.g. everything follows the paths). */
 export function setAllModes(doc: EditorDoc, mode: SegmentMode): EditorDoc {
   return { ...doc, segments: doc.segments.map((s) => (s.mode === mode ? s : seg(mode))) };
 }
@@ -96,14 +96,14 @@ export function reverseDoc(doc: EditorDoc): EditorDoc {
   };
 }
 
-/** Retour au point de départ. Sans effet si la trace est vide, ou déjà fermée. */
+/** Back to the start point. No effect if the track is empty, or already closed. */
 export function closeLoop(doc: EditorDoc, mode: SegmentMode): EditorDoc {
   const n = doc.waypoints.length;
   if (n < 2 || same(doc.waypoints[0], doc.waypoints[n - 1])) return doc;
   return addWaypoint(doc, doc.waypoints[0], mode);
 }
 
-/** Liaison domicile → départ : le domicile devient le premier point. */
+/** Home → start link: home becomes the first point. */
 export function prependHome(doc: EditorDoc, home: LonLat, mode: SegmentMode): EditorDoc {
   if (doc.waypoints.length && same(doc.waypoints[0], home)) return doc;
   return {
@@ -112,19 +112,19 @@ export function prependHome(doc: EditorDoc, home: LonLat, mode: SegmentMode): Ed
   };
 }
 
-/** Coupe le début : le point `i` devient le départ. */
+/** Cuts the beginning: point `i` becomes the start. */
 export function trimBefore(doc: EditorDoc, i: number): EditorDoc {
   if (i <= 0 || i >= doc.waypoints.length) return doc;
   return { waypoints: doc.waypoints.slice(i), segments: doc.segments.slice(i) };
 }
 
-/** Coupe la fin : le point `i` devient l'arrivée. */
+/** Cuts the end: point `i` becomes the finish. */
 export function trimAfter(doc: EditorDoc, i: number): EditorDoc {
   if (i < 0 || i >= doc.waypoints.length - 1) return doc;
   return { waypoints: doc.waypoints.slice(0, i + 1), segments: doc.segments.slice(0, i) };
 }
 
-/** Enregistre le tracé calculé d'un segment, si ses extrémités n'ont pas bougé entre-temps. */
+/** Stores the computed line of a segment, if its end points did not move in the meantime. */
 export function resolveSegment(doc: EditorDoc, i: number, from: LonLat, to: LonLat, coords: Position[]): EditorDoc {
   const a = doc.waypoints[i];
   const b = doc.waypoints[i + 1];
@@ -133,23 +133,23 @@ export function resolveSegment(doc: EditorDoc, i: number, from: LonLat, to: LonL
   return { ...doc, segments: doc.segments.map((x, k) => (k === i ? { mode: 'route', coords } : x)) };
 }
 
-/** Segments « suivre les chemins » dont le tracé reste à demander à BRouter. */
+/** "Follow the paths" segments whose line still has to be asked from BRouter. */
 export function pendingSegments(doc: EditorDoc): number[] {
   return doc.segments.flatMap((s, i) => (s.mode === 'route' && !s.coords ? [i] : []));
 }
 
-/** Points intermédiaires tous les `stepM` m sur une ligne droite (pour que l'altitude IGN suive le terrain). */
+/** Intermediate points every `stepM` m on a straight line (so that the IGN elevation follows the terrain). */
 export function densify(a: Position, b: Position, stepM: number): Position[] {
   const n = Math.max(1, Math.ceil(haversine(a, b) / stepM));
   return Array.from({ length: n + 1 }, (_, k) => [a[0] + ((b[0] - a[0]) * k) / n, a[1] + ((b[1] - a[1]) * k) / n] as Position);
 }
 
 export type DocGeometryOptions = {
-  /** Densifie les lignes droites (enregistrement) ; sinon deux points suffisent (affichage). */
+  /** Densifies straight lines (saving); otherwise two points are enough (display). */
   densifyM?: number;
 };
 
-/** Tracé de chaque segment (un segment à calculer s'affiche provisoirement en ligne droite). */
+/** Line of each segment (a segment still to compute is shown as a temporary straight line). */
 export function segmentLine(doc: EditorDoc, i: number, opts: DocGeometryOptions = {}): Position[] {
   const s = doc.segments[i];
   if (s.coords) return s.coords;
@@ -158,7 +158,7 @@ export function segmentLine(doc: EditorDoc, i: number, opts: DocGeometryOptions 
   return opts.densifyM ? densify(a, b, opts.densifyM) : [a, b];
 }
 
-/** Géométrie complète, ou `null` s'il y a moins de deux points. Les jonctions ne sont pas dupliquées. */
+/** Full geometry, or `null` with fewer than two points. Junctions are not duplicated. */
 export function docGeometry(doc: EditorDoc, opts: DocGeometryOptions = {}): LineString | null {
   if (doc.waypoints.length < 2) return null;
   const out: Position[] = [];
@@ -173,15 +173,15 @@ export type StoredDoc = { waypoints: LonLat[]; modes: SegmentMode[] };
 
 export const docToStored = (doc: EditorDoc): StoredDoc => ({ waypoints: doc.waypoints, modes: doc.segments.map((s) => s.mode) });
 
-/** Relit un document enregistré : les segments « chemins » sont à recalculer. */
+/** Reads a saved document back: "paths" segments have to be recomputed. */
 export function docFromStored(s: StoredDoc): EditorDoc {
   return { waypoints: s.waypoints, segments: s.modes.map((m) => seg(m)) };
 }
 
 /**
- * Relit un document enregistré **en reprenant le tracé enregistré** (#1526) : la géométrie de la trace est découpée aux
- * waypoints (premier sommet à moins de `tolM` en avançant), chaque segment « chemins » retrouve ainsi son tracé et seule
- * la portion modifiée sera recalculée. Un waypoint introuvable laisse ses segments voisins à recalculer.
+ * Reads a saved document back **reusing the saved line** (#1526): the track geometry is cut at the
+ * waypoints (first vertex within `tolM` going forward), so each "paths" segment gets its line back and only
+ * the modified portion will be recomputed. A waypoint that cannot be found leaves its neighbouring segments to recompute.
  */
 export function docFromStoredWithGeometry(s: StoredDoc, g: TrackGeometry, tolM = 2): EditorDoc {
   const doc = docFromStored(s);
@@ -208,7 +208,7 @@ export function docFromStoredWithGeometry(s: StoredDoc, g: TrackGeometry, tolM =
   return doc;
 }
 
-/** Valide la forme d'un document lu en base (colonne `raw`) ou reçu d'un client. */
+/** Validates the shape of a document read from the database (`raw` column) or received from a client. */
 export function parseStored(v: unknown, maxPoints = 500): StoredDoc | null {
   if (!v || typeof v !== 'object') return null;
   const { waypoints, modes } = v as Record<string, unknown>;
@@ -219,16 +219,16 @@ export function parseStored(v: unknown, maxPoints = 500): StoredDoc | null {
 }
 
 /**
- * Ouvre une géométrie existante (import GPX, trace OSM...) : on garde ≤ `maxPoints` sommets comme
- * waypoints, et chaque segment conserve le tracé d'origine (mode ligne) — rien ne bouge tant qu'on ne
- * déplace pas un point ou qu'on ne bascule pas un segment en « suivre les chemins ».
+ * Opens an existing geometry (GPX import, OSM track...): ≤ `maxPoints` vertices are kept as
+ * waypoints, and each segment keeps the original line (line mode) — nothing moves until a point is
+ * moved or a segment is switched to "follow the paths".
  */
 export function docFromGeometry(g: TrackGeometry, maxPoints = 60): EditorDoc {
   const all: Position[] = g.type === 'LineString' ? g.coordinates : g.coordinates.flat();
   if (all.length < 2) return emptyDoc();
   let idx: number[] = [];
   for (let tol = 5; tol < 5000; tol *= 1.6) {
-    // Douglas-Peucker sur des indices : on retrouve les sommets gardés par leurs coordonnées.
+    // Douglas-Peucker on indices: the kept vertices are found back through their coordinates.
     const kept = simplifyLine(all.map((p, i) => [p[0], p[1], i] as Position), tol);
     idx = kept.map((p) => p[2] as number);
     if (idx.length <= maxPoints) break;
@@ -242,30 +242,30 @@ export function docFromGeometry(g: TrackGeometry, maxPoints = 60): EditorDoc {
   };
 }
 
-/** Fenêtre de déviation (#1451) : longueur de tracé d'origine « libéré » de chaque côté du point tiré. */
+/** Detour window (#1451): length of original line "freed" on each side of the dragged point. */
 export const DEVIATION_WINDOW_M = 400;
 
-/** Parcours d'origine remplacé par une déviation, proposé en alternative : `a` = indice de la première ancre. */
+/** Original route replaced by a detour, offered as an alternative: `a` = index of the first anchor. */
 export type Deviation = {
   a: number;
-  /** Nombre de waypoints du document dévié et de ceux qui remplacent l'origine (garde-fou de la restauration). */
+  /** Number of waypoints of the detoured document and of those replacing the original (restore safeguard). */
   len: number;
   count: number;
   waypoints: LonLat[];
   segments: Segment[];
-  /** Tracé d'origine d'ancre à ancre (ligne grise cliquable). */
+  /** Original line from anchor to anchor (clickable grey line). */
   path: Position[];
 };
 
 const lineLen = (c: Position[]) => c.reduce((s, p, k) => (k ? s + haversine(c[k - 1], p) : 0), 0);
-/** Un segment « d'origine » : ligne figée portant son tracé (import / copie), que la fenêtre peut absorber. */
+/** An "original" segment: frozen line carrying its route (import / copy), which the window may absorb. */
 const absorbable = (s: Segment | undefined) => !!s && s.mode === 'line' && !!s.coords;
 
 /**
- * Tire le waypoint `i` en `p` en **déviation** : les waypoints d'origine (segments figés) sur ~`windowM` de tracé
- * de chaque côté sont retirés ; ancre → point → ancre sont à recalculer par BRouter. Si les ancres sont les voisins
- * directs (trace faite à la main, peu de points), c'est le déplacement habituel et `deviation` vaut `null`.
- * La fenêtre s'arrête au premier segment qui n'est pas un tracé d'origine, et finit sur le waypoint qui la dépasse.
+ * Drags waypoint `i` to `p` as a **detour**: the original waypoints (frozen segments) over ~`windowM` of line
+ * on each side are removed; anchor → point → anchor are to be recomputed by BRouter. If the anchors are the direct
+ * neighbours (hand-drawn track, few points), it is the usual move and `deviation` is `null`.
+ * The window stops at the first segment that is not an original line, and ends on the waypoint that goes past it.
  */
 export function deviateWaypoint(
   doc: EditorDoc, i: number, p: LonLat, windowM = DEVIATION_WINDOW_M,
@@ -304,7 +304,7 @@ export function deviateWaypoint(
   };
 }
 
-/** Rétablit le parcours d'origine d'une déviation, ou renvoie le document tel quel s'il a changé de forme. */
+/** Restores the original route of a detour, or returns the document as is if it changed shape. */
 export function restoreDeviation(doc: EditorDoc, d: Deviation): EditorDoc {
   if (doc.waypoints.length !== d.len) return doc;
   return {

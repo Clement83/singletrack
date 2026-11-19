@@ -4,30 +4,30 @@ import { liveStats, type LiveStats } from './stats';
 import type { AltSet } from './alts';
 
 /**
- * Déviation au glisser « contourne aussi les points posés à la main » (#1641).
+ * Detour on drag that "also bypasses hand-placed points" (#1641).
  *
- * Après un glisser (point ou ligne) vers une route voisine, on route ancre amont → point tiré → ancre aval, où les
- * ancres sont des waypoints **assez loin** (plafonds ci-dessous). En comparant ce tracé à l'ancien, on trouve la
- * divergence et la rejonction ; les waypoints entre les deux sont retirés dans l'option « nouveau » seulement.
- * « Ancien » est le document d'avant le glisser, strictement inchangé. Tout est pur : le routage est fourni par l'appelant.
+ * After a drag (point or line) towards a nearby road, we route upstream anchor → dragged point → downstream anchor, where the
+ * anchors are waypoints **far enough** away (caps below). Comparing this line with the old one gives the
+ * divergence and the rejoin; the waypoints between them are removed in the "new" option only.
+ * "Old" is the document from before the drag, strictly unchanged. Everything is pure: routing is provided by the caller.
  */
-/** Plafond de tracé (m) parcouru de chaque côté pour chercher une ancre ; au-delà, retour au comportement #1451. */
+/** Cap (m) of line walked on each side to look for an anchor; beyond it, back to the #1451 behaviour. */
 export const CHOICE_MAX_M = 3000;
-/** Plafond de waypoints franchis de chaque côté. */
+/** Cap of waypoints crossed on each side. */
 export const CHOICE_MAX_POINTS = 12;
-/** Tolérance (m) pour dire qu'un point du nouveau tracé « suit » l'ancien : 8 m couvre l'écart de deux calculs BRouter sur les mêmes chemins. */
+/** Tolerance (m) to say that a point of the new line "follows" the old one: 8 m covers the gap between two BRouter computations on the same paths. */
 export const CHOICE_TOL_M = 8;
 
-/** Geste de déviation en attente d'être élargi (posé par l'action `deviate`). */
+/** Detour gesture waiting to be widened (set by the `deviate` action). */
 export type PendingDeviation = {
-  /** Document d'avant le glisser (= option « ancien »). */
+  /** Document from before the drag (= "old" option). */
   before: EditorDoc;
-  /** Document d'avant, avec le point inséré si c'était un glisser de ligne : sert au calcul. */
+  /** Previous document, with the inserted point if it was a line drag: used for the computation. */
   base: EditorDoc;
-  /** Indice du point tiré dans `base`. */
+  /** Index of the dragged point in `base`. */
   i: number;
   p: LonLat;
-  /** Vrai si `base` a un point de plus que `before` (glisser de ligne). */
+  /** True if `base` has one more point than `before` (line drag). */
   inserted: boolean;
 };
 
@@ -40,7 +40,7 @@ const segLen = (doc: EditorDoc, k: number) => {
   return s;
 };
 
-/** Ancres lointaines à router (indices dans `base`), ou `null` si le comportement habituel suffit. */
+/** Far anchors to route (indices in `base`), or `null` if the usual behaviour is enough. */
 export function planWiden(p: PendingDeviation, maxM = CHOICE_MAX_M, maxPts = CHOICE_MAX_POINTS): WidenPlan | null {
   const { base, i } = p;
   const n = base.waypoints.length;
@@ -76,12 +76,12 @@ const nearestVertex = (c: Position, path: Position[]) => {
   return best;
 };
 
-/** Résultat du calcul : document « nouveau » (tronçons à recalculer) et indices de ses deux nouveaux tronçons. */
+/** Computation result: "new" document (segments to recompute) and indices of its two new segments. */
 export type WidenResult = { doc: EditorDoc; segs: number[]; oldSegs: [number, number] };
 
 /**
- * Construit le document « nouveau » à partir des routes calculées ancre amont → point (`up`) et point → ancre aval
- * (`down`). `null` si le nouveau tracé ne rejoint pas l'ancien dans les plafonds (repli sur #1451) ou ne s'en écarte pas.
+ * Builds the "new" document from the routes computed upstream anchor → point (`up`) and point → downstream anchor
+ * (`down`). `null` if the new line does not rejoin the old one within the caps (falls back to #1451) or does not leave it.
  */
 export function buildWiden(p: PendingDeviation, plan: WidenPlan, up: Position[] | null, down: Position[] | null, tolM = CHOICE_TOL_M): WidenResult | null {
   const { base, i } = p;
@@ -89,7 +89,7 @@ export function buildWiden(p: PendingDeviation, plan: WidenPlan, up: Position[] 
   const a = plan.up ?? i;
   const b = plan.down ?? i;
   if ((plan.up !== null && !up) || (plan.down !== null && !down)) return null;
-  // Ancien tracé d'ancre à ancre, et position (indice de sommet) de chaque waypoint dedans.
+  // Old line from anchor to anchor, and position (vertex index) of each waypoint in it.
   const old: Position[] = [];
   const at: number[] = [];
   for (let k = a; k <= b; k++) {
@@ -109,13 +109,13 @@ export function buildWiden(p: PendingDeviation, plan: WidenPlan, up: Position[] 
     for (let k = 1; k < oldXY.length; k++) d = Math.min(d, distToSeg(q, oldXY[k - 1], oldXY[k]));
     return d <= tolM;
   };
-  let lo = 0; // sommet de l'ancien tracé où le nouveau s'en écarte
-  let hi = old.length - 1; // sommet où il le rejoint
+  let lo = 0; // vertex of the old line where the new one leaves it
+  let hi = old.length - 1; // vertex where it rejoins it
   if (up) {
     let d = -1;
     while (d + 1 < up.length && near(up[d + 1])) d++;
-    if (d >= up.length - 1) return null; // le point tiré est sur l'ancien tracé : rien à contourner
-    if (d <= 0 && a > 0 && a < i - 1) return null; // n'a pas rejoint l'ancien tracé dans le plafond
+    if (d >= up.length - 1) return null; // the dragged point is on the old line: nothing to bypass
+    if (d <= 0 && a > 0 && a < i - 1) return null; // did not rejoin the old line within the cap
     lo = nearestVertex(up[Math.max(d, 0)], old);
   }
   if (down) {
@@ -145,7 +145,7 @@ export function buildWiden(p: PendingDeviation, plan: WidenPlan, up: Position[] 
 }
 
 export type ChoiceWhich = 'new' | 'old';
-/** Paire de choix active : les deux documents, celui qui est appliqué, et leurs tronçons (pour masquer les alternatives BRouter). */
+/** Active choice pair: both documents, the applied one, and their segments (to hide the BRouter alternatives). */
 export type ChoicePair = {
   selected: ChoiceWhich;
   new: EditorDoc;
@@ -155,23 +155,23 @@ export type ChoicePair = {
 };
 
 export type ChoiceOption = { which: ChoiceWhich; doc: EditorDoc; stats: LiveStats };
-/** Les deux options avec km, D+, D− et profil (calculés à la demande : les tracés « nouveau » arrivent du routage). */
+/** Both options with km, gain, loss and profile (computed on demand: the "new" lines come from routing). */
 export const choiceOptions = (c: ChoicePair): ChoiceOption[] => [
   { which: 'new', doc: c.new, stats: liveStats(c.new) },
   { which: 'old', doc: c.old, stats: liveStats(c.old) },
 ];
 
-/** Pas d'alternatives BRouter (#1527) pour la portion concernée par une paire de choix. */
+/** No BRouter alternatives (#1527) for the portion covered by a choice pair. */
 export function withoutChoiceAlts(sets: AltSet[], c: ChoicePair | null): AltSet[] {
   if (!c) return sets;
   return sets.filter((s) => (c.selected === 'new' ? !c.newSegs.includes(s.seg) : s.seg < c.oldSegs[0] || s.seg >= c.oldSegs[1]));
 }
 
-/** Tronçons (indices dans le document de l'option) qui diffèrent : seuls ceux-là reçoivent halo et étiquette. */
+/** Segments (indices in the option's document) that differ: only those get a halo and a label. */
 export const choiceSegs = (c: ChoicePair, which: ChoiceWhich): number[] =>
   which === 'new' ? c.newSegs : Array.from({ length: Math.max(0, c.oldSegs[1] - c.oldSegs[0]) }, (_, k) => c.oldSegs[0] + k);
 
-/** Écart de chaque option par rapport à l'autre : km et D+ (null si le dénivelé est inconnu d'un côté). */
+/** Difference of each option from the other: km and gain (null if the elevation is unknown on one side). */
 export function choiceDeltas(c: ChoicePair): Record<ChoiceWhich, { km: number; gainM: number | null }> {
   const [n, o] = choiceOptions(c);
   const gain = n.stats.gainM !== null && o.stats.gainM !== null ? n.stats.gainM - o.stats.gainM : null;
