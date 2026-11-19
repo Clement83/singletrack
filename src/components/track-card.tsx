@@ -35,7 +35,7 @@ export function TrackCard({ href, onSelect, title, distanceKm, elevationM, diffi
   const t = useTranslations('trackCard');
   const locale = useLocale();
   const cls = cn(
-    'flex items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left text-card-foreground shadow-sm transition-colors duration-150 hover:bg-accent/40 active:bg-accent/60',
+    'flex items-center gap-3 rounded-xl border border-border bg-card p-3.5 text-left text-card-foreground shadow-sm transition-colors duration-150 hover:bg-accent/40 active:bg-accent/60',
     className,
   );
   const body = (
@@ -47,7 +47,7 @@ export function TrackCard({ href, onSelect, title, distanceKm, elevationM, diffi
             {formatOutingDate(date, locale)}
           </p>
         )}
-        <p className="truncate text-heading">{title || t('untitled')}</p>
+        <p className="truncate text-heading text-balance">{title || t('untitled')}</p>
         <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-body tabular-nums">
           <span className="flex items-center gap-1.5">
             <Route aria-hidden className="size-4 text-muted-foreground" />
@@ -101,7 +101,7 @@ export function TrackCard({ href, onSelect, title, distanceKm, elevationM, diffi
 /** Squelette de TrackCard, pour les listes en chargement. */
 export function TrackCardSkeleton() {
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4" aria-hidden>
+    <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-3.5" aria-hidden>
       <Skeleton className="h-6 w-2/3" />
       <Skeleton className="h-5 w-1/2" />
       <Skeleton className="h-7 w-24 rounded-full" />

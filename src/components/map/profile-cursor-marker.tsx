@@ -18,7 +18,7 @@ export function ProfileCursorMarker({ mapRef, lon, lat }: { mapRef: RefObject<Ma
 
   return (
     <Marker longitude={lon} latitude={lat} style={{ pointerEvents: 'none' }}>
-      <span aria-hidden className="block size-5 rounded-full border-4 border-card bg-foreground shadow-md ring-4 ring-foreground/25" />
+      <span aria-hidden className="block size-5 rounded-full border-[3px] border-card bg-foreground shadow-md ring-4 ring-foreground/20" />
     </Marker>
   );
 }

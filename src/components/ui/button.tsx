@@ -13,6 +13,7 @@ const buttonVariants = cva(
         secondary: 'bg-secondary text-secondary-foreground hover:bg-accent active:bg-accent',
         ghost: 'text-foreground active:bg-accent hover:bg-accent hover:text-accent-foreground',
         destructive: 'bg-destructive text-destructive-foreground shadow-sm hover:brightness-110 active:brightness-95',
+        glass: 'glass border border-border text-foreground shadow-md hover:brightness-95 active:brightness-90',
         outline: 'border border-input bg-card text-foreground hover:bg-accent active:bg-accent',
       },
       size: {

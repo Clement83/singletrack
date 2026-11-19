@@ -43,7 +43,7 @@ export function TrackTip({ tip }: { tip: TrackTipState }) {
   return (
     <div
       role="status"
-      className="pointer-events-none absolute z-20 flex items-center gap-2 rounded-lg bg-popover px-2.5 py-1.5 text-small whitespace-nowrap text-popover-foreground tabular-nums shadow-md"
+      className="pointer-events-none absolute z-20 flex items-center gap-2 rounded-lg border border-border glass px-2.5 py-1.5 text-small whitespace-nowrap text-popover-foreground tabular-nums shadow-md"
       style={{ left: tip.x + 14, top: tip.y + 14 }}
     >
       <span className="font-semibold">{tip.kms.map(fmt).join(' · ')}</span>

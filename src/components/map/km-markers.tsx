@@ -30,7 +30,7 @@ export function KmMarkers({ geometry }: { geometry: TrackGeometry | null | undef
       <Marker key={m.km} longitude={m.position[0]} latitude={m.position[1]} style={{ pointerEvents: 'none' }}>
         <span
           aria-hidden
-          className="flex h-5 min-w-5 items-center justify-center rounded-full border border-foreground/30 bg-card px-1 text-caption leading-none font-semibold text-foreground tabular-nums shadow-sm"
+          className="flex h-5 min-w-5 items-center justify-center rounded-full border border-border bg-card px-1 text-caption leading-none font-semibold text-foreground tabular-nums shadow-sm"
         >
           {Math.round(m.km)}
         </span>
