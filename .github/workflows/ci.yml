@@ -20,10 +20,10 @@ jobs:
     env:
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0 # tags nécessaires au test de montée de version
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -35,7 +35,7 @@ jobs:
       - run: npx tsc --noEmit
       # Couverture + seuils (vitest.config.ts, #1482) : échoue si la couverture régresse sous les seuils.
       - run: npm run test:coverage
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: coverage
@@ -50,9 +50,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/build-push-action@v7
         with:
           context: .
           target: runner
@@ -62,7 +62,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       # Test de fumée (#1482) : l'image démarre sur une base d'exemple, /api/health, /login FR/EN, /t/<slug> publique.
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       - run: SMOKE_IMAGE=singletrack:ci ./scripts/smoke-docker.sh
@@ -73,9 +73,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/build-push-action@v7
         with:
           context: .
           target: release
@@ -83,14 +83,14 @@ jobs:
           tags: local/singletrack:ci
           cache-from: type=gha,scope=install-app
           cache-to: type=gha,mode=max,scope=install-app
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: .
           target: runner
           load: true
           tags: local/singletrack-tools:ci
           cache-from: type=gha
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: brouter
           load: true
