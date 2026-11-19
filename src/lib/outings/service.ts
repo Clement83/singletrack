@@ -10,7 +10,7 @@ import { parisToUtc } from './time';
 import { outingPermissions, isFrozen } from './permissions';
 import { emitOutingChange, emitRemoteRetract } from './federation-hook';
 
-/** Une sortie reste ouverte aux réponses jusqu'à 6 h après son départ. */
+/** An outing stays open to answers until 6 h after its start. */
 const GRACE_MS = 6 * 3600_000;
 
 export type OutingInput = {
@@ -25,13 +25,13 @@ export type OutingInput = {
   level?: string;
   ebike?: string;
   maxParticipants?: number | null;
-  /** `public | friends | invite` (#1442) ; absent à la création = défaut du compte. */
+  /** `public | friends | invite` (#1442); absent at creation = the account's default. */
   visibility?: string;
-  /** Privée : les participants inscrits peuvent inviter leurs copains (#1455). Ignoré en publique (toujours vrai). */
+  /** Private: registered participants may invite their friends (#1455). Ignored for public outings (always true). */
   participantsCanInvite?: boolean;
 };
 
-/** Champ → code d'erreur, traduit côté client (`errors.<code>`, #1402). */
+/** Field → error code, translated on the client (`errors.<code>`, #1402). */
 export type Errors = Record<string, string>;
 
 function validate(input: OutingInput, partial: boolean): { errors: Errors; startsAt?: Date } {
@@ -58,19 +58,19 @@ function validate(input: OutingInput, partial: boolean): { errors: Errors; start
 
 export async function createOuting(db: Db, userId: string, input: OutingInput): Promise<{ slug: string } | { errors: Errors } | { error: 'not_found' }> {
   const found = input.trackSlug ? db.select().from(track).where(eq(track.slug, input.trackSlug)).get() : undefined;
-  // Un brouillon (#1450) ou une trace invisible pour l'organisateur (#1589) ne sert jamais à créer une sortie : même réponse qu'une trace inconnue.
+  // A draft (#1450) or a track invisible to the organiser (#1589) never creates an outing: same answer as an unknown track.
   if (!found || found.status === 'draft' || !canViewTrack(db, found, userId)) return { error: 'not_found' };
   const { errors, startsAt } = validate(input, false);
   if (Object.keys(errors).length) return { errors };
-  const t = await ensureTrackElevation(db, found); // la sortie fige la trace : altitude IGN complétée avant (#1428)
-  // Anti double envoi (#1424) : même organisateur, trace, titre et date créés il y a moins de 30 s ⇒ la même sortie.
+  const t = await ensureTrackElevation(db, found); // the outing freezes the track: IGN elevation completed first (#1428)
+  // Double-submit guard (#1424): same organiser, track, title and date created less than 30 s ago ⇒ the same outing.
   const title = input.title!.trim();
   const recent = db.select().from(outing)
     .where(and(eq(outing.createdBy, userId), eq(outing.trackId, t.id), eq(outing.title, title), eq(outing.startsAt, startsAt!), gt(outing.createdAt, new Date(Date.now() - 30_000))))
     .get();
   if (recent) return { slug: recent.slug };
   const visibility = (input.visibility as OutingRow['visibility']) ?? getDefaultOutingVisibility(db, userId);
-  // Publique = sans propriétaire, figée, lien de groupe toujours actif (#1455) ; `created_by` garde « proposée par ».
+  // Public = no owner, frozen, group link always active (#1455); `created_by` keeps "proposed by".
   const isPublic = visibility === 'public';
   const row = db
     .insert(outing)
@@ -94,16 +94,16 @@ export async function createOuting(db: Db, userId: string, input: OutingInput): 
     })
     .returning({ id: outing.id, slug: outing.slug })
     .get();
-  emitOutingChange(db, row.id, 'Create'); // #1476 : publique / copains → serveurs des copains distants (sur invitation : rien tant que personne n'est invité)
+  emitOutingChange(db, row.id, 'Create'); // #1476: public / friends → servers of the remote friends (invitation only: nothing until someone is invited)
   return { slug: row.slug };
 }
 
 export type DuplicateInput = { date?: string; time?: string; trackSource?: string };
 
 /**
- * Duplique une sortie à une autre date (#1360) : même trace, titre, description, RDV, niveau, VAE et places ;
- * nouveau slug, nouveau lien ouvert, statut « prévue », aucune invitation (les liens perso sont propres à une sortie).
- * `trackSource` : `track` (défaut : version actuelle de la trace, repli sur le snapshot si elle a disparu) ou `snapshot`.
+ * Duplicates an outing to another date (#1360): same track, title, description, meeting point, level, e-bike and seats;
+ * new slug, new open link, status "planned", no invitation (personal links belong to one outing).
+ * `trackSource`: `track` (default: current version of the track, falling back to the snapshot if it is gone) or `snapshot`.
  */
 export function duplicateOuting(db: Db, userId: string, slug: string, input: DuplicateInput): Result<{ slug: string }> {
   const o = getManagedOuting(db, userId, slug);
@@ -129,7 +129,7 @@ export function duplicateOuting(db: Db, userId: string, slug: string, input: Dup
       ebike: o.ebike,
       maxParticipants: o.maxParticipants,
       visibility: o.visibility,
-      // Dupliquer une publique donne une publique (sans propriétaire, figée, lien de groupe actif).
+      // Duplicating a public outing gives a public outing (no owner, frozen, group link active).
       ownerId: isFrozen(o) ? null : userId,
       participantsCanInvite: o.participantsCanInvite,
       openLinkEnabled: isFrozen(o),
@@ -141,15 +141,15 @@ export function duplicateOuting(db: Db, userId: string, slug: string, input: Dup
   return { ok: true, slug: row.slug };
 }
 
-/** Sortie de l'organisateur, ou undefined (inconnue ou d'un autre : même réponse). */
+/** The organiser's outing, or undefined (unknown or someone else's: same answer). */
 export function getOwnedOuting(db: Db, userId: string, slug: string): OutingRow | undefined {
   const o = db.select().from(outing).where(eq(outing.slug, slug)).get();
   return o && o.ownerId === userId ? o : undefined;
 }
 
 /**
- * Sortie que `userId` gère depuis la page `/s/<slug>` : la sienne (propriétaire), ou une publique qu'il a proposée
- * (sans propriétaire : il n'y a rien à modifier, mais il garde sa page pour inviter et partager). Autre ⇒ undefined.
+ * Outing that `userId` manages from the `/s/<slug>` page: their own (owner), or a public one they proposed
+ * (no owner: nothing to edit, but they keep their page to invite and share). Otherwise ⇒ undefined.
  */
 export function getManagedOuting(db: Db, userId: string, slug: string): OutingRow | undefined {
   const o = db.select().from(outing).where(eq(outing.slug, slug)).get();
@@ -157,12 +157,12 @@ export function getManagedOuting(db: Db, userId: string, slug: string): OutingRo
   return o.ownerId === userId || (o.ownerId == null && o.createdBy === userId) ? o : undefined;
 }
 
-/** Sorties gérées par l'utilisateur : possédées, ou publiques qu'il a proposées. */
+/** Outings managed by the user: owned, or public ones they proposed. */
 const managedBy = (userId: string) => or(eq(outing.ownerId, userId), and(isNull(outing.ownerId), eq(outing.createdBy, userId)));
 
 export type Result<T = object> = ({ ok: true } & T) | { ok: false; error: 'not_found' | 'invalid' | 'closed' | 'full' | 'disabled' | 'outingFrozen'; errors?: Errors };
 
-/** Sortie à modifier : propriétaire seulement. Une publique (sans propriétaire) répond `outingFrozen` à son créateur, `not_found` aux autres. */
+/** Outing to edit: owner only. A public one (no owner) answers `outingFrozen` to its creator, `not_found` to others. */
 function editableOuting(db: Db, userId: string, slug: string): { o: OutingRow } | { error: 'not_found' | 'outingFrozen' } {
   const o = getManagedOuting(db, userId, slug);
   if (!o) return { error: 'not_found' };
@@ -173,10 +173,10 @@ export function updateOuting(db: Db, userId: string, slug: string, input: Outing
   const e = editableOuting(db, userId, slug);
   if ('error' in e) return { ok: false, error: e.error };
   const o = e.o;
-  // Rendre publique passe par `makePublic` (une seule voie, irréversible) ; jamais l'inverse.
+  // Making public goes through `makePublic` (a single path, irreversible); never the other way round.
   if (input.visibility === 'public' && o.visibility !== 'public') return { ok: false, error: 'invalid', errors: { visibility: 'visibility' } };
   const merged: OutingInput = { ...input };
-  // Date et heure vont ensemble : on complète avec les valeurs actuelles.
+  // Date and time go together: completed with the current values.
   const { errors, startsAt } = validate(merged, true);
   if (Object.keys(errors).length) return { ok: false, error: 'invalid', errors };
   db.update(outing)
@@ -204,11 +204,11 @@ export function setStatus(db: Db, userId: string, slug: string, status: 'planned
   if ('error' in e) return { ok: false, error: e.error };
   const o = e.o;
   db.update(outing).set({ status, updatedAt: new Date() }).where(eq(outing.id, o.id)).run();
-  emitOutingChange(db, o.id, 'Update'); // annulation = `Update(Event)` avec le statut (la sortie n'est jamais effacée)
+  emitOutingChange(db, o.id, 'Update'); // cancellation = `Update(Event)` with the status (the outing is never erased)
   return { ok: true };
 }
 
-/** « Mettre à jour depuis la trace » : recopie la version courante de la trace dans la sortie. */
+/** "Update from the track": copies the current version of the track into the outing. */
 export function refreshSnapshot(db: Db, userId: string, slug: string): Result {
   const e = editableOuting(db, userId, slug);
   if ('error' in e) return { ok: false, error: e.error };
@@ -220,7 +220,7 @@ export function refreshSnapshot(db: Db, userId: string, slug: string): Result {
   return { ok: true };
 }
 
-/** Nouveau slug (le précédent lien organisateur cesse de fonctionner). */
+/** New slug (the previous organiser link stops working). */
 export function regenerateSlug(db: Db, userId: string, slug: string): Result<{ slug: string }> {
   const o = getOwnedOuting(db, userId, slug);
   if (!o) return { ok: false, error: 'not_found' };
@@ -232,7 +232,7 @@ export function regenerateSlug(db: Db, userId: string, slug: string): Result<{ s
 export function setOpenLink(db: Db, userId: string, slug: string, enabled: boolean): Result {
   const o = getManagedOuting(db, userId, slug);
   if (!o) return { ok: false, error: 'not_found' };
-  // Publique : le lien de groupe est toujours actif, on ne le désactive ni ne le régénère.
+  // Public: the group link is always active, it is neither disabled nor regenerated.
   if (isFrozen(o)) return { ok: false, error: 'outingFrozen' };
   db.update(outing)
     .set({ openLinkEnabled: enabled, updatedAt: new Date() })
@@ -243,7 +243,7 @@ export function setOpenLink(db: Db, userId: string, slug: string, enabled: boole
 
 const cleanName = (s: unknown) => (typeof s === 'string' ? s.trim().replace(/\s+/g, ' ') : '');
 
-/** Crée une invitation nominative. Le token en clair n'est renvoyé qu'ici. */
+/** Creates a named invitation. The plain token is only returned here. */
 export function createInvitation(db: Db, userId: string, slug: string, name: unknown): Result<{ token: string; id: string }> {
   const o = getManagedOuting(db, userId, slug);
   if (!o || !outingPermissions(db, { userId }, o).canInvite) return { ok: false, error: 'not_found' };
@@ -265,14 +265,14 @@ export function revokeInvitation(db: Db, userId: string, slug: string, id: strin
   const inv = ownedInvitation(db, userId, slug, id);
   if (!inv) return { ok: false, error: 'not_found' };
   db.update(invitation).set({ revokedAt: new Date(), updatedAt: new Date() }).where(eq(invitation.id, inv.id)).run();
-  if (inv.remoteActorId) emitRemoteRetract(db, inv.outingId, inv.remoteActorId); // #1476 : retrait de son côté
+  if (inv.remoteActorId) emitRemoteRetract(db, inv.outingId, inv.remoteActorId); // #1476: removal on their side
   return { ok: true };
 }
 
 /**
- * Lien perso d'une personne, **déchiffré** (#1456) : jamais de régénération, on réaffiche le même lien.
- * Qui a le droit : `canRevoke` (propriétaire en privée ; en publique, la personne qui a créé ce lien).
- * `linkUnavailable` pour un lien créé avant le chiffrement (ou clé absente / changée).
+ * A person's personal link, **decrypted** (#1456): never regenerated, the same link is shown again.
+ * Who may: `canRevoke` (owner for a private outing; for a public one, the person who created that link).
+ * `linkUnavailable` for a link created before encryption (or key missing / changed).
  */
 export function getInvitationLink(db: Db, userId: string, slug: string, id: string): { ok: true; token: string } | { ok: false; error: 'not_found' | 'linkUnavailable' } {
   const inv = ownedInvitation(db, userId, slug, id);
@@ -285,7 +285,7 @@ export function listInvitations(db: Db, outingId: string): InvitationRow[] {
   return db.select().from(invitation).where(eq(invitation.outingId, outingId)).orderBy(asc(invitation.createdAt)).all();
 }
 
-/** Mes sorties, la plus proche d'abord à venir ; passées ensuite. */
+/** My outings, nearest upcoming first; past ones after. */
 export function listOutings(db: Db, userId: string, now = new Date()) {
   const rows = db.select().from(outing).where(managedBy(userId)).orderBy(asc(outing.startsAt)).all();
   const cut = now.getTime() - GRACE_MS;
@@ -303,7 +303,7 @@ export function isClosed(o: Pick<OutingRow, 'status' | 'startsAt'>, now = new Da
   return o.status !== 'planned' || o.startsAt.getTime() + GRACE_MS < now.getTime();
 }
 
-/** Invitation active (non révoquée) par son token en clair, avec sa sortie. */
+/** Active (non-revoked) invitation from its plain token, with its outing. */
 export function getInvitationByToken(db: Db, token: string) {
   if (typeof token !== 'string' || token.length < 20 || token.length > 100) return undefined;
   const inv = db.select().from(invitation).where(and(eq(invitation.tokenHash, hashToken(token)), isNull(invitation.revokedAt))).get();
@@ -323,7 +323,7 @@ export function countYes(db: Db, outingId: string, exceptId?: string): number {
 
 export type RespondInput = { status?: unknown; name?: unknown; comment?: unknown };
 
-/** Réponse d'un invité : ne touche que SA ligne (identifiée par le hash du token). */
+/** A guest's answer: only touches THEIR row (identified by the token hash). */
 export function respond(db: Db, token: string, input: RespondInput, now = new Date()): Result {
   const found = getInvitationByToken(db, token);
   if (!found) return { ok: false, error: 'not_found' };
@@ -356,7 +356,7 @@ export function getOutingByOpenToken(db: Db, openToken: string) {
   return o && o.openLinkEnabled ? o : undefined;
 }
 
-/** Lien ouvert : crée l'invitation personnelle de celui qui saisit son nom. */
+/** Open link: creates the personal invitation of whoever enters their name. */
 export function joinOpen(db: Db, openToken: string, name: unknown, now = new Date()): Result<{ token: string }> {
   const o = getOutingByOpenToken(db, openToken);
   if (!o) return { ok: false, error: 'disabled' };
@@ -370,21 +370,21 @@ export function joinOpen(db: Db, openToken: string, name: unknown, now = new Dat
   return { ok: true, token };
 }
 
-/** Jeton du flux agenda de l'organisateur (#1357) : créé au premier appel, stable ensuite. */
+/** Token of the organiser's calendar feed (#1357): created on first call, stable afterwards. */
 export function getCalendarFeedToken(db: Db, userId: string): string {
   const row = db.select().from(calendarFeed).where(eq(calendarFeed.userId, userId)).get();
   if (row) return row.token;
   return regenerateCalendarFeedToken(db, userId);
 }
 
-/** Nouveau jeton : l'ancien lien s'arrête de répondre (404). */
+/** New token: the old link stops answering (404). */
 export function regenerateCalendarFeedToken(db: Db, userId: string): string {
   const token = newToken();
   db.insert(calendarFeed).values({ userId, token }).onConflictDoUpdate({ target: calendarFeed.userId, set: { token, createdAt: new Date() } }).run();
   return token;
 }
 
-/** Sorties d'un flux agenda par jeton (toutes celles de l'organisateur, annulées comprises : l'agenda les barre). */
+/** Outings of a calendar feed by token (all of the organiser's, cancelled ones included: the calendar strikes them out). */
 export function outingsForCalendarFeed(db: Db, token: string): OutingRow[] | undefined {
   if (typeof token !== 'string' || token.length < 20 || token.length > 100) return undefined;
   const feed = db.select().from(calendarFeed).where(eq(calendarFeed.token, token)).get();
@@ -393,9 +393,9 @@ export function outingsForCalendarFeed(db: Db, token: string): OutingRow[] | und
 }
 
 /**
- * Passer une sortie privée en **publique** (#1455) : propriétaire seulement. Elle perd son propriétaire (`owner_id` NULL ;
- * `created_by` garde « proposée par »), son lien de groupe devient actif, plus rien n'est modifiable ni annulable.
- * **Irréversible** : publique → privée n'existe pas.
+ * Switch a private outing to **public** (#1455): owner only. It loses its owner (`owner_id` NULL;
+ * `created_by` keeps "proposed by"), its group link becomes active, nothing can be edited or cancelled any more.
+ * **Irreversible**: public → private does not exist.
  */
 export function makePublic(db: Db, userId: string, slug: string): Result {
   const o = getOwnedOuting(db, userId, slug);

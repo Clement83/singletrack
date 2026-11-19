@@ -13,7 +13,7 @@ function fail(res: Extract<CommentResult, { ok: false }>) {
 
 const NOT_FOUND = () => Response.json({ error: 'not_found' }, { status: 404 });
 
-/** GET/POST/PATCH/DELETE communs aux routes invité (`/api/i/<token>/comments`) et organisateur. */
+/** GET/POST/PATCH/DELETE shared by the guest routes (`/api/i/<token>/comments`) and the organiser routes. */
 export function commentHandlers(resolve: (req: Request, params: Record<string, string>) => Promise<Ctx>, limitKey: (req: Request, params: Record<string, string>) => string) {
   const limited = (req: Request, p: Record<string, string>) => !rateLimit(`cmt:${limitKey(req, p)}`, 20, 60_000);
   return {

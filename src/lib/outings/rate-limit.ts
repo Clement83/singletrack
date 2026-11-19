@@ -1,4 +1,4 @@
-/** Limiteur en mémoire (fenêtre fixe) pour les endpoints invités publics. Un seul processus : suffisant. */
+/** In-memory limiter (fixed window) for the public guest endpoints. A single process: enough. */
 const hits = new Map<string, { n: number; reset: number }>();
 
 export function rateLimit(key: string, max: number, windowMs: number, now = Date.now()): boolean {
@@ -12,7 +12,7 @@ export function rateLimit(key: string, max: number, windowMs: number, now = Date
   return h.n <= max;
 }
 
-/** IP du client derrière nginx (X-Forwarded-For). */
+/** Client IP behind nginx (X-Forwarded-For). */
 export function clientIp(req: Request): string {
   return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'local';
 }

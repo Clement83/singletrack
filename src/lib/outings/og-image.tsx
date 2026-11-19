@@ -1,5 +1,5 @@
-// Aperçu de lien d'une sortie (#1351) : image OpenGraph 1200 × 630 générée côté serveur (next/og), avec le tracé
-// de la trace figée. Couleurs lues dans design/tokens.json (thème clair : les messageries affichent l'aperçu sur fond clair).
+// Link preview of an outing (#1351): 1200 × 630 OpenGraph image generated on the server (next/og), with the line
+// of the frozen track. Colours read from design/tokens.json (light theme: messaging apps show the preview on a light background).
 import { ImageResponse } from 'next/og';
 import tokens from '../../../design/tokens.json';
 import type { OutingRow } from '@/db/schema';
@@ -12,8 +12,8 @@ export const OG_SIZE = { width: 1200, height: 630 };
 const color = (name: string) => tokens.color.find((c) => c.name === name)!.value.light;
 
 /**
- * Tracé d'une géométrie projeté dans une boîte `w × h` (marge `pad`), proportions conservées (équirectangulaire
- * corrigé de la latitude), une chaîne de points SVG par ligne. Pur, testé.
+ * Line of a geometry projected into a `w × h` box (margin `pad`), aspect ratio kept (equirectangular
+ * corrected for latitude), one SVG point string per line. Pure, tested.
  */
 export function ogPaths(geometry: TrackGeometry, w: number, h: number, pad = 0): string[] {
   const lines = geometry.type === 'LineString' ? [geometry.coordinates] : geometry.coordinates;
@@ -32,7 +32,7 @@ export function ogPaths(geometry: TrackGeometry, w: number, h: number, pad = 0):
   return lines.map((l) => l.map((p) => `${(ox + (p[0] * k - minX) * s).toFixed(1)},${(oy + (maxY - p[1]) * s).toFixed(1)}`).join(' '));
 }
 
-/** Image d'aperçu d'une sortie ; `outing` absent (lien inconnu ou révoqué) ⇒ image générique, sans rien révéler. */
+/** Preview image of an outing; `outing` absent (unknown or revoked link) ⇒ generic image, revealing nothing. */
 export function outingOgImage(outing: Pick<OutingRow, 'title' | 'startsAt' | 'trackSnapshot'> | undefined, locale: Locale) {
   const t = translatorFor(locale);
   const paths = outing ? ogPaths(outing.trackSnapshot.geometry, 520, 520, 20) : [];

@@ -5,14 +5,14 @@ import { getManagedOuting, type Result } from './service';
 import { outingPermissions } from './permissions';
 import { newInviteToken } from './tokens';
 
-/** Carnet de potes (#1359) : habitués de l'utilisateur, prénom + note seulement. */
+/** Buddy book (#1359): the user's regulars, first name + note only. */
 
 const clean = (s: unknown, max: number) => (typeof s === 'string' ? s.trim().replace(/\s+/g, ' ').slice(0, max) : '');
 const same = (a: string, b: string) => a.localeCompare(b, 'fr', { sensitivity: 'base' }) === 0;
 
 export type ContactView = ContactRow & { outings: number; lastOutingAt: Date | null };
 
-/** Contacts de l'utilisateur, avec l'historique (nombre de sorties, dernière date). Tri : dernière invitation d'abord. */
+/** The user's contacts, with their history (number of outings, last date). Order: most recent invitation first. */
 export function listContacts(db: Db, userId: string, opts: { archived?: boolean } = {}): ContactView[] {
   const rows = db.select().from(contact)
     .where(and(eq(contact.ownerUserId, userId), eq(contact.archived, !!opts.archived)))
@@ -64,9 +64,9 @@ export function updateContact(db: Db, userId: string, id: string, input: { name?
 export type BulkInvite = { id: string; name: string; token: string; path: string };
 
 /**
- * Invite plusieurs personnes d'un coup : contacts cochés (`contactIds`) et/ou nouveaux prénoms (`newNames`, avec
- * `addToBook` pour les mémoriser). Une invitation nominative (donc un lien) par personne ; un contact déjà invité
- * (lien actif) à cette sortie est ignoré. Les tokens en clair ne sont renvoyés qu'ici.
+ * Invites several people at once: ticked contacts (`contactIds`) and/or new first names (`newNames`, with
+ * `addToBook` to remember them). One named invitation (hence one link) per person; a contact already invited
+ * (active link) to this outing is skipped. Plain tokens are only returned here.
  */
 export function inviteMany(
   db: Db, userId: string, slug: string,
@@ -112,8 +112,8 @@ export function inviteMany(
 }
 
 /**
- * « Réinviter les mêmes personnes » (#1360) : invités actifs d'une sortie d'origine (du même organisateur),
- * en contacts du carnet (non archivés) ou, à défaut, en simples prénoms. Aucune invitation n'est créée ici.
+ * "Invite the same people again" (#1360): active guests of an original outing (same organiser),
+ * as buddy-book contacts (not archived) or, failing that, as plain first names. No invitation is created here.
  */
 export function reinviteCandidates(db: Db, userId: string, fromSlug: string): { contactIds: string[]; names: string[] } {
   const src = getManagedOuting(db, userId, fromSlug);

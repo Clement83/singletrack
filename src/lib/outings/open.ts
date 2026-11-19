@@ -7,9 +7,9 @@ import { countYes, isClosed } from './service';
 import { decryptToken, newInviteToken } from './tokens';
 
 /**
- * « Sorties ouvertes » (#1443, epic #1440) : sorties d'autres comptes que l'utilisateur peut découvrir
- * (`public`, ou `friends` + copain accepté), à venir, non annulées, pas encore rejointes par lui.
- * Résumé volontairement maigre : jamais de prénoms de participants, d'email, de token ni de slug organisateur.
+ * "Open outings" (#1443, epic #1440): outings of other accounts that the user can discover
+ * (`public`, or `friends` + accepted friend), upcoming, not cancelled, not joined by them yet.
+ * Deliberately lean summary: never participants' first names, email, token or organiser slug.
  */
 export type OpenOuting = {
   id: string;
@@ -23,23 +23,23 @@ export type OpenOuting = {
   ebike: OutingRow['ebike'];
   visibility: 'public' | 'friends';
   yesCount: number;
-  /** `null` = pas de limite. */
+  /** `null` = no limit. */
   spotsLeft: number | null;
 };
 
 export function listVisibleOutings(db: Db, viewerId: string, now = new Date()): OpenOuting[] {
   const today = utcToParisInputs(now).date;
   const rows = db.select({ o: outing, organizer: user.name }).from(outing)
-    .innerJoin(user, eq(user.id, outing.createdBy)) // « proposée par » : vaut aussi pour une publique sans propriétaire
+    .innerJoin(user, eq(user.id, outing.createdBy)) // "proposed by": also valid for a public outing without an owner
     .where(and(eq(outing.status, 'planned'), sql`${outing.createdBy} <> ${viewerId}`, or(eq(outing.visibility, 'public'), eq(outing.visibility, 'friends'))))
     .all()
-    // Droits : `outingPermissions` (#1455). Une publique est visible de tout compte, une « copains » de ses copains.
+    // Rights: `outingPermissions` (#1455). A public outing is visible to every account, a "friends" one to the friends.
     .filter(({ o }) => o.ownerId !== viewerId && outingPermissions(db, { userId: viewerId }, o).canView)
-    // Même règle que `isDone` : une sortie « planned » reste à venir jusqu'à la fin de son jour civil de Paris.
+    // Same rule as `isDone`: a "planned" outing stays upcoming until the end of its Paris calendar day.
     .filter(({ o }) => utcToParisInputs(o.startsAt).date >= today);
   if (!rows.length) return [];
 
-  // Réponses « je viens » (liens non révoqués) en une requête ; sorties déjà rejointes par le compte.
+  // "I'm in" answers (non-revoked links) in one query; outings already joined by the account.
   const invs = db.select({ outingId: invitation.outingId, status: invitation.status, userId: invitation.userId })
     .from(invitation).where(isNull(invitation.revokedAt)).all();
   const yes = new Map<string, number>();
@@ -66,11 +66,11 @@ export function listVisibleOutings(db: Db, viewerId: string, now = new Date()): 
 export type JoinResult = { ok: true; already: boolean } | { ok: false; error: 'not_found' | 'closed' | 'full' };
 
 /**
- * Rejoindre une sortie visible avec son compte (#1444, epic #1440) : crée l'invitation au prénom du compte,
- * réponse « je viens » directement, origine `self`. Une seule par compte et par sortie.
- * La sortie est désignée par son `id` (jamais par le slug organisateur, que `OpenOuting` n'expose pas).
- * Non visible, inconnue, ou sortie de l'utilisateur ⇒ `not_found` (même réponse : rien ne fuit).
- * Une invitation révoquée par l'organisateur n'est pas recréée (`not_found`).
+ * Join a visible outing with one's account (#1444, epic #1440): creates the invitation under the account's first name,
+ * answer "I'm in" directly, origin `self`. Only one per account and per outing.
+ * The outing is designated by its `id` (never by the organiser slug, which `OpenOuting` does not expose).
+ * Not visible, unknown, or the user's own outing ⇒ `not_found` (same answer: nothing leaks).
+ * An invitation revoked by the organiser is not recreated (`not_found`).
  */
 export function joinVisibleOuting(db: Db, userId: string, outingId: string, now = new Date()): JoinResult {
   const o = db.select().from(outing).where(eq(outing.id, outingId)).get();
@@ -92,22 +92,22 @@ export function joinVisibleOuting(db: Db, userId: string, outingId: string, now 
 
 export type JoinedOuting = { id: string; title: string; startsAt: Date; organizerName: string; status: OutingRow['status']; level: OutingRow['level']; ebike: OutingRow['ebike'] };
 
-/** Sorties d'autres comptes rejointes avec mon compte (invitation non révoquée liée), à venir d'abord. */
+/** Outings of other accounts joined with my account (linked non-revoked invitation), upcoming first. */
 export function listJoinedOutings(db: Db, userId: string): JoinedOuting[] {
   return db.select({ o: outing, organizer: user.name }).from(invitation)
     .innerJoin(outing, eq(outing.id, invitation.outingId))
     .innerJoin(user, eq(user.id, outing.createdBy))
     .where(and(eq(invitation.userId, userId), isNull(invitation.revokedAt), sql`${outing.createdBy} <> ${userId}`))
     .all()
-    .filter(({ o }) => o.ownerId !== userId) // confiée à ce compte (#1459) : elle est dans « Mes sorties »
+    .filter(({ o }) => o.ownerId !== userId) // handed over to this account (#1459): it is in "My outings"
     .sort((a, b) => a.o.startsAt.getTime() - b.o.startsAt.getTime())
     .map(({ o, organizer }) => ({ id: o.id, title: o.title, startsAt: o.startsAt, organizerName: organizer, status: o.status, level: o.level, ebike: o.ebike }));
 }
 
 /**
- * Rouvrir la page participant (#1456) : **déchiffre** le lien existant de l'invitation liée à ce compte, sans rien
- * régénérer (l'abonnement agenda reste valable). `not_found` si pas rejoint / révoqué ; `linkUnavailable` pour un
- * lien créé avant le chiffrement.
+ * Reopen the participant page (#1456): **decrypts** the existing link of the invitation linked to this account, without
+ * regenerating anything (the calendar subscription stays valid). `not_found` if not joined / revoked; `linkUnavailable` for a
+ * link created before encryption.
  */
 export function reopenJoinedOuting(db: Db, userId: string, outingId: string): { ok: true; token: string } | { ok: false; error: 'not_found' | 'linkUnavailable' } {
   const inv = db.select().from(invitation).where(and(eq(invitation.outingId, outingId), eq(invitation.userId, userId), isNull(invitation.revokedAt))).get();

@@ -1,6 +1,6 @@
 /**
- * Regroupement des sorties de la carte sous un zoom faible (#1461) : grille proportionnelle au zoom (≈ 110 px par case),
- * pur et testé. Au zoom `CLUSTER_BELOW` et au-dessus, chaque sortie reste seule.
+ * Clustering of the map's outings at low zoom (#1461): grid proportional to the zoom (≈ 110 px per cell),
+ * pure and tested. At zoom `CLUSTER_BELOW` and above, every outing stays alone.
  */
 export const OUTING_CLUSTER_BELOW = 11;
 

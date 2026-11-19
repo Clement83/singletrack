@@ -1,6 +1,6 @@
 const TZ = 'Europe/Paris';
 
-/** Décalage (ms) de Paris par rapport à UTC à l'instant donné. */
+/** Offset (ms) of Paris from UTC at the given instant. */
 function parisOffsetMs(at: Date): number {
   const parts = Object.fromEntries(
     new Intl.DateTimeFormat('en-US', { timeZone: TZ, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })
@@ -11,7 +11,7 @@ function parisOffsetMs(at: Date): number {
   return asUtc - Math.floor(at.getTime() / 1000) * 1000;
 }
 
-/** « 2026-11-22 » + « 08:30 » (heure de Paris) → Date UTC. null si invalide. */
+/** "2026-11-22" + "08:30" (Paris time) → UTC Date. null if invalid. */
 export function parisToUtc(date: string, time: string): Date | null {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
   const t = /^(\d{2}):(\d{2})$/.exec(time);
@@ -23,7 +23,7 @@ export function parisToUtc(date: string, time: string): Date | null {
   return new Date(utc);
 }
 
-/** Date UTC → { date: 'YYYY-MM-DD', time: 'HH:MM' } à Paris (pré-remplissage des formulaires). */
+/** UTC Date → { date: 'YYYY-MM-DD', time: 'HH:MM' } in Paris (form pre-filling). */
 export function utcToParisInputs(d: Date): { date: string; time: string } {
   const p = Object.fromEntries(
     new Intl.DateTimeFormat('en-CA', { timeZone: TZ, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })

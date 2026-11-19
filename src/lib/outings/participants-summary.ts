@@ -1,18 +1,18 @@
-// Résumé « Qui vient » (#1468) : pur (sans base), utilisable côté client comme côté serveur.
+// "Who's coming" summary (#1468): pure (no database), usable on the client and on the server.
 export type ParticipantStatus = 'yes' | 'maybe' | 'no' | 'pending';
 
-/** Participant tel qu'affiché : prénom seulement, jamais d'email ni de token. */
+/** Participant as displayed: first name only, never an email or a token. */
 export type Participant = { id: string; name: string; status: ParticipantStatus; isMe: boolean; isOrganizer: boolean };
 
 export const PREVIEW_COUNT = 3;
 
 export type ParticipantsSummary = {
   counts: Record<ParticipantStatus, number>;
-  /** Les 3 premiers (viennent, puis peut-être) dans l'ordre reçu. */
+  /** The first 3 (coming, then maybe) in the order received. */
   preview: Participant[];
-  /** Nombre de « viennent / peut-être » hors aperçu. */
+  /** Number of "coming / maybe" not in the preview. */
   others: number;
-  /** Tout n'est pas déjà visible dans l'aperçu : il faut le tiroir. */
+  /** Not everything is already visible in the preview: the drawer is needed. */
   needsSheet: boolean;
 };
 
@@ -24,7 +24,7 @@ export function summarizeParticipants(list: Participant[]): ParticipantsSummary 
   return { counts, preview, others: coming.length - preview.length, needsSheet: list.length > preview.length };
 }
 
-/** Initiale du prénom (avatar). */
+/** Initial of the first name (avatar). */
 export function initialOf(name: string): string {
   const first = [...name.trim()][0];
   return first ? first.toLocaleUpperCase() : '?';

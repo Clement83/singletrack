@@ -11,7 +11,7 @@ const STATUS = { not_found: 404, closed: 409, tooEarly: 409, tooLarge: 413, notI
 const NOT_FOUND = () => Response.json({ error: 'not_found' }, { status: 404 });
 const num = (v: FormDataEntryValue | null) => (typeof v === 'string' && v.trim() !== '' ? Number(v) : NaN);
 
-/** Liste / envoi (multipart `file`, `lat`, `lon` facultatifs) des photos, et fichier / suppression d'une photo. */
+/** List / upload (multipart `file`, optional `lat`, `lon`) of the photos, and file / deletion of a photo. */
 export function photoHandlers(resolve: (req: Request, p: Record<string, string>) => Promise<Ctx>, limitKey: (req: Request, p: Record<string, string>) => string) {
   return {
     async list(req: Request, { params }: { params: Params }) {
@@ -22,7 +22,7 @@ export function photoHandlers(resolve: (req: Request, p: Record<string, string>)
     },
     async upload(req: Request, { params }: { params: Params }) {
       const p = await params;
-      // Une rafale de photos d'une même personne reste possible (30/min) ; l'IP est plus large (derrière un même wifi).
+      // A burst of photos from one person stays possible (30/min); the IP limit is wider (behind the same wifi).
       if (!rateLimit(`photo:${limitKey(req, p)}`, 30, 60_000) || !rateLimit(`photoip:${clientIp(req)}`, 90, 60_000)) {
         return Response.json({ error: 'tooManyRequests' }, { status: 429 });
       }

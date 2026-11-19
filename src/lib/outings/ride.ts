@@ -5,7 +5,7 @@ import { bboxOf, enrichElevation, type EnrichOptions, gainLoss, haversine, lineL
 import { type Actor } from './comments';
 
 export const RIDE_MAX_BYTES = 5 * 1024 * 1024;
-/** Sous cette vitesse on est à l'arrêt ; au-delà de cette pause le GPS était en pause (pas du temps de déplacement). */
+/** Below this speed we are stopped; beyond this pause the GPS was paused (not moving time). */
 const STOP_SPEED_MS = 0.5;
 const MAX_GAP_S = 300;
 
@@ -17,7 +17,7 @@ export type RideStats = {
   elapsedSec: number | null;
 };
 
-/** Points d'un GPX avec leur horodatage (`<time>`), par segment. */
+/** Points of a GPX with their timestamp (`<time>`), per segment. */
 function timedSegments(xml: string): { p: Position; t: number | null }[][] {
   const segs: { p: Position; t: number | null }[][] = [];
   const segRe = /<trkseg\b[^>]*>([\s\S]*?)<\/trkseg>/g;
@@ -44,16 +44,16 @@ function timedSegments(xml: string): { p: Position; t: number | null }[][] {
 }
 
 /**
- * Analyse un GPX roulé : distance, D+ (altitudes lissées comme partout), temps de déplacement
- * (les arrêts et les pauses du GPS ne comptent pas) et durée totale. Lève `notGpx`, `doctype`, `noTrack`.
+ * Analyses a ridden GPX: distance, elevation gain (elevations smoothed as everywhere), moving time
+ * (stops and GPS pauses do not count) and total duration. Throws `notGpx`, `doctype`, `noTrack`.
  */
 export async function analyzeRide(xml: string, enrich: EnrichOptions = {}): Promise<RideStats> {
-  const file = parseGpxFile(xml); // valide (refuse DOCTYPE/ENTITY, sans trace) ; la géométrie vient d'ici si pas de <trkseg> (rte)
+  const file = parseGpxFile(xml); // valid (rejects DOCTYPE/ENTITY, no track); the geometry comes from here if there is no <trkseg> (rte)
   const segs = timedSegments(xml).filter((s) => s.length >= 2);
   const lines: Position[][] = segs.length ? segs.map((s) => s.map((x) => x.p)) : file.tracks.flatMap((t) => (t.geometry.type === 'LineString' ? [t.geometry.coordinates] : t.geometry.coordinates));
   if (lines.length === 0) throw new Error('noTrack');
   const rawGeom: TrackGeometry = lines.length === 1 ? { type: 'LineString', coordinates: lines[0] } : { type: 'MultiLineString', coordinates: lines };
-  // Altitude IGN (#1515) ; GPS en repli si l'IGN est indisponible. Les temps restent ceux du fichier (points non modifiés en nombre/ordre).
+  // IGN elevation (#1515); GPS as a fallback if IGN is unavailable. Times stay those of the file (points unchanged in number/order).
   let raw = rawGeom;
   try {
     raw = await enrichElevation(rawGeom, { replace: true, ...enrich });
@@ -94,7 +94,7 @@ export async function analyzeRide(xml: string, enrich: EnrichOptions = {}): Prom
 
 export type RideView = {
   id: string;
-  /** Prénom de l'invité ; `organizer` pour l'organisateur. */
+  /** Guest's first name; `organizer` for the organiser. */
   author: string;
   organizer: boolean;
   mine: boolean;
@@ -113,12 +113,12 @@ const where = (outingId: string, a: Actor) =>
     ? and(eq(outingRide.outingId, outingId), eq(outingRide.invitationId, a.invitationId))
     : and(eq(outingRide.outingId, outingId), isNull(outingRide.invitationId), eq(outingRide.authorUserId, a.userId));
 
-/** Une trace roulée n'a de sens qu'une fois la sortie commencée, et pas pour une sortie annulée. */
+/** A ridden track only makes sense once the outing has started, and not for a cancelled outing. */
 export function canUploadRide(o: Pick<OutingRow, 'status' | 'startsAt'>, now = new Date()): boolean {
   return o.status !== 'cancelled' && o.startsAt.getTime() <= now.getTime() + 3 * 3600_000;
 }
 
-/** Enregistre (ou remplace) la trace de l'acteur. */
+/** Stores (or replaces) the actor's track. */
 export async function saveRide(db: Db, o: OutingRow, actor: Actor, xml: string, now = new Date(), enrich: EnrichOptions = {}): Promise<RideResult<{ id: string }>> {
   if (xml.length > RIDE_MAX_BYTES) return { ok: false, error: 'tooLarge' };
   if (o.status === 'cancelled') return { ok: false, error: 'closed' };
@@ -150,7 +150,7 @@ export function deleteRide(db: Db, o: OutingRow, actor: Actor): void {
   db.delete(outingRide).where(where(o.id, actor)).run();
 }
 
-/** Traces visibles par l'acteur : l'invité ne voit que la sienne, l'organisateur voit celles de tous. */
+/** Tracks visible to the actor: the guest only sees their own, the organiser sees everyone's. */
 export function listRides(db: Db, outingId: string, actor: Actor): RideView[] {
   const rows = db.select({ r: outingRide, name: invitation.name }).from(outingRide)
     .leftJoin(invitation, eq(invitation.id, outingRide.invitationId))

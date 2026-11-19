@@ -1,7 +1,7 @@
 import { lines, profileOf } from '@/lib/geo';
 import type { TrackGeometry } from '@/lib/geo/types';
 
-/** Profil échantillonné (~240 points) + position, au format attendu par `TrackDetail`. */
+/** Sampled profile (~240 points) + position, in the format expected by `TrackDetail`. */
 export function profileFor(geometry: TrackGeometry, target = 240) {
   const coords = lines(geometry).flat();
   const full = profileOf(coords);

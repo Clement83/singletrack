@@ -10,7 +10,7 @@ type Params = Promise<Record<string, string>>;
 const STATUS = { not_found: 404, closed: 409, tooEarly: 409, tooLarge: 413, notGpx: 422, doctype: 422, noTrack: 422 } as const;
 const NOT_FOUND = () => Response.json({ error: 'not_found' }, { status: 404 });
 
-/** GET / POST (multipart `file`, .gpx ≤ 5 Mo) / DELETE de la trace roulée, communs aux routes invité et organisateur. */
+/** GET / POST (multipart `file`, .gpx ≤ 5 MB) / DELETE of the ridden track, shared by the guest and organiser routes. */
 export function rideHandlers(resolve: (req: Request, p: Record<string, string>) => Promise<Ctx>, limitKey: (req: Request, p: Record<string, string>) => string) {
   return {
     async list(req: Request, { params }: { params: Params }) {

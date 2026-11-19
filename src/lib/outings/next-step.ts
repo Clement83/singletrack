@@ -1,14 +1,14 @@
 import { utcToParisInputs } from '@/lib/outings/time';
 
-/** Réponse du lecteur à l'invitation (`pending` / `null` = pas encore répondu). */
+/** The reader's answer to the invitation (`pending` / `null` = not answered yet). */
 export type NextStepAnswer = 'yes' | 'maybe' | 'no' | 'pending' | null;
 
 export type NextStepInput = {
   role: 'organizer' | 'guest' | 'visitor' | 'anonymous';
   answer?: NextStepAnswer;
-  /** Sortie passée (délai de grâce compris). */
+  /** Past outing (grace period included). */
   past: boolean;
-  /** Prénoms des invités qui n'ont pas répondu (organisateur). */
+  /** First names of the guests who have not answered (organiser). */
   pendingGuests?: string[];
   organizerName?: string;
   meetingLabel?: string | null;
@@ -29,7 +29,7 @@ export type NextStep = {
 
 const TZ = 'Europe/Paris';
 
-/** « Départ dans X h » le jour même (Paris), sinon « <jour> · <heure> ». */
+/** "Starts in X h" on the same day (Paris), otherwise "<day> · <time>". */
 function meetingStep(i: NextStepInput): NextStep {
   const locale = i.locale === 'en' ? 'en-GB' : 'fr-FR';
   const place = i.meetingLabel ?? '';
@@ -43,7 +43,7 @@ function meetingStep(i: NextStepInput): NextStep {
   return { kind: 'meeting', titleKey: 'meeting', contextKey: 'meetingWhen', params: { place, day, time } };
 }
 
-/** Prochaine étape de la sortie pour ce lecteur (#1620) : la première règle qui s'applique. Pure, sans accès base. */
+/** Next step of the outing for this reader (#1620): the first rule that applies. Pure, no database access. */
 export function nextStep(i: NextStepInput): NextStep {
   if (i.role === 'organizer') {
     if (i.past) return { kind: 'importRide', titleKey: 'importRide', params: {} };

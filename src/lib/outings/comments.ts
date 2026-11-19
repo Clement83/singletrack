@@ -6,7 +6,7 @@ import { outingPermissions } from './permissions';
 
 export const COMMENT_MAX = 1000;
 
-/** Qui écrit : un invité (par son lien perso) ou l'organisateur (par sa session). */
+/** Who writes: a guest (through their personal link) or the organiser (through their session). */
 export type Actor = { kind: 'guest'; invitationId: string } | { kind: 'organizer'; userId: string };
 
 export type CommentView = {
@@ -17,20 +17,20 @@ export type CommentView = {
   createdAt: string;
   edited: boolean;
   mine: boolean;
-  /** L'acteur peut le supprimer (auteur, ou organisateur = modération). */
+  /** The actor may delete it (author, or organiser = moderation). */
   canDelete: boolean;
   canEdit: boolean;
 };
 
 export type CommentResult<T = object> = ({ ok: true } & T) | { ok: false; error: 'not_found' | 'closed' | 'invalid' | 'forbidden'; errors?: Record<string, string> };
 
-/** Résout le contexte d'un lien invité : sortie + acteur. Lien inconnu ou révoqué → undefined (404). */
+/** Resolves the context of a guest link: outing + actor. Unknown or revoked link → undefined (404). */
 export function guestContext(db: Db, token: string): { outing: OutingRow; actor: Actor; canModerate: false } | undefined {
   const found = getInvitationByToken(db, token);
   return found ? { outing: found.outing, actor: { kind: 'guest', invitationId: found.invitation.id }, canModerate: false } : undefined;
 }
 
-/** Contexte organisateur : propriétaire (modère) ou créateur d'une publique (commente, ne modère pas). */
+/** Organiser context: owner (moderates) or creator of a public outing (comments, does not moderate). */
 export function organizerContext(db: Db, userId: string, slug: string): { outing: OutingRow; actor: Actor; canModerate: boolean } | undefined {
   const o = getManagedOuting(db, userId, slug);
   return o ? { outing: o, actor: { kind: 'organizer', userId }, canModerate: outingPermissions(db, { userId }, o).canModerateComment } : undefined;
@@ -46,7 +46,7 @@ function isMine(row: { invitationId: string | null; authorUserId: string | null 
   return actor.kind === 'guest' ? row.invitationId === actor.invitationId : row.invitationId === null && row.authorUserId === actor.userId;
 }
 
-/** Fil chronologique (le plus récent en bas). Seul le texte brut sort : aucun HTML n'est interprété à l'affichage. */
+/** Chronological thread (newest at the bottom). Only raw text goes out: no HTML is interpreted when displayed. */
 export function listComments(db: Db, outingId: string, actor: Actor): CommentView[] {
   const rows = db
     .select({ c: outingComment, name: invitation.name })
@@ -72,7 +72,7 @@ export function listComments(db: Db, outingId: string, actor: Actor): CommentVie
 }
 
 export function addComment(db: Db, o: OutingRow, actor: Actor, raw: unknown, now = new Date()): CommentResult<{ id: string }> {
-  // Le fil se fige comme les réponses : sortie annulée ou partie depuis plus de 6 h.
+  // The thread freezes like the answers: outing cancelled or started more than 6 h ago.
   if (isClosed(o, now)) return { ok: false, error: 'closed' };
   const body = cleanBody(raw);
   if (!body) return { ok: false, error: 'invalid', errors: { body: typeof raw === 'string' && raw.trim().length > COMMENT_MAX ? 'tooLong' : 'empty' } };
@@ -94,7 +94,7 @@ function find(db: Db, outingId: string, id: string) {
   return db.select().from(outingComment).where(and(eq(outingComment.id, id), eq(outingComment.outingId, outingId), isNull(outingComment.deletedAt))).get();
 }
 
-/** Seul l'auteur modifie son message (même l'organisateur ne réécrit pas ceux des autres). */
+/** Only the author edits their message (even the organiser does not rewrite other people's). */
 export function editComment(db: Db, o: OutingRow, actor: Actor, id: string, raw: unknown, now = new Date()): CommentResult {
   const c = find(db, o.id, id);
   if (!c) return { ok: false, error: 'not_found' };
@@ -106,7 +106,7 @@ export function editComment(db: Db, o: OutingRow, actor: Actor, id: string, raw:
   return { ok: true };
 }
 
-/** L'auteur supprime le sien ; l'organisateur supprime n'importe quel message (modération). */
+/** The author deletes their own; the organiser deletes any message (moderation). */
 export function deleteComment(db: Db, o: OutingRow, actor: Actor, id: string, now = new Date()): CommentResult {
   const c = find(db, o.id, id);
   if (!c) return { ok: false, error: 'not_found' };

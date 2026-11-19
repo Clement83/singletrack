@@ -19,18 +19,18 @@ export type PhotoView = {
   author: string;
   organizer: boolean;
   mine: boolean;
-  /** L'acteur peut la supprimer : l'auteur, ou l'organisateur (modération). */
+  /** The actor may delete it: the author, or the organiser (moderation). */
   canDelete: boolean;
   width: number;
   height: number;
-  /** Position arrondie (~10 m), seulement si la photo en avait une. */
+  /** Rounded position (~10 m), only if the photo had one. */
   pos: { lat: number; lon: number } | null;
 };
 
 export type PhotoError = 'not_found' | 'closed' | 'tooEarly' | 'tooLarge' | 'notImage' | 'tooMany';
 export type PhotoResult<T = object> = ({ ok: true } & T) | { ok: false; error: PhotoError };
 
-/** Dossier des médias : `MEDIA_DIR`, sinon `media/` à côté de la base (bind mount `./data`). */
+/** Media folder: `MEDIA_DIR`, otherwise `media/` next to the database (`./data` bind mount). */
 export function mediaDir(): string {
   return process.env.MEDIA_DIR || join(dirname(process.env.DATABASE_URL || './data/singletrack.db'), 'media');
 }
@@ -40,9 +40,9 @@ const isMine = (r: { invitationId: string | null; authorUserId: string | null },
   a.kind === 'guest' ? r.invitationId === a.invitationId : r.invitationId === null && r.authorUserId === a.userId;
 
 /**
- * Enregistre une photo. Le fichier est **toujours ré-encodé** (rotation EXIF appliquée, 2000 px max, JPEG) :
- * l'EXIF d'origine (appareil, date, GPS…) n'est jamais publié. Seule la position est conservée, en base,
- * pour placer la photo sur la carte — fournie par le navigateur (qui l'a lue avant compression) ou lue ici.
+ * Stores a photo. The file is **always re-encoded** (EXIF rotation applied, 2000 px max, JPEG):
+ * the original EXIF (camera, date, GPS…) is never published. Only the position is kept, in the database,
+ * to place the photo on the map — provided by the browser (which read it before compression) or read here.
  */
 export async function savePhoto(
   db: Db, o: OutingRow, actor: Actor, data: Buffer,
@@ -78,7 +78,7 @@ export async function savePhoto(
   return { ok: true, id: row.id };
 }
 
-/** Galerie : tous les participants voient toutes les photos de la sortie, des plus anciennes aux plus récentes. */
+/** Gallery: every participant sees every photo of the outing, oldest first. */
 export function listPhotos(db: Db, outingId: string, actor: Actor): PhotoView[] {
   const rows = db.select({ p: outingPhoto, name: invitation.name }).from(outingPhoto)
     .leftJoin(invitation, eq(invitation.id, outingPhoto.invitationId))
@@ -92,7 +92,7 @@ export function listPhotos(db: Db, outingId: string, actor: Actor): PhotoView[] 
   });
 }
 
-/** Supprime une photo (auteur ou organisateur). `false` si inconnue ou non autorisée. */
+/** Deletes a photo (author or organiser). `false` if unknown or not allowed. */
 export function deletePhoto(db: Db, o: OutingRow, actor: Actor, id: string, dir = mediaDir()): boolean {
   const p = db.select().from(outingPhoto).where(and(eq(outingPhoto.id, id), eq(outingPhoto.outingId, o.id))).get();
   if (!p || !(actor.kind === 'organizer' || isMine(p, actor))) return false;
@@ -101,7 +101,7 @@ export function deletePhoto(db: Db, o: OutingRow, actor: Actor, id: string, dir 
   return true;
 }
 
-/** Octets JPEG d'une photo de la sortie (`null` si inconnue). L'id est un UUID relu en base : pas de chemin forgé. */
+/** JPEG bytes of a photo of the outing (`null` if unknown). The id is a UUID read back from the database: no forged path. */
 export function readPhoto(db: Db, outingId: string, id: string, thumb: boolean, dir = mediaDir()): Buffer | null {
   const p = db.select({ id: outingPhoto.id }).from(outingPhoto).where(and(eq(outingPhoto.id, id), eq(outingPhoto.outingId, outingId))).get();
   if (!p) return null;
@@ -109,7 +109,7 @@ export function readPhoto(db: Db, outingId: string, id: string, thumb: boolean, 
   return existsSync(f) ? readFileSync(f) : null;
 }
 
-/** Pour les tests de suppression en cascade : fichiers d'une sortie. */
+/** For cascade-deletion tests: files of an outing. */
 export function photoFileExists(outingId: string, id: string, dir = mediaDir()): boolean {
   return existsSync(fileOf(dir, outingId, id, false));
 }

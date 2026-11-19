@@ -4,9 +4,9 @@ import { contact, invitation, outing, type OutingRow } from '@/db/schema';
 import { utcToParisInputs } from './time';
 
 /**
- * « Nos sorties » (#1411) : historique des sorties terminées.
- * Une sortie est terminée si l'organisateur l'a marquée `done`, ou automatiquement le lendemain de sa
- * date (jour civil de Paris) tant qu'elle n'est pas annulée. Aucun traitement planifié : c'est calculé à la lecture.
+ * "Our outings" (#1411): history of completed outings.
+ * An outing is completed when the organiser marked it `done`, or automatically the day after its
+ * date (Paris calendar day) unless cancelled. No scheduled job: it is computed on read.
  */
 export function isDone(o: Pick<OutingRow, 'status' | 'startsAt'>, now = new Date()): boolean {
   if (o.status === 'done') return true;
@@ -28,8 +28,8 @@ export type HistoryEntry = {
 export type HistoryTotals = { outings: number; distanceM: number; gainM: number };
 export type HistoryPal = { contactId: string; name: string; outings: number; distanceM: number; gainM: number; lastAt: Date };
 
-/** Sorties terminées de l'organisateur (récentes d'abord), cumul, et sorties faites avec chaque pote du carnet
- *  (réponse « je viens » sur un lien non révoqué). */
+/** Completed outings of the organiser (most recent first), totals, and outings done with each buddy-book contact
+ *  ("I'm in" answer on a non-revoked link). */
 export function listHistory(db: Db, userId: string, now = new Date()) {
   const rows = db.select().from(outing).where(eq(outing.createdBy, userId)).all()
     .filter((o) => isDone(o, now))
@@ -71,7 +71,7 @@ export function listHistory(db: Db, userId: string, now = new Date()) {
 
 export type ClaimedEntry = { slug: string; title: string; startsAt: Date; distanceM: number; gainM: number };
 
-/** Sorties terminées d'autres organisateurs où ce compte a répondu « je viens » via un lien rattaché (#1434). */
+/** Completed outings of other organisers where this account answered "I'm in" through a linked invitation (#1434). */
 export function listClaimedHistory(db: Db, userId: string, now = new Date()): ClaimedEntry[] {
   return db.select({ o: outing }).from(invitation).innerJoin(outing, eq(outing.id, invitation.outingId))
     .where(and(eq(invitation.userId, userId), eq(invitation.status, 'yes'), isNull(invitation.revokedAt))).all()

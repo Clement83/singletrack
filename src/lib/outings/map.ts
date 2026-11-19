@@ -13,10 +13,10 @@ import { countYes, isClosed } from './service';
 import { listParticipants, type Participant } from './participants';
 
 /**
- * « Sorties à venir » sur la carte (#1461, epic #1463 P7). Une sortie apparaît à son **point de RDV** si le compte la voit
- * (`outingPermissions.canView` : publique, propriétaire, invité lié à un compte même sans réponse, ou copain du propriétaire
- * d'une sortie « copains »), si elle est planifiée, à venir et non masquée (archivée) par ce compte.
- * Résumé maigre : jamais de slug organisateur, de token, d'email ni de prénoms de participants.
+ * "Upcoming outings" on the map (#1461, epic #1463 P7). An outing shows at its **meeting point** if the account can see it
+ * (`outingPermissions.canView`: public, owner, guest linked to an account even without an answer, or friend of the owner
+ * of a "friends" outing), if it is planned, upcoming and not hidden (archived) by this account.
+ * Lean summary: never an organiser slug, token, email or participants' first names.
  */
 export type MapOuting = {
   id: string;
@@ -33,7 +33,7 @@ export type MapOuting = {
   organizerName: string;
   yesCount: number;
   spotsLeft: number | null;
-  /** Le compte est propriétaire, créateur ou invité lié : la fiche renvoie vers sa page. */
+  /** The account is owner, creator or linked guest: the card links to their page. */
   mine: boolean;
 };
 
@@ -59,7 +59,7 @@ export function listMapOutings(db: Db, viewerId: string | null, bbox: MapBbox, n
   for (const { o, organizer } of rows) {
     if (out.length >= MAP_OUTINGS_MAX) break;
     if (hidden.get(o.id) === true) continue;
-    // Anonyme (#1589) : seulement les sorties publiques (jamais copains ni sur invitation).
+    // Anonymous (#1589): public outings only (never friends or invitation only).
     if (!viewerId ? o.visibility !== 'public' : !outingPermissions(db, { userId: viewerId }, o, now).canView) continue;
     const yesCount = countYes(db, o.id);
     out.push({
@@ -79,10 +79,10 @@ export type OutingDiscovery =
   | { kind: 'notFound' };
 
 /**
- * Fiche de découverte (#1461) d'une sortie désignée par son **id** (le slug organisateur n'est jamais exposé).
- * Inconnue ou non visible ⇒ `notFound` (même réponse). Déjà rattaché (propriétaire, créateur, invité lié) ⇒ redirection vers
- * sa page : `/s/<slug>`, ou `/i/<token>` déchiffré (#1456) ; si le lien est indisponible (créé avant le chiffrement),
- * on affiche la fiche sans bouton « Je viens ».
+ * Discovery page (#1461) of an outing designated by its **id** (the organiser slug is never exposed).
+ * Unknown or not visible ⇒ `notFound` (same answer). Already attached (owner, creator, linked guest) ⇒ redirect to
+ * their page: `/s/<slug>`, or decrypted `/i/<token>` (#1456); if the link is unavailable (created before encryption),
+ * the page is shown without the "I'm in" button.
  */
 export function getOutingDiscovery(db: Db, viewerId: string, outingId: string, now = new Date()): OutingDiscovery {
   const row = db.select({ o: outing, organizer: user.name }).from(outing)
@@ -106,7 +106,7 @@ export function getOutingDiscovery(db: Db, viewerId: string, outingId: string, n
     kind: 'show',
     outing: {
       id: o.id, title: o.title, description: o.description, geometry: o.trackSnapshot.geometry,
-      // Jamais le slug de la trace d'origine (#1592) : champs choisis un à un.
+      // Never the slug of the original track (#1592): fields picked one by one.
       track: (({ name, geometry, bbox, start, distanceM, elevationGainM, attribution, license }) => ({ name, geometry, bbox, start, distanceM, elevationGainM, attribution, license }))(o.trackSnapshot),
       startsAt: o.startsAt, lat: o.meetingLat, lon: o.meetingLon, meetingLabel: o.meetingLabel,
       distanceM: o.trackSnapshot.distanceM, gainM: o.trackSnapshot.elevationGainM ?? null,
@@ -118,22 +118,22 @@ export function getOutingDiscovery(db: Db, viewerId: string, outingId: string, n
   };
 }
 
-/** Parcours figé d'une sortie pour la carte (#1596) : géométrie + profil seulement, jamais le slug ni l'id de la trace d'origine. */
+/** Frozen route of an outing for the map (#1596): geometry + profile only, never the slug or id of the original track. */
 export type MapOutingTrack = {
   geometry: TrackGeometry;
   profile: ReturnType<typeof profileFor>;
   bbox: [number, number, number, number];
   end: [number, number];
-  /** Contenu du panneau `OutingView` (#1599) : jamais le slug ni l'id de la trace d'origine. */
+  /** Content of the `OutingView` panel (#1599): never the slug or id of the original track. */
   description: string | null;
   track: Pick<TrackSnapshot, 'name' | 'distanceM' | 'elevationGainM' | 'attribution' | 'license'>;
-  /** Prénoms seulement pour qui est rattaché à la sortie (propriétaire, créateur, invité lié) ; sinon `null` (le compteur de la liste suffit). */
+  /** First names only for someone attached to the outing (owner, creator, linked guest); otherwise `null` (the list's counter is enough). */
   participants: Participant[] | null;
 };
 
 /**
- * Parcours (`trackSnapshot`) d'une sortie visible sur la carte, chargé à la demande. Mêmes droits que `listMapOutings` :
- * anonyme = sortie `public` seulement, connecté = `canView` ; inconnue, passée/annulée ou non visible ⇒ `null` (404, jamais 403).
+ * Route (`trackSnapshot`) of an outing visible on the map, loaded on demand. Same rights as `listMapOutings`:
+ * anonymous = `public` outing only, signed in = `canView`; unknown, past/cancelled or not visible ⇒ `null` (404, never 403).
  */
 export function getMapOutingTrack(db: Db, viewerId: string | null, outingId: string, now = new Date()): MapOutingTrack | null {
   const o = db.select().from(outing).where(eq(outing.id, outingId)).get();

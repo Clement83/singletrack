@@ -3,20 +3,20 @@ import type { Db } from '@/db';
 import { friendship, invitation, type InvitationRow, type OutingRow } from '@/db/schema';
 
 /**
- * Source unique des droits sur une sortie (#1455, epic #1463). Toutes les routes et pages de sorties passent par ici
- * au lieu de tester « propriétaire seulement » chacune de leur côté.
+ * Single source of the rights on an outing (#1455, epic #1463). Every outing route and page goes through here
+ * instead of each testing "owner only" on its own.
  *
- * Modèle :
- * - **privée** (`visibility` = `friends` | `invite`) : un **propriétaire** (`owner_id`) seul modifie / annule ;
- *   `friends` = ses copains acceptés la voient et la rejoignent sans invitation, `invite` = seuls les invités la voient ;
- *   `participants_can_invite` laisse les participants inscrits inviter à leur tour ;
- * - **publique** (`visibility` = `public`, `owner_id` NULL) : pas de propriétaire, **tout est figé**, tout le monde a les mêmes droits.
- *   (Une ancienne sortie `public` encore pourvue d'un propriétaire, antérieure à #1455, reste modifiable par lui.)
+ * Model:
+ * - **private** (`visibility` = `friends` | `invite`): one **owner** (`owner_id`) alone edits / cancels;
+ *   `friends` = their accepted friends see it and join without an invitation, `invite` = only guests see it;
+ *   `participants_can_invite` lets registered participants invite in turn;
+ * - **public** (`visibility` = `public`, `owner_id` NULL): no owner, **everything is frozen**, everyone has the same rights.
+ *   (An old `public` outing that still has an owner, from before #1455, stays editable by them.)
  */
 export type Viewer = {
-  /** Compte connecté, s'il y en a un. */
+  /** Signed-in account, if any. */
   userId?: string | null;
-  /** Invitation (lien perso) par laquelle le visiteur arrive, ligne déjà chargée par son token. */
+  /** Invitation (personal link) the visitor comes through, row already loaded from its token. */
   invitation?: Pick<InvitationRow, 'id' | 'userId' | 'status' | 'revokedAt'> | null;
 };
 
@@ -24,7 +24,7 @@ export type OutingFacts = Pick<OutingRow, 'id' | 'ownerId' | 'createdBy' | 'visi
 
 export type OutingPermissions = {
   isOwner: boolean;
-  /** Sans propriétaire : ni modification ni annulation possibles. */
+  /** Without an owner: neither editing nor cancelling is possible. */
   frozen: boolean;
   isPublic: boolean;
   isParticipant: boolean;
@@ -36,15 +36,15 @@ export type OutingPermissions = {
   canShareGroupLink: boolean;
   canModerateComment: boolean;
   canJoin: boolean;
-  /** Révoquer cette invitation : le propriétaire toutes, tout autre seulement les liens qu'il a lui-même créés (#1457). */
+  /** Revoke this invitation: the owner any of them, anyone else only the links they created themselves (#1457). */
   canRevoke: (inv: Pick<InvitationRow, 'createdByUserId' | 'createdByInvitationId'>) => boolean;
 };
 
-/** Sortie sans propriétaire = publique figée. */
+/** Outing without an owner = frozen public outing. */
 export const isFrozen = (o: Pick<OutingRow, 'ownerId'>): boolean => o.ownerId == null;
 export const isPublicOuting = (o: Pick<OutingRow, 'ownerId' | 'visibility'>): boolean => o.visibility === 'public' && o.ownerId == null;
 
-/** Copains **locaux** : un copain d'un autre serveur n'a pas de session ici, il voit les sorties « copains » depuis son serveur (P6, #1476). */
+/** **Local** friends: a friend on another server has no session here, they see "friends" outings from their server (P6, #1476). */
 export function areFriendsOf(db: Db, a: string, b: string): boolean {
   return !!db.select({ id: friendship.id }).from(friendship)
     .where(and(eq(friendship.status, 'accepted'), or(
@@ -62,7 +62,7 @@ export function outingPermissions(db: Db, viewer: Viewer, o: OutingFacts, now = 
   const frozen = isFrozen(o);
   const isPublic = o.visibility === 'public';
 
-  // Invitation du visiteur : celle de son lien, sinon celle rattachée à son compte (#1434 / #1444).
+  // Visitor's invitation: the one from their link, otherwise the one attached to their account (#1434 / #1444).
   let inv = viewer.invitation && !viewer.invitation.revokedAt ? viewer.invitation : null;
   if (!inv && uid) {
     inv = db.select({ id: invitation.id, userId: invitation.userId, status: invitation.status, revokedAt: invitation.revokedAt }).from(invitation)
@@ -70,12 +70,12 @@ export function outingPermissions(db: Db, viewer: Viewer, o: OutingFacts, now = 
   }
   const hasInvitation = !!inv;
   const isParticipant = !!inv && inv.status === 'yes';
-  const known = !!uid || hasInvitation; // un visiteur anonyme sans lien ne voit rien
+  const known = !!uid || hasInvitation; // an anonymous visitor without a link sees nothing
 
   const friendOfOwner = !!uid && !!o.ownerId && uid !== o.ownerId && areFriendsOf(db, uid, o.ownerId);
   const canView = isOwner || hasInvitation || (isPublic && !!uid) || (o.visibility === 'friends' && friendOfOwner);
 
-  // Inviter (lien perso, lien de groupe) : le propriétaire ; tout le monde en publique ; les participants si l'option est active.
+  // Invite (personal link, group link): the owner; everyone for a public outing; participants if the option is on.
   const open = isOwner || (isPublic && known && canView) || (o.participantsCanInvite && isParticipant);
   const canInvite = open;
   const canInviteFriends = open && !!uid;

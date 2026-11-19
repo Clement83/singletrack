@@ -1,9 +1,9 @@
-// Partage d'une sortie (#1351) : liens d'itinéraire vers le RDV, nom de fichier. Logique pure, testée.
+// Sharing an outing (#1351): directions links to the meeting point, file name. Pure logic, tested.
 
 export type MapApp = 'google' | 'waze' | 'apple';
 export const MAP_APPS: MapApp[] = ['google', 'waze', 'apple'];
 
-/** Itinéraire vers le RDV dans l'appli de cartes choisie (ouvre l'appli sur téléphone, le site sinon). */
+/** Directions to the meeting point in the chosen maps app (opens the app on a phone, the website otherwise). */
 export function directionsLinks(lat: number, lon: number): Record<MapApp, string> {
   const ll = `${lat.toFixed(6)},${lon.toFixed(6)}`;
   return {
@@ -13,7 +13,7 @@ export function directionsLinks(lat: number, lon: number): Record<MapApp, string
   };
 }
 
-/** Nom de fichier sûr (sans accents ni caractères spéciaux), 60 caractères au plus. */
+/** Safe file name (no accents or special characters), at most 60 characters. */
 export function safeFileName(title: string, fallback = 'sortie'): string {
   const base = title
     .normalize('NFD')

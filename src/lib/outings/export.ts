@@ -1,5 +1,5 @@
-// Fichiers téléchargeables d'une sortie (#1351) : calendrier .ics et GPX de la trace figée.
-// Partagé par les routes invité (/api/i/<token>/…) et organisateur (/api/outings/<slug>/…).
+// Downloadable files of an outing (#1351): .ics calendar and GPX of the frozen track.
+// Shared by the guest routes (/api/i/<token>/…) and the organiser routes (/api/outings/<slug>/…).
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import type { OutingRow } from '@/db/schema';
@@ -11,7 +11,7 @@ import { translatorFor } from '@/i18n/server';
 import { calendarIcs, type IcsEvent } from './ics';
 import { safeFileName } from './share';
 
-/** Langue d'une requête de Route Handler (cookie NEXT_LOCALE > Accept-Language > français). */
+/** Language of a Route Handler request (NEXT_LOCALE cookie > Accept-Language > French). */
 export function requestLocale(req: Request): Locale {
   const cookie = (req.headers.get('cookie') ?? '')
     .split(';')
@@ -20,12 +20,12 @@ export function requestLocale(req: Request): Locale {
   return resolveLocale({ cookie, acceptLanguage: req.headers.get('accept-language') });
 }
 
-/** Origine publique des liens écrits dans les fichiers (URL du site derrière nginx, sinon celle de la requête). */
+/** Public origin of the links written in the files (site URL behind nginx, otherwise the request's). */
 export function publicOrigin(req: Request): string {
   return (process.env.BETTER_AUTH_URL || new URL(req.url).origin).replace(/\/+$/, '');
 }
 
-/** Date d'une sortie pour un message partagé ou un aperçu de lien (« dimanche 16 novembre à 08:30 »), fuseau Paris. */
+/** Date of an outing for a shared message or a link preview (« dimanche 16 novembre à 08:30 »), Paris time zone. */
 export function formatShareDate(d: Date, locale: Locale): string {
   return new Intl.DateTimeFormat(locale, {
     weekday: 'long',
@@ -38,8 +38,8 @@ export function formatShareDate(d: Date, locale: Locale): string {
 }
 
 /**
- * Métadonnées d'une page de sortie partagée (lien perso, lien de groupe) : titre « <titre> — <date> », description
- * (date, distance, RDV) et OpenGraph pour l'aperçu dans les messageries. Toujours `noindex`.
+ * Metadata of a shared outing page (personal link, group link): title "<title> — <date>", description
+ * (date, distance, meeting point) and OpenGraph for the preview in messaging apps. Always `noindex`.
  */
 export function outingShareMetadata(
   o: Pick<OutingRow, 'title' | 'startsAt' | 'meetingLabel' | 'trackSnapshot'>,
@@ -65,7 +65,7 @@ type OutingForExport = Pick<
   'id' | 'title' | 'description' | 'startsAt' | 'meetingLat' | 'meetingLon' | 'meetingLabel' | 'status' | 'trackSnapshot' | 'updatedAt'
 >;
 
-/** Texte de l'événement (.ics) : RDV, trace, description, lien. Dans la langue de la requête. */
+/** Event text (.ics): meeting point, track, description, link. In the request's language. */
 export function icsText(o: OutingForExport, locale: Locale, url: string): { title: string; description: string; location: string } {
   const t = translatorFor(locale);
   const snap = o.trackSnapshot;
@@ -87,7 +87,7 @@ export function icsText(o: OutingForExport, locale: Locale, url: string): { titl
   return { title: o.title, description, location: meeting };
 }
 
-/** Événement iCalendar d'une sortie (UID stable par sortie : réimporter ou s'abonner met à jour au lieu de dupliquer). */
+/** iCalendar event of an outing (stable UID per outing: re-importing or subscribing updates instead of duplicating). */
 export function icsEvent(o: OutingForExport, locale: Locale, url: string, host: string): IcsEvent {
   const { title, description, location } = icsText(o, locale, url);
   return {
@@ -108,7 +108,7 @@ export function icsEvent(o: OutingForExport, locale: Locale, url: string, host: 
 
 const NO_STORE = { 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex' };
 
-/** Réponse HTTP du fichier .ics (téléchargement ponctuel). */
+/** HTTP response of the .ics file (one-off download). */
 export function icsResponse(o: OutingForExport, locale: Locale, url: string, host: string): Response {
   return new Response(calendarIcs([icsEvent(o, locale, url, host)]), {
     headers: {
@@ -119,14 +119,14 @@ export function icsResponse(o: OutingForExport, locale: Locale, url: string, hos
   });
 }
 
-/** Flux d'abonnement (webcal, #1357) : affiché inline, rafraîchi par l'agenda de l'abonné. */
+/** Subscription feed (webcal, #1357): served inline, refreshed by the subscriber's calendar. */
 export function feedResponse(events: IcsEvent[], name: string): Response {
   return new Response(calendarIcs(events, { feed: { name, refreshHours: 6 } }), {
     headers: { 'Content-Type': 'text/calendar; charset=utf-8', 'Content-Disposition': 'inline; filename="singletrack.ics"', ...NO_STORE },
   });
 }
 
-/** Réponse HTTP du GPX de la trace **figée** dans la sortie (celle que les invités voient), attribution conservée. */
+/** HTTP response of the GPX of the track **frozen** in the outing (the one guests see), attribution kept. */
 export function gpxResponse(o: OutingForExport): Response {
   const snap = o.trackSnapshot;
   return new Response(toGpx({ name: snap.name, attribution: snap.attribution, geometry: snap.geometry }), {
@@ -139,7 +139,7 @@ export function gpxResponse(o: OutingForExport): Response {
   });
 }
 
-/** Même trace figée en KML (GPX reste le format par défaut). */
+/** Same frozen track as KML (GPX stays the default format). */
 export function kmlResponse(o: OutingForExport): Response {
   const snap = o.trackSnapshot;
   return new Response(toKml({ name: snap.name, attribution: snap.attribution, geometry: snap.geometry }), {
@@ -152,7 +152,7 @@ export function kmlResponse(o: OutingForExport): Response {
   });
 }
 
-/** Origine publique pour une page serveur (lien d'abonnement affiché) : URL du site, sinon l'hôte de la requête. */
+/** Public origin for a server page (subscription link shown): site URL, otherwise the request host. */
 export async function pageOrigin(): Promise<string> {
   if (process.env.BETTER_AUTH_URL) return process.env.BETTER_AUTH_URL.replace(/\/+$/, '');
   const h = await headers();

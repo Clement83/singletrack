@@ -8,9 +8,9 @@ export * from './participants-summary';
 const ORDER = { yes: 0, maybe: 1, pending: 2, no: 3 } as const;
 
 /**
- * Participants d'une sortie pour le bloc « Qui vient » (#1468) : prénoms seulement, invitations révoquées exclues.
- * Ordre : « Toi » d'abord, puis l'organisateur, puis l'ordre de réponse (les sans-réponse à la fin, par création).
- * Le droit de voir est celui de la page appelante (lien invité valide ou gestionnaire connecté).
+ * Participants of an outing for the "Who's coming" block (#1468): first names only, revoked invitations excluded.
+ * Order: "You" first, then the organiser, then answer order (no answer last, by creation).
+ * The right to see is that of the calling page (valid guest link or signed-in manager).
  */
 export function listParticipants(db: Db, outingId: string, viewer: { invitationId?: string; userId?: string }): Participant[] {
   const o = db.select({ ownerId: outing.ownerId }).from(outing).where(eq(outing.id, outingId)).get();

@@ -5,7 +5,7 @@ import { getInvitationByToken, getManagedOuting } from './service';
 import { rateLimit } from './rate-limit';
 import type { OutingRow } from '@/db/schema';
 
-/** Routes « inviter ses copains » (#1458) : par la page organisateur (slug) ou par le lien d'un participant rattaché à son compte (token). */
+/** "Invite your friends" routes (#1458): from the organiser page (slug) or from the link of a participant linked to their account (token). */
 export function friendsHandlers(resolve: (userId: string, key: string) => OutingRow | undefined) {
   return {
     async GET(_req: Request, key: string) {
@@ -30,5 +30,5 @@ export function friendsHandlers(resolve: (userId: string, key: string) => Outing
 }
 
 export const bySlug = (userId: string, slug: string) => getManagedOuting(getDb().db, userId, slug);
-/** Par le lien : seul le compte rattaché à l'invitation (ou un compte qui en a une sur la sortie) agit ; les droits viennent de `outingPermissions`. */
+/** Through the link: only the account linked to the invitation (or an account that has one on the outing) acts; rights come from `outingPermissions`. */
 export const byToken = (_userId: string, token: string) => getInvitationByToken(getDb().db, token)?.outing;

@@ -2,7 +2,7 @@ import { simplifyGeometry } from '@/lib/geo';
 import type { TrackGeometry } from '@/lib/geo/types';
 import type { TrackRow } from '@/db/schema';
 
-/** Trace figée dans une sortie (#1341) : la sortie ne change pas quand la trace est modifiée. */
+/** Track frozen in an outing (#1341): the outing does not change when the track is edited. */
 export type TrackSnapshot = {
   slug: string;
   name: string;

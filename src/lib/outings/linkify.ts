@@ -2,13 +2,13 @@ export type Part = { text: string; href?: string };
 
 const URL_RE = /https?:\/\/[^\s<>"]+/gi;
 
-/** Découpe un texte brut en morceaux texte / lien. Aucun HTML : l'affichage passe par React (échappé). */
+/** Splits a raw text into text / link pieces. No HTML: rendering goes through React (escaped). */
 export function linkify(text: string): Part[] {
   const parts: Part[] = [];
   let last = 0;
   for (const m of text.matchAll(URL_RE)) {
     let url = m[0];
-    // La ponctuation finale appartient à la phrase, pas au lien.
+    // Trailing punctuation belongs to the sentence, not to the link.
     const trail = url.match(/[.,;:!?)\]]+$/)?.[0] ?? '';
     url = url.slice(0, url.length - trail.length);
     const i = m.index!;

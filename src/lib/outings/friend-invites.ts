@@ -13,24 +13,24 @@ import { newInviteToken } from './tokens';
 import { emitRemoteInvites } from './federation-hook';
 
 /**
- * Inviter ses copains (comptes) depuis une sortie (#1458, epic #1463 P4). Le droit vient de `outingPermissions`
- * (`canInviteFriends` : propriétaire, participant inscrit si l'option est active, tout compte en publique).
- * L'invitation est liée au compte du copain (`invitation.user_id`) et à celui qui invite (`created_by_user_id`) :
- * elle apparaît dans « Mes sorties » du copain, réponse en attente. Un mail part en arrière-plan.
+ * Inviting one's friends (accounts) from an outing (#1458, epic #1463 P4). The right comes from `outingPermissions`
+ * (`canInviteFriends`: owner, registered participant if the option is on, any account for a public outing).
+ * The invitation is linked to the friend's account (`invitation.user_id`) and to the inviter (`created_by_user_id`):
+ * it shows up in the friend's "My outings", answer pending. An email is sent in the background.
  */
 
-/** Préfixe des identifiants de copains d'un autre serveur dans `userIds`. */
+/** Prefix of the ids of friends on another server in `userIds`. */
 export const REMOTE_PREFIX = 'remote:';
 
 export type InvitableFriend = { userId: string; name: string };
 
-/** Copains acceptés de `userId` qui ne sont pas encore dans la sortie (invitation active) ni son propriétaire. [] sans le droit. */
+/** Accepted friends of `userId` not yet in the outing (active invitation) nor its owner. [] without the right. */
 export function listInvitableFriends(db: Db, userId: string, o: OutingRow): InvitableFriend[] {
   if (!outingPermissions(db, { userId }, o).canInviteFriends) return [];
   const taken = new Set(
     db.select({ u: invitation.userId }).from(invitation).where(and(eq(invitation.outingId, o.id), isNull(invitation.revokedAt))).all().map((r) => r.u),
   );
-  // Copains d'un autre serveur (#1476) : identifiant `remote:<id d'acteur>`, invités par ActivityPub (aucun lien, aucun mail d'ici).
+  // Friends on another server (#1476): id `remote:<actor id>`, invited through ActivityPub (no link, no email from here).
   const takenRemote = new Set(
     db.select({ r: invitation.remoteActorId }).from(invitation).where(and(eq(invitation.outingId, o.id), isNull(invitation.revokedAt))).all().map((r) => r.r),
   );
@@ -41,17 +41,17 @@ export function listInvitableFriends(db: Db, userId: string, o: OutingRow): Invi
 }
 
 
-/** Invite des copains distants (ids d'acteurs) : une invitation par copain (réponse en attente), l'`Event` part à leur serveur. */
+/** Invites remote friends (actor ids): one invitation per friend (answer pending), the `Event` goes to their server. */
 export function addRemoteInvites(db: Db, userId: string, o: OutingRow, remoteActorIds: string[]): { invited: string[]; skipped: string[]; actorIds: string[] } {
   const mine = new Set(remoteFriendActorIds(db, userId));
   const invited: string[] = [], skipped: string[] = [], actorIds: string[] = [];
   for (const id of new Set(remoteActorIds)) {
     const a = mine.has(id) ? db.select().from(remoteActor).where(eq(remoteActor.id, id)).get() : undefined;
-    if (!a) continue; // pas un copain distant accepté : ignoré en silence
+    if (!a) continue; // not an accepted remote friend: silently ignored
     const name = (a.displayName || a.handle).slice(0, 60);
     const existing = db.select().from(invitation).where(and(eq(invitation.outingId, o.id), eq(invitation.remoteActorId, id), isNull(invitation.revokedAt))).get();
     if (existing) { skipped.push(name); continue; }
-    const { tokenHash } = newInviteToken(); // le jeton n'existe pas pour un distant : la colonne est unique et non nulle, il est jeté
+    const { tokenHash } = newInviteToken(); // the token does not exist for a remote guest: the column is unique and non-null, so it is discarded
     db.insert(invitation).values({ outingId: o.id, tokenHash, tokenEnc: null, remoteActorId: id, name, origin: 'remote', createdByUserId: userId }).run();
     invited.push(name);
     actorIds.push(id);
@@ -79,7 +79,7 @@ export function inviteFriends(
     );
     const targets = ids.filter((id) => allowed.has(id) && id !== o.ownerId && id !== o.createdBy);
     const users = targets.length ? tx.select({ id: user.id, email: user.email, locale: user.locale }).from(user).where(inArray(user.id, targets)).all() : [];
-    // Pote du carnet de l'invitant déjà lié à ce copain : on garde le lien (historique, « Réinviter »).
+    // The inviter's buddy-book entry already linked to this friend: the link is kept (history, "Invite again").
     const contacts = new Map(
       tx.select({ id: contact.id, userId: contact.userId }).from(contact).where(and(eq(contact.ownerUserId, userId), eq(contact.archived, false))).all()
         .flatMap((c) => (c.userId ? [[c.userId, c.id] as const] : [])),
@@ -90,7 +90,7 @@ export function inviteFriends(
     for (const id of ids) {
       const name = allowed.get(id);
       const u = users.find((x) => x.id === id);
-      if (!name || !u) continue; // pas un copain accepté : ignoré en silence (pas d'annuaire)
+      if (!name || !u) continue; // not an accepted friend: silently ignored (no directory)
       if (taken.has(id)) { skipped.push(name); continue; }
       const { token, tokenHash, tokenEnc } = newInviteToken();
       const contactId = contacts.get(id) ?? null;

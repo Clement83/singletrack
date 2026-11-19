@@ -1,19 +1,19 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
 
-/** Token d'invitation : 32 octets aléatoires (256 bits) en base64url. */
+/** Invitation token: 32 random bytes (256 bits) in base64url. */
 export function newToken(): string {
   return randomBytes(32).toString('base64url');
 }
 
-/** Seul le hash est stocké en base. */
+/** Only the hash is stored in the database. */
 export function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
 
 /**
- * Chiffrement réversible des liens perso (#1456) : AES-256-GCM, clé `INVITE_LINK_KEY` (32 octets en base64).
- * Le hash reste la clé de recherche ; le chiffré ne sert qu'à réafficher / repartager le lien sans le régénérer.
- * Format stocké : base64url(iv 12 o ‖ tag 16 o ‖ chiffré).
+ * Reversible encryption of personal links (#1456): AES-256-GCM, key `INVITE_LINK_KEY` (32 bytes in base64).
+ * The hash stays the lookup key; the ciphertext is only used to show / share the link again without regenerating it.
+ * Stored format: base64url(iv 12 B ‖ tag 16 B ‖ ciphertext).
  */
 export class InviteKeyError extends Error {}
 
@@ -25,13 +25,13 @@ export function inviteKey(env: NodeJS.ProcessEnv = process.env): Buffer | null {
   return key;
 }
 
-/** Au démarrage en production : refuse de tourner sans clé valide. */
+/** At start-up in production: refuses to run without a valid key. */
 export function assertInviteKey(env: NodeJS.ProcessEnv = process.env): void {
   if (env.NODE_ENV === 'production' && !inviteKey(env)) throw new InviteKeyError('INVITE_LINK_KEY manquante (openssl rand -base64 32)');
   inviteKey(env);
 }
 
-/** `null` si aucune clé n'est configurée (hors production) : le lien ne sera alors pas réaffichable. */
+/** `null` if no key is configured (outside production): the link will then not be shown again. */
 export function encryptToken(token: string, env: NodeJS.ProcessEnv = process.env): string | null {
   const key = inviteKey(env);
   if (!key) return null;
@@ -41,7 +41,7 @@ export function encryptToken(token: string, env: NodeJS.ProcessEnv = process.env
   return Buffer.concat([iv, c.getAuthTag(), enc]).toString('base64url');
 }
 
-/** `null` si pas de valeur, clé absente ou fausse, donnée altérée. */
+/** `null` if no value, key missing or wrong, tampered data. */
 export function decryptToken(stored: string | null | undefined, env: NodeJS.ProcessEnv = process.env): string | null {
   if (!stored) return null;
   try {
@@ -56,7 +56,7 @@ export function decryptToken(stored: string | null | undefined, env: NodeJS.Proc
   }
 }
 
-/** Nouveau token d'invitation avec les colonnes à stocker. */
+/** New invitation token with the columns to store. */
 export function newInviteToken(): { token: string; tokenHash: string; tokenEnc: string | null } {
   const token = newToken();
   return { token, tokenHash: hashToken(token), tokenEnc: encryptToken(token) };
