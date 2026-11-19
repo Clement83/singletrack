@@ -38,7 +38,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
           outing={{ title: o.title, startsAt: o.startsAt, level: o.level, ebike: o.ebike, meetingLabel: o.label, meetingLat: o.lat, meetingLon: o.lon, description: o.description, cancelled: o.status === 'cancelled' }}
           track={track}
           topLink={
-            <Link href="/sorties" className="flex min-h-touch items-center gap-2 text-body font-semibold text-primary underline-offset-4 hover:underline active:opacity-70">
+            <Link href="/sorties" className="flex min-h-touch items-center gap-2 text-body font-medium text-primary underline-offset-4 hover:underline active:opacity-70">
               <ArrowLeft aria-hidden className="size-5" /> {t('back')}
             </Link>
           }

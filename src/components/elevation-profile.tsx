@@ -105,7 +105,7 @@ export function ElevationProfile({ points, onScrub, cursor = null, slopes = fals
         aria-valuenow={active ?? 0}
         aria-valuetext={cur ? t('point', { km: km(cur.distKm), ele: m(cur.ele) }) : undefined}
         viewBox={`0 0 ${W} ${H}`}
-        className={`${compact ? 'h-16' : 'h-32'} min-h-touch w-full cursor-crosshair touch-pan-y rounded-2xl bg-muted select-none`}
+        className={`${compact ? 'h-16' : 'h-32'} min-h-touch w-full cursor-crosshair touch-pan-y rounded-xl border border-border bg-muted/60 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
         onPointerDown={(e) => {
           if (e.pointerType !== 'mouse') e.currentTarget.setPointerCapture(e.pointerId);
           fromEvent(e.clientX);
@@ -130,7 +130,7 @@ export function ElevationProfile({ points, onScrub, cursor = null, slopes = fals
           <g key={k} pointerEvents="none">
             <line x1={(k / maxKm) * W} x2={(k / maxKm) * W} y1={compact ? 0 : 14} y2={H} stroke="var(--border)" strokeWidth={1} vectorEffect="non-scaling-stroke" />
             {!compact && (
-              <text x={(k / maxKm) * W} y={10} textAnchor="middle" fontSize={9} fill="var(--muted-foreground)" className="tabular-nums">
+              <text x={(k / maxKm) * W} y={10} textAnchor="middle" fontSize={9} fill="var(--muted-foreground)" className="font-medium tabular-nums">
                 {format.number(k)}
               </text>
             )}
@@ -157,7 +157,7 @@ export function ElevationProfile({ points, onScrub, cursor = null, slopes = fals
         )}
       </svg>
       {/* Étiquette du curseur : hauteur fixe et chiffres tabulaires, pas de saut de mise en page. */}
-      <figcaption className="mt-1 flex min-h-6 min-w-0 items-center gap-2 text-small text-muted-foreground tabular-nums" aria-live="polite">
+      <figcaption className="mt-1.5 flex min-h-6 min-w-0 items-center gap-2 text-small text-muted-foreground tabular-nums" aria-live="polite">
         {cur ? (
           <>
             <span className="font-semibold text-foreground">

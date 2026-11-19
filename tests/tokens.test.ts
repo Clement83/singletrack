@@ -28,7 +28,7 @@ describe('tokens : contrastes WCAG', () => {
   });
 
   it('chaque token a une note d’usage', () => {
-    const all = [tokens.color, tokens.text, tokens.radius, tokens.shadow, tokens.surface, tokens.chartes, tokens.size, tokens.motion, tokens.map, tokens.font].flat();
+    const all = [tokens.color, tokens.text, tokens.radius, tokens.shadow, tokens.surface, tokens.chartes, tokens.size, tokens.motion, tokens.easing ?? [], tokens.map, tokens.font].flat();
     expect(all.filter((t) => !t.usage).map((t) => t.name)).toEqual([]);
   });
 });
@@ -52,7 +52,7 @@ describe('tokens : génération', () => {
   });
 
   describe('chartes (#1624)', () => {
-    // Charte d'essai : copie de Classique, rayons à 0, polices et verre propres, clair et sombre.
+    // Charte d'essai : copie de la charte de base (Singletrack, id `classique`), rayons à 0, polices et verre propres, clair et sombre.
     const edited = structuredClone(tokens);
     edited.chartes.push({ id: 'essai', name: 'Essai', usage: 'test' });
     for (const r of edited.radius) r.chartes = { essai: '0px' };
@@ -92,48 +92,32 @@ describe('tokens : génération', () => {
       expect(generateCss(e2).split("[data-charte='fille'][data-theme='light']")[1].split('}')[0]).toContain('--radius-xl: 0px;');
     });
 
-    it('Technique nuit (#1626) : verre sombre flouté, rayons 2–8 px, Space Grotesk + JetBrains Mono, vert fluo en sombre', () => {
-      const real = generateCss(tokens);
-      const dark = real.split("[data-charte='nuit'][data-theme='dark']")[1].split('}')[0];
-      expect(dark).toContain('--primary: #c6f432;');
-      expect(dark).toContain('--glass-blur: blur(16px);');
-      expect(dark).toContain('--font-display: "Space Grotesk Variable"');
-      expect(dark).toContain('--font-figures: "JetBrains Mono Variable"');
-      for (const r of tokens.radius) {
-        const px = parseInt(String(r.chartes?.nuit), 10);
-        expect(px).toBeGreaterThanOrEqual(2);
-        expect(px).toBeLessThanOrEqual(8);
-      }
+    it('une seule charte déclarée (#1646) : nuit, affiche et alpin ont disparu des tokens et du CSS', () => {
+      expect(tokens.chartes.map((c) => c.id)).toEqual(['classique']);
+      const css = generateCss(tokens);
+      expect(css).not.toContain('data-charte');
+      expect(css).not.toMatch(/Space Grotesk|JetBrains|Manrope|Anton/);
     });
 
-    it('Affiche de trail (#1627) : Anton, rayons 0–4 px, ombre pleine décalée, contours 2 px, verre opaque', () => {
-      const real = generateCss(tokens);
-      const dark = real.split("[data-charte='affiche'][data-theme='dark']")[1].split('}')[0];
-      expect(dark).toContain('--font-display: Anton');
-      expect(dark).toContain('--elevation-md: 4px 4px 0 rgba(245, 239, 227, 0.5);');
-      expect(dark).toContain('--border-width: 2px;');
-      for (const r of tokens.radius) {
-        const px = parseInt(String(r.chartes?.affiche), 10);
-        expect(px).toBeGreaterThanOrEqual(0);
-        expect(px).toBeLessThanOrEqual(4);
-      }
+    it('charte par défaut Singletrack (#1645) : verre flouté + saturé sur les couches flottantes, repli opaque garanti par `glass`', () => {
+      expect(tokens.chartes[0].id).toBe('classique'); // id conservé pour les comptes existants
+      expect(css).toContain('--glass-opacity: 72%;');
+      expect(css).toContain('--glass-blur: saturate(180%) blur(20px);');
+      const globals = readFileSync(path.join(root, 'src/app/globals.css'), 'utf8');
+      expect(globals).toMatch(/prefers-reduced-transparency: reduce\)[\s\S]*?background-color: var\(--surface-glass\)/);
     });
 
-    it('Alpin verre (#1628) : Manrope, rayons 6–12 px, verre givré flouté', () => {
-      const real = generateCss(tokens);
-      const light = real.split("[data-charte='alpin'][data-theme='dark']")[1].split('}')[0];
-      expect(light).toContain('--font-display: "Manrope Variable"');
-      expect(light).toContain('--glass-blur: blur(20px);');
-      for (const r of tokens.radius) {
-        const px = parseInt(String(r.chartes?.alpin), 10);
-        expect(px).toBeGreaterThanOrEqual(6);
-        expect(px).toBeLessThanOrEqual(12);
-      }
+    it('charte par défaut Singletrack (#1645) : rayons serrés et hiérarchisés (4 → 16 px)', () => {
+      const px = tokens.radius.map((r) => parseInt(String(r.value), 10));
+      expect(px).toEqual([...px].sort((a, b) => a - b));
+      expect(Math.min(...px)).toBeGreaterThanOrEqual(4);
+      expect(Math.max(...px)).toBeLessThanOrEqual(16);
     });
 
-    it('le verre de Classique est opaque (aucun changement visible)', () => {
-      expect(css).toContain('--glass-opacity: 100%;');
-      expect(css).toContain('--glass-blur: none;');
+    it('courbes d’animation (#1645) : `--ease-*` dans @theme et courbe par défaut des transitions', () => {
+      expect(css).toContain('  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);');
+      expect(css).toMatch(/  --ease-spring: linear\(/);
+      expect(css).toContain('  --default-transition-timing-function: var(--ease-out);');
     });
   });
 

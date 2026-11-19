@@ -13,6 +13,26 @@
   }
   body {
     @apply bg-background text-body text-foreground font-sans antialiased;
+    /* Charte Singletrack (ticket 1645) : Inter 4, axe optique automatique (coupe Display sur les grands titres),
+       « l » à queue pour distinguer l / I / 1 ; rendu net. Sans effet sur les autres familles. */
+    font-optical-sizing: auto;
+    font-feature-settings: 'cv05';
+    text-rendering: optimizeLegibility;
+  }
+  /* Titres équilibrés, paragraphes sans veuve. */
+  h1,
+  h2,
+  h3,
+  .text-display,
+  .text-title,
+  .text-heading {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  ::selection {
+    background-color: color-mix(in srgb, var(--primary) 24%, transparent);
   }
   *,
   ::before,
@@ -48,7 +68,7 @@
   [role='button'] {
     touch-action: manipulation;
   }
-  /* Polices de charte (ticket 1626) : titres en `display`, chiffres en `figures`. Classique : mêmes familles que `sans`, aucun changement. */
+  /* Polices de charte : titres en `display`, chiffres en `figures` (aujourd'hui les mêmes familles que `sans`). */
   h1,
   h2,
   h3,
@@ -60,21 +80,12 @@
   .text-stat,
   .tabular-nums {
     font-family: var(--font-figures);
-  }
-  /* Affiche de trail (ticket 1627) : titres Anton en capitales (une seule graisse, pas de gras synthétique), contours épais et ombre pleine. */
-  [data-charte='affiche'] :is(h1, h2, h3, .text-display, .text-title, .text-heading) {
-    text-transform: uppercase;
-    font-weight: 400;
-    letter-spacing: 0.02em;
-  }
-  [data-charte='affiche'] .border,
-  [data-charte='affiche'] .border-b,
-  [data-charte='affiche'] .border-t {
-    border-width: var(--border-width);
+    font-variant-numeric: tabular-nums;
   }
   :focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 2px;
+    transition: outline-offset var(--duration-fast) var(--ease-out);
   }
   ::placeholder {
     color: var(--muted-foreground);
@@ -122,18 +133,36 @@
   animation-delay: calc(var(--i, 0) * 40ms);
 }
 
+/* Entrées courtes (ticket 1649) : panneau latéral desktop et voile du sheet ; coupées par prefers-reduced-motion. */
+@keyframes panel-in {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.panel-in {
+  animation: panel-in var(--duration-base, 200ms) var(--ease-out) both;
+}
+.fade-in {
+  animation: fade-in var(--duration-base, 200ms) var(--ease-out) both;
+}
+
 /* Verre (ticket 1624) : couches flottantes (nav, sheet, boutons de carte, toasts). Fond `surface-glass` à
-   l'opacité `--glass-opacity` + `--glass-blur` (`none` ou `blur(…)`) selon la charte. Classique : 100 % /
-   none = surface pleine, aucun changement visible. Repli opaque sans backdrop-filter ou si l'utilisateur
+   l'opacité `--glass-opacity` + `--glass-blur` (`none` ou `blur(…)`) selon la charte. Charte Singletrack (ticket 1645) :
+   72 % (sombre 70 %) + saturate(180%) blur(20px) ; jamais sur les cartes de contenu. Repli opaque sans backdrop-filter ou si l'utilisateur
    demande moins de transparence. */
 @utility glass {
   background-color: var(--surface-glass);
   @supports (backdrop-filter: blur(1px)) {
     background-color: color-mix(in srgb, var(--surface-glass) var(--glass-opacity), transparent);
+    -webkit-backdrop-filter: var(--glass-blur);
     backdrop-filter: var(--glass-blur);
   }
   @media (prefers-reduced-transparency: reduce) {
     background-color: var(--surface-glass);
+    -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
 }
@@ -143,12 +172,30 @@
 @supports (backdrop-filter: blur(1px)) {
   .map-touch .maplibregl-ctrl-group {
     background-color: color-mix(in srgb, var(--surface-glass) var(--glass-opacity), transparent);
+    -webkit-backdrop-filter: var(--glass-blur);
     backdrop-filter: var(--glass-blur);
   }
 }
 @media (prefers-reduced-transparency: reduce) {
   .map-touch .maplibregl-ctrl-group {
     background-color: var(--surface-glass);
+    -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
+}
+
+/* États d'interaction (ticket 1645) : appui = léger enfoncement en ressort (`press`), jamais au seul survol. */
+@utility press {
+  transition-property: transform, background-color, color, border-color, opacity, box-shadow;
+  transition-duration: var(--duration-fast);
+  transition-timing-function: var(--ease-spring);
+  &:active:not(:disabled, [aria-disabled='true']) {
+    transform: scale(0.97);
+  }
+}
+
+/* Rayon concentrique (ticket 1645) : élément imbriqué = rayon du parent − sa marge intérieure.
+   `--radius-outer` (défaut rounded-2xl) et `--inset` (défaut 4 px) se règlent sur le parent ou l'élément. */
+@utility concentric {
+  border-radius: max(var(--radius-sm), calc(var(--radius-outer, var(--radius-2xl)) - var(--inset, 4px)));
 }

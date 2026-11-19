@@ -34,7 +34,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
           outing={{ title: o.title, startsAt: o.startsAt, level: o.level, ebike: o.ebike, meetingLabel: o.meetingLabel, meetingLat: o.lat, meetingLon: o.lon, description: o.description, visibility: o.visibility }}
           track={o.track}
           topLink={
-            <BackToMap className="flex min-h-touch items-center gap-2 text-body font-semibold text-primary underline-offset-4 hover:underline active:opacity-70">
+            <BackToMap className="flex min-h-touch items-center gap-2 text-body font-medium text-primary underline-offset-4 hover:underline active:opacity-70">
               <ArrowLeft aria-hidden className="size-5" /> {t('back')}
             </BackToMap>
           }

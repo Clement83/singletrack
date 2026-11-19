@@ -157,13 +157,13 @@ function PageView({ role, outing: o, snap, end, topLink, headerAction, headerMen
         <p className="text-heading tabular-nums">{formatOutingDate(o.startsAt, locale)}</p>
         {notices}
         {o.description && <OrganizerWord name={organizerName ?? o.title} text={o.description} />}
-        <section aria-label={tg('meetingRegion')} className="flex items-center justify-between gap-2">
+        <section aria-label={tg('meetingRegion')} className="flex items-center justify-between gap-2 border-t border-border pt-3">
           <p className="min-w-0 text-body">{tg('meeting', { place: o.meetingLabel ?? t('meetingFallback') })}</p>
           <Button asChild variant="outline">
             <a href={directionsUrl(o.meetingLat, o.meetingLon)} target="_blank" rel="noopener noreferrer"><Navigation aria-hidden /> {tg('directions')}</a>
           </Button>
         </section>
-        <p className="flex flex-wrap items-baseline gap-x-2 text-stat tabular-nums">
+        <p className="flex flex-wrap items-baseline gap-x-2 border-t border-border pt-3 text-stat tabular-nums">
           {snap && <span>{formatKm(snap.distanceM / 1000, locale)}</span>}
           {snap?.elevationGainM != null && <><span aria-hidden className="text-muted-foreground">·</span><span>{formatElevation(snap.elevationGainM, locale)}</span></>}
           <span aria-hidden className="text-muted-foreground">·</span>

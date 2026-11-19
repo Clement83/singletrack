@@ -4,11 +4,11 @@ import { cn } from '@/lib/utils';
 import { DIFFICULTY, FIRE, RSVP, type Difficulty, type FireLevel, type Rsvp } from '@/lib/design/scales';
 
 const badgeVariants = cva(
-  'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-small font-medium max-w-full text-left [&_svg]:size-4 [&_svg]:shrink-0',
+  'inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-small font-medium tabular-nums max-w-full text-left [&_svg]:size-3.5 [&_svg]:shrink-0',
   {
     variants: {
       variant: {
-        neutral: 'bg-muted text-foreground',
+        neutral: 'bg-muted text-foreground ring-1 ring-inset ring-border/60',
         outline: 'border border-border bg-card text-foreground',
         primary: 'bg-accent text-accent-foreground',
         success: 'bg-success-soft text-success',
@@ -29,7 +29,7 @@ export function Badge({ className, variant, ...props }: BadgeProps) {
 
 /** Pastille de couleur d'échelle. Jamais seule : toujours dans un badge avec libellé. */
 function Dot({ className }: { className: string }) {
-  return <span aria-hidden className={cn('size-2.5 shrink-0 rounded-full', className)} />;
+  return <span aria-hidden className={cn('size-2 shrink-0 rounded-full', className)} />;
 }
 
 export function DifficultyBadge({ level, className }: { level: Difficulty; className?: string }) {

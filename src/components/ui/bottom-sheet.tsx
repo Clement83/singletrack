@@ -44,7 +44,7 @@ export function BottomSheet({ open, onOpenChange, title, description, children, 
       <aside
         aria-label={title}
         onKeyDown={(e) => e.key === 'Escape' && onOpenChange(false)}
-        className="fixed inset-y-3 left-[calc(var(--spacing-rail)+12px)] z-40 flex w-panel flex-col overflow-hidden rounded-3xl border border-border glass text-card-foreground shadow-md"
+        className="panel-in fixed inset-y-3 left-[calc(var(--spacing-rail)+12px)] z-40 flex w-panel flex-col overflow-hidden rounded-2xl border border-border glass text-card-foreground shadow-md"
       >
         <header className="flex items-start gap-2 p-4 pb-2">
           <div className="min-w-0 flex-1 pt-2">
@@ -75,14 +75,14 @@ export function BottomSheet({ open, onOpenChange, title, description, children, 
       modal={modal}
     >
       <Drawer.Portal>
-        {modal && <Drawer.Overlay className="fixed inset-0 z-40 bg-foreground/40" />}
+        {modal && <Drawer.Overlay className="fade-in fixed inset-0 z-40 bg-foreground/40" />}
         <Drawer.Content
           onInteractOutside={(e) => {
             // Le pied d'action est hors du Content (portail à part) : le toucher ne doit pas
             // être pris pour un clic « à l'extérieur » qui fermerait le sheet avant le clic (#1447).
             if ((e.target as Element | null)?.closest?.('[data-sheet-footer]')) e.preventDefault();
           }}
-          className="fixed inset-x-0 bottom-0 z-40 flex h-full max-h-[96dvh] flex-col rounded-t-3xl border border-b-0 border-border glass text-card-foreground shadow-sheet outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="fixed inset-x-0 bottom-0 z-40 flex h-full max-h-[96dvh] flex-col rounded-t-2xl border border-b-0 border-border glass text-card-foreground shadow-sheet outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Drawer.Handle className="mt-2 !bg-muted" />
           <header className="flex items-start gap-1 px-4">

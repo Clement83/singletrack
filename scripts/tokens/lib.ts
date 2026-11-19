@@ -31,6 +31,8 @@ export type Tokens = {
   surface: ValueToken[];
   size: ValueToken[];
   motion: ValueToken[];
+  /** Courbes d'animation (#1645) : `--ease-<nom>` dans @theme (classes `ease-out`, `ease-spring`…). */
+  easing?: ValueToken[];
   map: ValueToken[];
 };
 
@@ -188,7 +190,9 @@ export function generateCss(tokens: Tokens): string {
   out.push('  --radius-*: initial;');
   for (const r of tokens.radius) out.push(`  --radius-${r.name}: ${resolveValue(tokens, r, tokens.themes[0].id, tokens.chartes[0].id)};`);
   for (const s of tokens.size) out.push(`  --spacing-${s.name}: ${s.value};`);
+  for (const e of tokens.easing ?? []) out.push(`  --ease-${e.name}: ${e.value};`);
   out.push('  --default-transition-duration: var(--duration-fast);');
+  if (tokens.easing?.some((e) => e.name === 'out')) out.push('  --default-transition-timing-function: var(--ease-out);');
   out.push('}', '');
   return out.join('\n');
 }

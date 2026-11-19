@@ -63,7 +63,7 @@ describe('export KML', () => {
     expect(parseKmlFile(kml).tracks[0].geometry.type).toBe('MultiLineString');
   });
   it('couleur de ligne lue sur le token primary (aabbggrr)', () => {
-    expect(toKml({ name: 'x', geometry })).toContain('<color>ff5c3a2a</color>');
+    expect(toKml({ name: 'x', geometry })).toContain('<color>ffe5464f</color>');
   });
 });
 

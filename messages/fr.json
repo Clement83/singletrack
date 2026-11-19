@@ -653,6 +653,11 @@
     }
   },
   "errors": {
+    "pageError": "Quelque chose a coincé",
+    "retry": "Réessayer",
+    "pageNotFound": "Page introuvable",
+    "pageNotFoundBody": "Cette page n’existe pas ou n’est plus visible.",
+    "backToMap": "Retour à la carte",
     "unknown": "Ça n’a pas marché, réessaie.",
     "full": "Désolé, la sortie est complète.",
     "closed": "Cette sortie n’accepte plus de réponses.",

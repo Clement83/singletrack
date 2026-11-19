@@ -383,20 +383,20 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
 
       {/* Barre flottante : recherche + filtres. Décalée à droite du panneau en desktop. */}
       <div className={cn('absolute top-3 right-16 left-16 z-10 flex gap-2 lg:left-3', desktop && sheetOpen && 'left-[calc(var(--spacing-panel)+36px)]')}>
-        <div className="relative flex-1">
+        <div className="relative flex-1 rounded-full border border-border glass shadow-md">
           <Search aria-hidden className="pointer-events-none absolute top-1/2 left-3.5 size-5 -translate-y-1/2 text-muted-foreground" />
-          <Input type="search" aria-label={t('search')} placeholder={t('search')} value={q} onChange={(e) => setDraft(e.target.value)} className="rounded-full pl-11 shadow-md" />
+          <Input type="search" aria-label={t('search')} placeholder={t('search')} value={q} onChange={(e) => setDraft(e.target.value)} className="rounded-full border-transparent bg-transparent pl-11" />
         </div>
-        <Button variant="outline" size="icon" aria-label={nFilters ? t('filtersActive', { n: nFilters }) : t('filters')} onClick={() => setPanel({ kind: 'filters' })} className="relative shadow-md">
+        <Button variant="glass" size="icon" aria-label={nFilters ? t('filtersActive', { n: nFilters }) : t('filters')} onClick={() => setPanel({ kind: 'filters' })} className="relative">
           <SlidersHorizontal />
-          {nFilters > 0 && <span className="absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full bg-primary text-caption text-primary-foreground">{nFilters}</span>}
+          {nFilters > 0 && <span className="absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full bg-primary text-caption font-semibold text-primary-foreground tabular-nums ring-2 ring-background">{nFilters}</span>}
         </Button>
         {signedIn && (
           <>
-            <Button asChild variant="outline" size="icon" className="shadow-md">
+            <Button asChild variant="glass" size="icon">
               <Link href="/importer" aria-label={t('import')}><Upload /></Link>
             </Button>
-            <Button asChild variant="outline" size="icon" className="shadow-md">
+            <Button asChild variant="glass" size="icon">
               <Link href={newHref} aria-label={t('create')}><PencilRuler /></Link>
             </Button>
           </>
@@ -407,11 +407,11 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
       <div className={cn('absolute top-[4.5rem] left-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-col items-start gap-2', desktop && sheetOpen && 'left-[calc(var(--spacing-panel)+36px)]')}>
         <div className="flex flex-wrap gap-2">
           {signedIn && (
-            <Button variant={mine ? 'primary' : 'outline'} aria-pressed={mine} onClick={() => apply({ ...filters, mine: mine ? undefined : true })} className="shadow-md">
+            <Button variant={mine ? 'primary' : 'glass'} aria-pressed={mine} onClick={() => apply({ ...filters, mine: mine ? undefined : true })} className={mine ? 'shadow-md' : undefined}>
               <UserRound aria-hidden /> {t('mine')}
             </Button>
           )}
-          <Button variant={outingsOn ? 'primary' : 'outline'} aria-pressed={outingsOn} onClick={() => setOutingsOn(!outingsOn)} className="shadow-md">
+          <Button variant={outingsOn ? 'primary' : 'glass'} aria-pressed={outingsOn} onClick={() => setOutingsOn(!outingsOn)} className={outingsOn ? 'shadow-md' : undefined}>
             <CalendarDays aria-hidden /> {tOut('toggle')}
           </Button>
         </div>
@@ -423,7 +423,7 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
       {openLine && desktop && <SlopeLegend className="bottom-8 left-[calc(var(--spacing-panel)+36px)]" />}
 
       {!sheetOpen && (
-        <Button onClick={() => setPanel({ kind: 'list' })} className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-full px-6 shadow-md">
+        <Button variant="glass" onClick={() => setPanel({ kind: 'list' })} className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-full px-6 tabular-nums">
           <List />
           {tracks === null ? t('loading') : t('count', { n: visible.length })}
         </Button>
@@ -508,7 +508,7 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
               </EmptyState>
             )}
             {visible.map((tr) => (
-              <div key={tr.slug} data-slug={tr.slug} {...listHover(tr.slug)} className={cn('rounded-2xl', hl === tr.slug && 'ring-2 ring-ring')}>
+              <div key={tr.slug} data-slug={tr.slug} {...listHover(tr.slug)} className={cn('rounded-xl transition-shadow', hl === tr.slug && 'ring-2 ring-ring')}>
                 <TrackCard onSelect={() => openTrack(tr.slug, { kind: 'list' })} title={tr.name} draft={tr.status === 'draft'} visibility={tr.visibility} distanceKm={tr.distanceKm} elevationM={tr.gainM} difficulty={tr.difficulty ?? undefined} loop={tr.loop} source={tTrack(`sources.${tr.source}`)} />
               </div>
             ))}

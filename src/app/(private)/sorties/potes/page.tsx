@@ -28,7 +28,7 @@ export default async function Page() {
     <>
       <main className="mx-auto flex w-full max-w-2xl flex-col gap-5 px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] lg:pt-16 pb-[calc(var(--spacing-nav)+2rem+env(safe-area-inset-bottom))] lg:pl-[calc(var(--spacing-rail)+1rem)]">
         <PageHeader title={t('title')} />
-        <Link href="/sorties" className="flex min-h-touch items-center gap-2 text-body font-semibold text-primary underline-offset-4 hover:underline active:opacity-70">
+        <Link href="/sorties" className="flex min-h-touch items-center gap-2 text-body font-medium text-primary underline-offset-4 hover:underline active:opacity-70">
           <ArrowLeft aria-hidden className="size-5" /> {t('back')}
         </Link>
         <ContactBook contacts={listContacts(db, user.id).map(entry)} archived={listContacts(db, user.id, { archived: true }).map(entry)} friends={listFriends(db, user.id).friends.map(({ userId, name, remote }) => ({ userId, remoteActorId: remote?.actorId ?? null, name, domain: remote?.domain ?? null }))} />

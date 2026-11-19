@@ -8,8 +8,8 @@ export function AuthShell({ subtitle, children }: { subtitle: string; children: 
   return (
     <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-6 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
       <div>
-        <h1 className="text-title">{t('appName')}</h1>
-        <p className="text-muted-foreground">{subtitle}</p>
+        <h1 className="text-display">{t('appName')}</h1>
+        <p className="mt-1 text-body text-muted-foreground text-pretty">{subtitle}</p>
       </div>
       {children}
       <a
@@ -27,7 +27,7 @@ export function AuthShell({ subtitle, children }: { subtitle: string; children: 
 /** Lien secondaire sous un formulaire d'auth (zone tactile ≥ 44 px). */
 export function AuthLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <Link href={href} className="inline-flex min-h-touch items-center font-semibold text-primary underline-offset-4 hover:underline active:opacity-70">
+    <Link href={href} className="inline-flex min-h-touch items-center font-medium text-primary underline-offset-4 hover:underline active:opacity-70">
       {children}
     </Link>
   );

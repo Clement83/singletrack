@@ -63,7 +63,7 @@ export function GuestAnswerBar({ token, status }: { token: string; status: Statu
 
   if (!choosing && status !== 'pending') {
     return (
-      <button type="button" data-bar-action="answered" onClick={() => setChoosing(true)} className="flex min-h-[52px] w-full min-w-0 items-center justify-center gap-2 rounded-xl bg-accent px-4 font-semibold text-accent-foreground transition-colors active:opacity-80">
+      <button type="button" data-bar-action="answered" onClick={() => setChoosing(true)} className="flex min-h-[52px] w-full min-w-0 items-center justify-center gap-2 rounded-2xl bg-accent px-4 font-medium text-accent-foreground transition-colors active:opacity-80">
         <Check aria-hidden className="size-5 shrink-0" />
         <span className="truncate">{t(`answered.${status}`)} · {t('change')}</span>
       </button>
@@ -104,7 +104,7 @@ export function GuestProfile({ token, name, comment, locked }: { token: string; 
   if (locked) return null;
   return (
     <details className="rounded-2xl border border-border bg-card p-4">
-      <summary className="flex min-h-touch cursor-pointer items-center font-semibold">{t('nameAndWord')}</summary>
+      <summary className="flex min-h-touch cursor-pointer items-center font-medium">{t('nameAndWord')}</summary>
       <form className="mt-3 flex flex-col gap-3" onSubmit={(e) => { e.preventDefault(); void send({ name: n, comment: c }, t('saved')); }}>
         <Field label={t('myName')}>{(p) => <Input {...p} value={n} onChange={(e) => setN(e.target.value)} maxLength={60} required />}</Field>
         <Field label={t('word')}>{(p) => <Input {...p} value={c} onChange={(e) => setC(e.target.value)} maxLength={300} placeholder={t('wordPlaceholder')} />}</Field>

@@ -53,11 +53,11 @@ export function useTrackSheet(slug: string | null) {
 
 function Stat({ icon: Icon, label, value }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string }) {
   return (
-    <div className="flex min-w-0 items-center gap-2 rounded-2xl bg-muted p-2.5">
-      <Icon aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+    <div className="flex min-w-0 items-center gap-2.5 rounded-xl border border-border bg-card p-2.5">
+      <Icon aria-hidden className="size-[18px] shrink-0 stroke-[1.75] text-muted-foreground" />
       <div className="min-w-0">
-        <dt className="truncate text-caption text-muted-foreground">{label}</dt>
-        <dd className="text-body font-semibold tabular-nums">{value}</dd>
+        <dt className="truncate text-label text-muted-foreground uppercase">{label}</dt>
+        <dd className="text-stat">{value}</dd>
       </div>
     </div>
   );
@@ -88,7 +88,7 @@ function SourceInfo({ sheet }: { sheet: PanelSheet }) {
         <HelpCircle aria-hidden />
       </Button>
       {open && (
-        <div id={id} role="note" className="absolute top-full right-0 z-10 w-72 max-w-[calc(100vw-2rem)] rounded-2xl border border-border bg-card p-4 text-small text-card-foreground shadow-md">
+        <div id={id} role="note" className="absolute top-full right-0 z-10 w-72 max-w-[calc(100vw-2rem)] rounded-xl border border-border glass p-4 text-small text-card-foreground shadow-md">
           <p className="font-semibold">{t('source', { source: t(`sources.${sheet.source}`) })}</p>
           {(sheet.author || sheet.license) && (
             <p className="mt-1 text-muted-foreground">
@@ -154,13 +154,13 @@ export function TrackPanelBody({ sheet, loading, error, backLabel, onBack }: { s
           {sheet.description && <p className="text-body break-words whitespace-pre-line">{sheet.description}</p>}
           {sheet.outings.length > 0 && (
             <section aria-label={t('outingsRegion')} className="flex flex-col gap-2">
-              <h3 className="text-heading">{t('outingsOn')}</h3>
+              <h3 className="text-label text-muted-foreground uppercase">{t('outingsOn')}</h3>
               <ul className="flex flex-col gap-2">
                 {sheet.outings.map((o) => (
                   <li key={o.slug}>
-                    <Link href={`/s/${o.slug}`} className="flex min-h-touch items-center justify-between gap-2 rounded-2xl border border-border bg-card px-4 py-2 transition-colors duration-150 hover:bg-accent/40 active:bg-accent/60">
+                    <Link href={`/s/${o.slug}`} className="flex min-h-touch items-center justify-between gap-2 rounded-xl border border-border bg-card px-4 py-2 transition-colors duration-150 hover:bg-accent/40 active:bg-accent/60">
                       <span className="min-w-0 truncate font-semibold">{o.title}</span>
-                      <span className="shrink-0 text-small text-muted-foreground">{formatOutingDate(new Date(o.startsAt), locale)}</span>
+                      <span className="shrink-0 text-small text-muted-foreground tabular-nums">{formatOutingDate(new Date(o.startsAt), locale)}</span>
                     </Link>
                   </li>
                 ))}
@@ -279,7 +279,7 @@ export function OpenTrackLayers({ sheet, colors, mapRef, marked, beforeId }: { s
       <SlopeRouteLayer id="open" data={data} colors={colors} beforeId={beforeId} />
       <KmMarkers geometry={sheet.geometry} />
       <Marker longitude={sheet.end[0]} latitude={sheet.end[1]} anchor="bottom">
-        <span className={cn('flex size-9 items-center justify-center rounded-full bg-foreground text-background shadow-md')} role="img" aria-label={t('end')}><Flag className="size-5" /></span>
+        <span className={cn('flex size-9 items-center justify-center rounded-full border-2 border-card bg-foreground text-background shadow-md')} role="img" aria-label={t('end')}><Flag className="size-5" /></span>
       </Marker>
       {point && <ProfileCursorMarker mapRef={mapRef} lon={point.lon} lat={point.lat} />}
     </>
