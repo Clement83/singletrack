@@ -4,7 +4,7 @@ import { updateContact } from '@/lib/outings';
 
 export const dynamic = 'force-dynamic';
 
-/** Privé. `{ name?, note?, archived? }` : renommer, annoter, archiver / restaurer (l'historique est conservé). */
+/** Private. `{ name?, note?, archived? }`: rename, annotate, archive / restore (the history is kept). */
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   let user;
   try { user = await assertUser(); } catch (e) { return unauthorized(e); }

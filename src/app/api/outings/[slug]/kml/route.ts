@@ -5,7 +5,7 @@ import { kmlResponse } from '@/lib/outings/export';
 
 export const dynamic = 'force-dynamic';
 
-/** Privé, organisateur seulement (#1351) : KML de la trace figée dans la sortie. */
+/** Private, organiser only (#1351): KML of the track frozen in the outing. */
 export async function GET(_req: Request, { params }: { params: Promise<{ slug: string }> }) {
   let user;
   try {

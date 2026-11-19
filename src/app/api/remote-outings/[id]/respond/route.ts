@@ -5,7 +5,7 @@ import { rateLimit } from '@/lib/outings/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
-/** Privé (#1476). `{ answer: 'yes' | 'maybe' | 'no' }` : ma réponse à une sortie d'un autre serveur ; l'organisateur confirme ensuite (Accept / Reject). */
+/** Private (#1476). `{ answer: 'yes' | 'maybe' | 'no' }`: my answer to an outing from another server; the organiser then confirms (Accept / Reject). */
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   let user;
   try { user = await assertUser(); } catch (e) { return unauthorized(e); }

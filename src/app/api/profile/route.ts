@@ -4,7 +4,7 @@ import { getDefaultOutingVisibility, getVisibility, setDefaultOutingVisibility, 
 
 export const dynamic = 'force-dynamic';
 
-/** Privé. Réglage de visibilité de mon profil (#1433) : `PUT {visibility?: 'private' | 'public', outingVisibility?: 'public' | 'friends' | 'invite'}` (#1442). */
+/** Private. Visibility setting of my profile (#1433): `PUT {visibility?: 'private' | 'public', outingVisibility?: 'public' | 'friends' | 'invite'}` (#1442). */
 export async function GET() {
   let user;
   try { user = await assertUser(); } catch (e) { return unauthorized(e); }
@@ -18,7 +18,7 @@ export async function PUT(req: Request) {
   const body = (await req.json().catch(() => null)) as { visibility?: unknown; outingVisibility?: unknown; drawnTrackVisibility?: unknown; importedTrackVisibility?: unknown; charte?: unknown } | null;
   if (!body || (body.visibility === undefined && body.outingVisibility === undefined && body.drawnTrackVisibility === undefined && body.importedTrackVisibility === undefined && body.charte === undefined)) return Response.json({ error: 'invalid' }, { status: 400 });
   const db = getDb().db;
-  // Valider les deux avant d'écrire : pas de demi-enregistrement.
+  // Validate both before writing: no half-save.
   if (body.charte !== undefined && !isCharte(body.charte)) return Response.json({ error: 'charteInvalid' }, { status: 422 });
   const bad = (body.visibility !== undefined && body.visibility !== 'private' && body.visibility !== 'public')
     || (body.outingVisibility !== undefined && !isOutingVisibility(body.outingVisibility))

@@ -4,7 +4,7 @@ import { getInvitationLink, revokeInvitation } from '@/lib/outings';
 
 export const dynamic = 'force-dynamic';
 
-/** Privé. `{ action: 'revoke' }`. Jamais de régénération (#1456). */
+/** Private. `{ action: 'revoke' }`. Never regenerated (#1456). */
 export async function PATCH(req: Request, { params }: { params: Promise<{ slug: string; id: string }> }) {
   let user;
   try {
@@ -22,7 +22,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ slug: 
   return Response.json({ error: 'unknownAction' }, { status: 400 });
 }
 
-/** Privé. `GET` : lien perso déchiffré `{ path: '/i/<token>' }` (#1456) ; 410 `linkUnavailable` pour un lien créé avant le chiffrement. */
+/** Private. `GET`: decrypted personal link `{ path: '/i/<token>' }` (#1456); 410 `linkUnavailable` for a link created before encryption. */
 export async function GET(_req: Request, { params }: { params: Promise<{ slug: string; id: string }> }) {
   let user;
   try {

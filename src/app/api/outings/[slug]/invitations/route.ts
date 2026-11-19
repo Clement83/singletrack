@@ -4,7 +4,7 @@ import { createInvitation } from '@/lib/outings';
 
 export const dynamic = 'force-dynamic';
 
-/** Privé. Crée une invitation nominative ; le token (donc le lien) n'est renvoyé que cette fois. */
+/** Private. Creates a named invitation; the token (hence the link) is only returned this once. */
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   let user;
   try {

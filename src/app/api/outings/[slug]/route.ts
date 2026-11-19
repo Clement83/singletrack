@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 type Body = OutingInput & { action?: 'update' | 'cancel' | 'done' | 'restore' | 'refresh' | 'regenerate-slug' | 'open-link' | 'make-public'; enabled?: boolean };
 
-/** Privé, réservé à l'organisateur (404 pour tout autre, sans distinguer « inconnue » de « pas à toi »). */
+/** Private, organiser only (404 for anyone else, without telling "unknown" from "not yours"). */
 export async function PATCH(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   let user;
   try {

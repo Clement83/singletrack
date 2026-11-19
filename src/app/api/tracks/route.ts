@@ -8,21 +8,21 @@ import { createEditedTrack, parseFilters, queryTracks, type EditorInput } from '
 export const dynamic = 'force-dynamic';
 
 /**
- * `GET /api/tracks?starts=1` est lisible **sans session** (#1589, traces publiques seulement) ; le reste est privé (connecté) : `GET /api/tracks?bbox=minLon,minLat,maxLon,maxLat&q=&minKm=&maxKm=&minGain=&maxGain=
- * &difficulty=green,blue&shape=loop|oneway&near=20&mine=1&access=today|tomorrow&overview=1|starts=1`. Géométrie simplifiée ; plafonnée (les plus proches du centre
- * de `bbox` d'abord), `total` = nombre avant plafond (#1428).
+ * `GET /api/tracks?starts=1` is readable **without a session** (#1589, public tracks only); the rest is private (signed in): `GET /api/tracks?bbox=minLon,minLat,maxLon,maxLat&q=&minKm=&maxKm=&minGain=&maxGain=
+ * &difficulty=green,blue&shape=loop|oneway&near=20&mine=1&access=today|tomorrow&overview=1|starts=1`. Simplified geometry; capped (the closest to the centre
+ * of `bbox` first), `total` = count before the cap (#1428).
  */
 export async function GET(req: Request) {
   const { user, rejected } = await readViewer(req);
   if (rejected) return rejected;
   const sp = new URL(req.url).searchParams;
-  // Sans session (#1589) : seulement les départs de la carte (`starts=1`), jamais « mes traces » ; le reste exige une session.
+  // Without a session (#1589): only the map's start points (`starts=1`), never "my tracks"; the rest requires a session.
   if (!user && (sp.get('starts') !== '1' || sp.get('mine') === '1')) return Response.json({ error: 'unauthorized' }, { status: 401 });
   const filters = parseFilters(sp);
-  // `overview=1` (zoom d'ensemble) : points de départ seulement, sans géométrie (#1428).
+  // `overview=1` (overview zoom): start points only, no geometry (#1428).
   const overview = sp.get('overview') === '1';
-  // `starts=1` (#1530) : départs légers (sans géométrie ni bbox) à tout zoom, plafond relevé ; la géométrie se
-  // charge ensuite à la demande par `/api/tracks/geometry?slugs=`.
+  // `starts=1` (#1530): light start points (no geometry or bbox) at any zoom, raised cap; the geometry
+  // then loads on demand through `/api/tracks/geometry?slugs=`.
   const starts = sp.get('starts') === '1';
   const today = parisDate(new Date());
   const openOn = filters.access ? (filters.access === 'today' ? today : addDays(today, 1)) : undefined;
@@ -35,8 +35,8 @@ export async function GET(req: Request) {
 }
 
 /**
- * Privé (éditeur, #1340). `POST /api/tracks` crée une trace (`{ name, description, geometry, waypoints, modes,
- * parentSlug? }`) : maison, ou copie modifiée si `parentSlug` est donné. Altitude manquante complétée par l'IGN.
+ * Private (editor, #1340). `POST /api/tracks` creates a track (`{ name, description, geometry, waypoints, modes,
+ * parentSlug? }`): home-made, or modified copy if `parentSlug` is given. Missing elevation filled by IGN.
  */
 export async function POST(req: Request) {
   let user;

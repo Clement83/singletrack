@@ -4,7 +4,7 @@ import { leaveOuting } from '@/lib/outings';
 
 export const dynamic = 'force-dynamic';
 
-/** Privé. `POST /api/outings/<id>/leave` (#1459) : quitter une sortie à venir (réponse « non », masquée pour soi). */
+/** Private. `POST /api/outings/<id>/leave` (#1459): leave an upcoming outing (answer "no", hidden for oneself). */
 export async function POST(_req: Request, { params }: { params: Promise<{ slug: string }> }) {
   let user;
   try {

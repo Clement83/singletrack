@@ -11,8 +11,8 @@ const FILE_ERRORS = new Set(['notGpxExt', 'tooBig', 'notGpx', 'doctype', 'noPoin
 export const dynamic = 'force-dynamic';
 
 /**
- * Privé. `POST /api/tracks/import` (multipart, champ `files`) : analyse sans rien enregistrer.
- * Renvoie une proposition par trace trouvée (stats, pré-remplissage, doublons éventuels).
+ * Private. `POST /api/tracks/import` (multipart, `files` field): analyses without saving anything.
+ * Returns one proposal per track found (stats, pre-filling, possible duplicates).
  */
 export async function POST(req: Request) {
   try {
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
         });
       }
     } catch (e) {
-      // Codes d'erreur traduits côté client (#1402) ; toute autre erreur (XML illisible…) → `unreadable`.
+      // Error codes translated on the client (#1402); any other error (unreadable XML…) → `unreadable`.
       const code = e instanceof Error && FILE_ERRORS.has(e.message) ? e.message : 'unreadable';
       errors.push({ file: f.name, error: code });
     }
@@ -57,7 +57,7 @@ export async function POST(req: Request) {
   return Response.json({ items, errors });
 }
 
-/** Privé. `PUT /api/tracks/import` (JSON `ImportInput`) : valide, complète l'altitude si absente, enregistre. */
+/** Private. `PUT /api/tracks/import` (JSON `ImportInput`): validates, fills the elevation if missing, saves. */
 export async function PUT(req: Request) {
   let user;
   try {
@@ -71,7 +71,7 @@ export async function PUT(req: Request) {
   if ('errors' in built) return Response.json({ errors: built.errors }, { status: 422 });
 
   const { db } = getDb();
-  // Toutes les altitudes viennent de l'IGN (#1515) ; l'altitude GPS du fichier ne sert que de repli.
+  // Every elevation comes from IGN (#1515); the file's GPS elevation is only a fallback.
   const geometry = await enrichElevation(built.track.geometry, { replace: true });
   const res = await upsertTrack(db, { ...built.track, geometry, createdBy: user.id, visibility: isTrackVisibility(input.visibility) ? input.visibility : getDefaultTrackVisibility(db, user.id, 'imported') }, { enrich: false });
   return Response.json({ slug: res.slug }, { status: 201 });

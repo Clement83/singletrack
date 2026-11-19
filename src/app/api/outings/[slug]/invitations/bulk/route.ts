@@ -4,8 +4,8 @@ import { inviteMany } from '@/lib/outings';
 
 export const dynamic = 'force-dynamic';
 
-/** Privé. `{ contactIds?: string[], newNames?: {name, addToBook?}[] }` : une invitation nominative par personne.
- *  Les tokens (donc les liens) ne sont renvoyés que cette fois. */
+/** Private. `{ contactIds?: string[], newNames?: {name, addToBook?}[] }`: one named invitation per person.
+ *  The tokens (hence the links) are only returned this once. */
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   let user;
   try { user = await assertUser(); } catch (e) { return unauthorized(e); }

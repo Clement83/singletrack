@@ -5,8 +5,8 @@ import { ownerDepart, type OwnerChoice } from '@/lib/outings';
 export const dynamic = 'force-dynamic';
 
 /**
- * Privé. `POST /api/outings/<slug>/depart {choice: 'delete' | 'public' | 'transfer', newOwnerId?}` (#1459) :
- * le propriétaire d'une privée quitte sa sortie. Les mails partent en arrière-plan.
+ * Private. `POST /api/outings/<slug>/depart {choice: 'delete' | 'public' | 'transfer', newOwnerId?}` (#1459):
+ * the owner of a private outing leaves it. Emails are sent in the background.
  */
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   let user;

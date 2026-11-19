@@ -6,9 +6,9 @@ import { OSM_ATTRIBUTION, OSM_LICENSE } from '@/lib/osm';
 export const dynamic = 'force-dynamic';
 
 /**
- * Privé (connecté) : calque des singles OSM (#1372).
- * `GET /api/tracks/segments?bbox=minLon,minLat,maxLon,maxLat&zoom=13` → FeatureCollection (difficulté, `mtb:scale`),
- * géométrie simplifiée selon le zoom, volume plafonné. Sous le zoom minimal : `status: "zoom_in"`, aucune donnée.
+ * Private (signed in): OSM singletrack layer (#1372).
+ * `GET /api/tracks/segments?bbox=minLon,minLat,maxLon,maxLat&zoom=13` → FeatureCollection (difficulty, `mtb:scale`),
+ * geometry simplified by zoom, capped volume. Below the minimum zoom: `status: "zoom_in"`, no data.
  */
 export async function GET(req: Request) {
   try {

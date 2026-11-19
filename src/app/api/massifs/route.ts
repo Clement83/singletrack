@@ -5,9 +5,9 @@ import { addDays, getDayRecord, getLevels, getMassifs, inSeason, isDateStr, mass
 export const dynamic = 'force-dynamic';
 
 /**
- * Privé (couche « Incendie » de la carte). `GET /api/massifs?date=YYYY-MM-DD` (défaut : aujourd'hui) :
- * GeoJSON des massifs avec `level` (1 vert … 5 noir, 0 = inconnu). `status` dit pourquoi un niveau manque.
- * Lecture en base uniquement : aucun appel à la préfecture depuis une requête.
+ * Private ("Fire" layer of the map). `GET /api/massifs?date=YYYY-MM-DD` (default: today):
+ * GeoJSON of the massifs with `level` (1 green … 5 black, 0 = unknown). `status` says why a level is missing.
+ * Database read only: no call to the prefecture from a request.
  */
 export async function GET(req: Request) {
   try {

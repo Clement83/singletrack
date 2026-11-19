@@ -4,14 +4,14 @@ import { blockActor, unblockActor } from '@/lib/federation/moderation';
 
 export const dynamic = 'force-dynamic';
 
-/** Privé (#1477). Bloque un compte d'un autre serveur : plus de demande de copain ni d'invitation de sa part. */
+/** Private (#1477). Blocks an account on another server: no more friend requests or invitations from it. */
 export async function POST(_req: Request, { params }: { params: Promise<{ actorId: string }> }) {
   let user;
   try { user = await assertUser(); } catch (e) { return unauthorized(e); }
   return blockActor(getDb().db, user.id, (await params).actorId) ? Response.json({ ok: true }) : Response.json({ error: 'not_found' }, { status: 404 });
 }
 
-/** Privé. Débloque un compte (ses demandes pourront de nouveau arriver). */
+/** Private. Unblocks an account (its requests may arrive again). */
 export async function DELETE(_req: Request, { params }: { params: Promise<{ actorId: string }> }) {
   let user;
   try { user = await assertUser(); } catch (e) { return unauthorized(e); }

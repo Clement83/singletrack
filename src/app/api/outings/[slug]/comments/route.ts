@@ -5,7 +5,7 @@ import { organizerContext } from '@/lib/outings';
 
 export const dynamic = 'force-dynamic';
 
-// Privé : propriétaire de la sortie seulement (404 sinon).
+// Private: owner of the outing only (404 otherwise).
 const resolve = async (_r: Request, p: Record<string, string>) => {
   const user = await assertUser();
   return organizerContext(getDb().db, user.id, p.slug);

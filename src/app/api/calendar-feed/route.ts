@@ -4,7 +4,7 @@ import { regenerateCalendarFeedToken } from '@/lib/outings';
 
 export const dynamic = 'force-dynamic';
 
-/** Privé (#1357) : nouveau jeton du flux agenda de l'organisateur ; l'ancien lien répond 404. */
+/** Private (#1357): new token for the organiser's calendar feed; the old link answers 404. */
 export async function POST() {
   let user;
   try {

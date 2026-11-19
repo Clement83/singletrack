@@ -5,7 +5,7 @@ import { icsResponse, publicOrigin, requestLocale } from '@/lib/outings/export';
 
 export const dynamic = 'force-dynamic';
 
-/** Privé, organisateur seulement (#1351) : la sortie en .ics, avec le lien de sa page organisateur. */
+/** Private, organiser only (#1351): the outing as .ics, with the link to its organiser page. */
 export async function GET(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   let user;
   try {

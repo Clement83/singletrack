@@ -5,7 +5,7 @@ import { rateLimit } from '@/lib/outings';
 
 export const dynamic = 'force-dynamic';
 
-// Rattachement de l'invité à son compte (#1434). Route sous /api/i (public pour le lien), mais le compte est exigé ici.
+// Attaching the guest to their account (#1434). Route under /api/i (public for the link), but an account is required here.
 export async function POST(_req: Request, { params }: { params: Promise<{ token: string }> }) {
   let user;
   try { user = await assertUser(); } catch (e) { return unauthorized(e); }

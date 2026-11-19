@@ -4,7 +4,7 @@ import { icsResponse, publicOrigin, requestLocale } from '@/lib/outings/export';
 
 export const dynamic = 'force-dynamic';
 
-/** Public (lien perso de l'invité, #1351) : la sortie en .ics. Le lien de l'événement ramène à la page de l'invité. */
+/** Public (guest's personal link, #1351): the outing as .ics. The event's link brings back to the guest's page. */
 export async function GET(req: Request, { params }: { params: Promise<{ token: string }> }) {
   const token = (await params).token;
   const found = getInvitationByToken(getDb().db, token);

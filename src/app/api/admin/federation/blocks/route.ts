@@ -5,8 +5,8 @@ import { blockDomain, importBlockList, unblockDomain } from '@/lib/federation/mo
 export const dynamic = 'force-dynamic';
 
 /**
- * Admin (#1477). `{ domain, reason? }` bloque un serveur ; `{ csv }` importe une liste partagée (format Mastodon, lignes `suspend`).
- * Bloquer retire aussitôt copains, sorties en cache et invitations venant de ce serveur.
+ * Admin (#1477). `{ domain, reason? }` blocks a server; `{ csv }` imports a shared list (Mastodon format, `suspend` lines).
+ * Blocking immediately removes friends, cached outings and invitations coming from that server.
  */
 export async function POST(req: Request) {
   try { await assertAdmin(); } catch (e) { return adminDenied(e); }
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
   return domain ? Response.json({ ok: true, domain }) : Response.json({ error: 'invalidDomain' }, { status: 422 });
 }
 
-/** Admin. `{ domain }` : débloque un serveur. */
+/** Admin. `{ domain }`: unblocks a server. */
 export async function DELETE(req: Request) {
   try { await assertAdmin(); } catch (e) { return adminDenied(e); }
   const body = (await req.json().catch(() => null)) as { domain?: unknown } | null;

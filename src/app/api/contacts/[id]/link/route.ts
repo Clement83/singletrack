@@ -4,7 +4,7 @@ import { linkContact } from '@/lib/friends';
 
 export const dynamic = 'force-dynamic';
 
-/** Privé. `{ userId: string | null }` ou `{ remoteActorId }` (copain d'un autre serveur, #1475) : lie le pote à un copain accepté (ou le délie avec `null`). */
+/** Private. `{ userId: string | null }` or `{ remoteActorId }` (friend on another server, #1475): links the buddy to an accepted friend (or unlinks with `null`). */
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   let user;
   try { user = await assertUser(); } catch (e) { return unauthorized(e); }

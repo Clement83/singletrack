@@ -9,9 +9,9 @@ import { getManagedOuting, parisToUtc } from '@/lib/outings';
 export const dynamic = 'force-dynamic';
 
 /**
- * Privé. `GET /api/outings/conditions?trace=<slug>|outing=<slug>&date=&time=&lat=&lon=` (#1407) :
- * verdict des conditions pendant qu'on organise une sortie (création ou modification). 422 tant que
- * date/heure/RDV ne sont pas valides ; une source manquante ne bloque jamais.
+ * Private. `GET /api/outings/conditions?trace=<slug>|outing=<slug>&date=&time=&lat=&lon=` (#1407):
+ * verdict of the conditions while organising an outing (creation or edit). 422 as long as
+ * date/time/meeting point are not valid; a missing source never blocks.
  */
 export async function GET(req: Request) {
   let user;

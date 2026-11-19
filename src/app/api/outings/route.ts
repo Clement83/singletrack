@@ -4,7 +4,7 @@ import { createOuting, type OutingInput } from '@/lib/outings';
 
 export const dynamic = 'force-dynamic';
 
-/** Privé. `POST /api/outings` : crée une sortie sur une trace (qui est figée dans la sortie). */
+/** Private. `POST /api/outings`: creates an outing on a track (which is frozen in the outing). */
 export async function POST(req: Request) {
   let user;
   try {

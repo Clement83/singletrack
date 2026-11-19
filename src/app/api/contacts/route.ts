@@ -8,7 +8,7 @@ const view = (c: ReturnType<typeof listContacts>[number]) => ({
   id: c.id, name: c.name, note: c.note, outings: c.outings, lastOutingAt: c.lastOutingAt?.toISOString() ?? null, linked: !!c.userId,
 });
 
-/** Privé. Carnet de potes de l'utilisateur (`?archived=1` pour les archivés). */
+/** Private. The user's buddy book (`?archived=1` for archived ones). */
 export async function GET(req: Request) {
   let user;
   try { user = await assertUser(); } catch (e) { return unauthorized(e); }
@@ -16,7 +16,7 @@ export async function GET(req: Request) {
   return Response.json({ contacts: listContacts(getDb().db, user.id, { archived }).map(view) });
 }
 
-/** Privé. `{ name, note? }` : ajoute un pote (un nom déjà présent est réutilisé, et désarchivé). */
+/** Private. `{ name, note? }`: adds a buddy (an existing name is reused, and un-archived). */
 export async function POST(req: Request) {
   let user;
   try { user = await assertUser(); } catch (e) { return unauthorized(e); }

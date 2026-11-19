@@ -4,7 +4,7 @@ import { archiveOuting } from '@/lib/outings';
 
 export const dynamic = 'force-dynamic';
 
-/** Privé. `POST /api/outings/<id>/archive {archived}` (#1459) : archiver / désarchiver pour soi seulement. */
+/** Private. `POST /api/outings/<id>/archive {archived}` (#1459): archive / un-archive for oneself only. */
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   let user;
   try {

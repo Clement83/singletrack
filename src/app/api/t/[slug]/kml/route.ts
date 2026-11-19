@@ -5,7 +5,7 @@ import { getVisibleTrack } from '@/lib/tracks';
 
 export const dynamic = 'force-dynamic';
 
-/** Public par slug : téléchargement du KML (attribution conservée dans le fichier). */
+/** Public by slug: KML download (attribution kept in the file). */
 export async function GET(_req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const user = await getCurrentUser().catch(() => null);

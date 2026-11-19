@@ -3,7 +3,7 @@ import { clientIp, joinOpen, rateLimit } from '@/lib/outings';
 
 export const dynamic = 'force-dynamic';
 
-/** Public. Lien ouvert d'une sortie (`[slug]` = jeton du lien ouvert) : crée l'invitation personnelle de la personne. */
+/** Public. Open link of an outing (`[slug]` = open-link token): creates the person's personal invitation. */
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   if (!rateLimit(`join:${clientIp(req)}`, 10, 60_000)) return Response.json({ error: 'tooManyRequests' }, { status: 429 });
   const body = (await req.json().catch(() => null)) as { name?: string } | null;

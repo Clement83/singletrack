@@ -1,6 +1,6 @@
 import { sqliteTable, text, integer, real, index, uniqueIndex, primaryKey, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
 
-/** Table de métadonnées clé/valeur (version du schéma, dates de synchro...). */
+/** Key/value metadata table (schema version, sync dates...). */
 export const meta = sqliteTable('meta', {
   key: text('key').primaryKey(),
   value: text('value').notNull(),
@@ -9,41 +9,41 @@ export const meta = sqliteTable('meta', {
     .$defaultFn(() => new Date()),
 });
 
-// Tables Better Auth (#1344) : utilisateurs connectés, sessions, comptes (mot de passe hashé), vérifications.
+// Better Auth tables (#1344): signed-in users, sessions, accounts (hashed password), verifications.
 export const user = sqliteTable('user', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   email: text('email').notNull().unique(),
   emailVerified: integer('email_verified', { mode: 'boolean' }).notNull().default(false),
   image: text('image'),
-  /** Langue choisie (`fr` | `en`, #1400) : langue des mails envoyés à cette personne. NULL = jamais choisie (mails en français). */
+  /** Chosen language (`fr` | `en`, #1400): language of the emails sent to this person. NULL = never chosen (emails in French). */
   locale: text('locale'),
-  /** Profil (#1433) : `private` (défaut, visible des copains) | `public` (visible de tout connecté). */
+  /** Profile (#1433): `private` (default, visible to friends) | `public` (visible to any signed-in account). */
   profileVisibility: text('profile_visibility').notNull().default('private'),
-  /** Visibilité par défaut de mes nouvelles sorties (#1442) : `public` | `friends` | `invite`. */
-  // Défaut « copains » depuis #1455 (côté application : la base garde son DEFAULT 'invite' (SQLite ne le change qu'en reconstruisant la table user, évité) : toute insertion Drizzle fournit 'friends').
+  /** Default visibility of my new outings (#1442): `public` | `friends` | `invite`. */
+  // "Friends" default since #1455 (application side: the database keeps its DEFAULT 'invite' (SQLite only changes it by rebuilding the user table, avoided): every Drizzle insert provides 'friends').
   defaultOutingVisibility: text('default_outing_visibility').notNull().$defaultFn(() => 'friends'),
-  /** #1588 : visibilité préremplie des traces dessinées / importées. */
+  /** #1588: pre-filled visibility of drawn / imported tracks. */
   defaultDrawnTrackVisibility: text('default_drawn_track_visibility').notNull().default('public'),
   defaultImportedTrackVisibility: text('default_imported_track_visibility').notNull().default('private'),
-  /** Charte graphique du compte (#1625) : id d'une charte de design/tokens.json, `classique` par défaut. */
+  /** Visual charter of the account (#1625): id of a charter in design/tokens.json, `classique` by default. */
   charte: text('charte').notNull().default('classique'),
-  /** Identifiant fédéré (#1474) : `[a-z0-9_]{3,30}`, minuscules, unique. NULL tant que le prénom n'est pas saisi. */
+  /** Federated identifier (#1474): `[a-z0-9_]{3,30}`, lower case, unique. NULL until the first name is entered. */
   handle: text('handle'),
-  /** Date de l'unique modification du handle ; NULL = jamais modifié. */
+  /** Date of the single change of the handle; NULL = never changed. */
   handleChangedAt: integer('handle_changed_at', { mode: 'timestamp' }),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 }, (t) => [uniqueIndex('user_handle_unique').on(t.handle)]);
 
-/** Anciens handles (#1474) : jamais réattribués à un autre compte. */
+/** Old handles (#1474): never given to another account. */
 export const handleHistory = sqliteTable('handle_history', {
   handle: text('handle').primaryKey(),
   userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
   retiredAt: integer('retired_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 });
 
-/** Paire de clés de signature HTTP d'un compte (#1474) ; la clé privée est chiffrée (AES-256-GCM, FEDERATION_KEY_ENC). */
+/** HTTP signature key pair of an account (#1474); the private key is encrypted (AES-256-GCM, FEDERATION_KEY_ENC). */
 export const actorKey = sqliteTable('actor_key', {
   userId: text('user_id').primaryKey().references(() => user.id, { onDelete: 'cascade' }),
   publicPem: text('public_pem').notNull(),
@@ -51,7 +51,7 @@ export const actorKey = sqliteTable('actor_key', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 });
 
-/** Cache des comptes distants (#1474). Jamais d'email. */
+/** Cache of remote accounts (#1474). Never an email. */
 export const remoteActor = sqliteTable('remote_actor', {
   id: text('id').primaryKey(),
   actorUrl: text('actor_url').notNull().unique(),
@@ -100,8 +100,8 @@ export const verification = sqliteTable('verification', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 });
 
-// Traces VTT (#1345). Une trace peut venir d'une source externe ou être faite maison.
-/** Visibilité d'une trace (#1588) : `public` (tous, même sans session), `friends` (auteur + copains), `private` (auteur seul). */
+// Mountain-bike tracks (#1345). A track may come from an external source or be home-made.
+/** Visibility of a track (#1588): `public` (everyone, even without a session), `friends` (author + friends), `private` (author only). */
 export const TRACK_VISIBILITIES = ['public', 'friends', 'private'] as const;
 export const TRACK_SOURCES = ['utagawa', 'osm', 'geotrek', 'gpx', 'manual', 'edited', 'datatourisme'] as const;
 export const DIFFICULTIES = ['green', 'blue', 'red', 'black'] as const;
@@ -110,7 +110,7 @@ export const track = sqliteTable(
   'track',
   {
     id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
-    /** UUID v4 distinct de l'id : seul identifiant exposé dans `/t/[slug]`. */
+    /** UUID v4 distinct from the id: the only identifier exposed in `/t/[slug]`. */
     slug: text('slug').notNull().unique().$defaultFn(() => crypto.randomUUID()),
     source: text('source', { enum: TRACK_SOURCES }).notNull(),
     externalId: text('external_id'),
@@ -118,10 +118,10 @@ export const track = sqliteTable(
     name: text('name').notNull(),
     description: text('description'),
     author: text('author'),
-    /** Obligatoires à l'affichage (CC BY-NC, ODbL...). */
+    /** Required for display (CC BY-NC, ODbL...). */
     license: text('license'),
     attribution: text('attribution'),
-    /** GeoJSON LineString / MultiLineString sérialisé, coordonnées [lon, lat, ele?]. */
+    /** Serialised GeoJSON LineString / MultiLineString, coordinates [lon, lat, ele?]. */
     geometry: text('geometry', { mode: 'json' }).$type<import('@/lib/geo').TrackGeometry>().notNull(),
     bboxMinLon: real('bbox_min_lon').notNull(),
     bboxMinLat: real('bbox_min_lat').notNull(),
@@ -137,24 +137,24 @@ export const track = sqliteTable(
     difficulty: text('difficulty', { enum: DIFFICULTIES }),
     difficultyRaw: text('difficulty_raw'),
     loop: integer('loop', { mode: 'boolean' }).notNull().default(false),
-    /** Copie éditée (#1340) : trace d'origine. */
+    /** Edited copy (#1340): original track. */
     parentTrackId: text('parent_track_id').references((): AnySQLiteColumn => track.id, { onDelete: 'set null' }),
     createdBy: text('created_by').references(() => user.id, { onDelete: 'set null' }),
     importedAt: integer('imported_at', { mode: 'timestamp' }),
     sourceUpdatedAt: integer('source_updated_at', { mode: 'timestamp' }),
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
     updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-    /** JSON brut de la source, pour réimporter sans re-télécharger. */
+    /** Raw JSON of the source, to re-import without downloading again. */
     raw: text('raw', { mode: 'json' }),
-    /** Codes des massifs forestiers traversés (#1349) ; NULL = pas encore calculé. */
+    /** Codes of the crossed forest massifs (#1349); NULL = not computed yet. */
     massifs: text('massifs', { mode: 'json' }).$type<string[]>(),
-    /** `draft` (#1450) : visible de son seul auteur, jamais publique ni utilisable pour une sortie. */
+    /** `draft` (#1450): visible to its author only, never public nor usable for an outing. */
     status: text('status', { enum: ['draft', 'published'] }).notNull().default('published'),
-    /** #1588 : qui voit la trace. Les sources synchronisées (OSM, Geotrek) sont toujours `public`. */
+    /** #1588: who sees the track. Synced sources (OSM, Geotrek, DATAtourisme) are always `public`. */
     visibility: text('visibility', { enum: TRACK_VISIBILITIES }).notNull().default('public'),
   },
   (t) => [
-    // Upsert idempotent : un (source, external_id) n'existe qu'une fois (NULL autorisés en multiples : traces maison).
+    // Idempotent upsert: a (source, external_id) exists only once (multiple NULLs allowed: home-made tracks).
     uniqueIndex('track_source_external_uq').on(t.source, t.externalId),
     index('track_bbox_idx').on(t.bboxMinLon, t.bboxMaxLon, t.bboxMinLat, t.bboxMaxLat),
     index('track_parent_idx').on(t.parentTrackId),
@@ -164,10 +164,10 @@ export const track = sqliteTable(
 export type TrackRow = typeof track.$inferSelect;
 
 /**
- * Calque des singles OSM (#1372) : ways `highway=path|track` avec `mtb:scale`. Ce ne sont **pas** des traces
- * (segments sans début ni fin, des milliers) : table à part, jamais mélangée à `track`, servie par bbox.
- * Remplacée par zone (département) à chaque synchro (`npm run sync:singles`). Index spatial R-tree
- * `trail_segment_rtree` (migration `0013`, maintenu par triggers) pour la recherche par bbox à l'échelle de la France.
+ * OSM singletrack layer (#1372): `highway=path|track` ways with `mtb:scale`. These are **not** tracks
+ * (segments without start or end, by the thousands): separate table, never mixed with `track`, served by bbox.
+ * Replaced per area (department) on each sync (`npm run sync:singles`). R-tree spatial index
+ * `trail_segment_rtree` (migration `0013`, maintained by triggers) for bbox search at the scale of France.
  */
 export const trailSegment = sqliteTable(
   'trail_segment',
@@ -179,7 +179,7 @@ export const trailSegment = sqliteTable(
     /** Valeur brute `mtb:scale` (ex. « 2+ »). */
     mtbScale: text('mtb_scale').notNull(),
     difficulty: text('difficulty', { enum: DIFFICULTIES }),
-    /** GeoJSON LineString [lon, lat], simplifié à 2 m à l'import. */
+    /** GeoJSON LineString [lon, lat], simplified to 2 m at import. */
     geometry: text('geometry', { mode: 'json' }).$type<import('@/lib/geo').TrackGeometry>().notNull(),
     bboxMinLon: real('bbox_min_lon').notNull(),
     bboxMinLat: real('bbox_min_lat').notNull(),
@@ -187,7 +187,7 @@ export const trailSegment = sqliteTable(
     bboxMaxLat: real('bbox_max_lat').notNull(),
     lengthM: real('length_m').notNull(),
     syncedAt: integer('synced_at', { mode: 'timestamp' }).notNull(),
-    /** Zone de synchro (département INSEE, #1428) : une synchro remplace sa zone seulement. */
+    /** Sync area (INSEE department, #1428): a sync only replaces its own area. */
     zone: text('zone'),
   },
   (t) => [index('trail_segment_zone_idx').on(t.zone), index('trail_segment_bbox_idx').on(t.bboxMinLon, t.bboxMaxLon, t.bboxMinLat, t.bboxMaxLat)],
@@ -198,7 +198,7 @@ export type TrailSegmentRow = typeof trailSegment.$inferSelect;
 // Sorties et invitations nominatives (#1341).
 export const OUTING_LEVELS = ['balade', 'sportif', 'enduro'] as const;
 export const OUTING_EBIKE = ['yes', 'no', 'only'] as const;
-/** Visibilité d'une sortie (#1442) : tous les comptes connectés / mes copains / seulement les invités par lien. */
+/** Visibility of an outing (#1442): every signed-in account / my friends / link guests only. */
 export const OUTING_VISIBILITIES = ['public', 'friends', 'invite'] as const;
 export const OUTING_STATUS = ['planned', 'cancelled', 'done'] as const;
 export const INVITATION_STATUS = ['pending', 'yes', 'maybe', 'no'] as const;
@@ -207,14 +207,14 @@ export const outing = sqliteTable(
   'outing',
   {
     id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
-    /** UUID v4 : page organisateur `/s/[slug]` (connecté). Régénérable. */
+    /** UUID v4: organiser page `/s/[slug]` (signed in). Can be regenerated. */
     slug: text('slug').notNull().unique().$defaultFn(() => crypto.randomUUID()),
     trackId: text('track_id').references(() => track.id, { onDelete: 'set null' }),
-    /** Trace figée à la création : { name, geometry, stats, attribution... } (voir lib/outings/snapshot). */
+    /** Track frozen at creation: { name, geometry, stats, attribution... } (see lib/outings/snapshot). */
     trackSnapshot: text('track_snapshot', { mode: 'json' }).$type<import('@/lib/outings/snapshot').TrackSnapshot>().notNull(),
     title: text('title').notNull(),
     description: text('description'),
-    /** UTC en base, affiché en Europe/Paris. */
+    /** UTC in the database, shown in Europe/Paris. */
     startsAt: integer('starts_at', { mode: 'timestamp' }).notNull(),
     meetingLat: real('meeting_lat').notNull(),
     meetingLon: real('meeting_lon').notNull(),
@@ -226,11 +226,11 @@ export const outing = sqliteTable(
     visibility: text('visibility', { enum: OUTING_VISIBILITIES }).notNull().default('invite'),
     openLinkEnabled: integer('open_link_enabled', { mode: 'boolean' }).notNull().default(false),
     openLinkToken: text('open_link_token').notNull().$defaultFn(() => crypto.randomUUID()),
-    /** Qui a créé la sortie (« proposée par »), conservé pour l'historique même si la sortie devient publique (#1455). */
+    /** Who created the outing ("proposed by"), kept for history even if the outing becomes public (#1455). */
     createdBy: text('created_by').references(() => user.id, { onDelete: 'set null' }),
-    /** Propriétaire (seul à modifier / annuler). **NULL = sortie publique sans propriétaire**, figée (#1455). */
+    /** Owner (the only one who edits / cancels). **NULL = public outing without an owner**, frozen (#1455). */
     ownerId: text('owner_id').references(() => user.id, { onDelete: 'set null' }),
-    /** Privée : les participants inscrits peuvent inviter leurs copains (#1455). Toujours vrai en publique. */
+    /** Private: registered participants may invite their friends (#1455). Always true for a public outing. */
     participantsCanInvite: integer('participants_can_invite', { mode: 'boolean' }).notNull().default(false),
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
     updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
@@ -239,9 +239,9 @@ export const outing = sqliteTable(
 );
 
 /**
- * Archivage par personne (#1459, epic #1463 P5) : `archived` explicite pour (sortie, compte). Sans ligne, une sortie
- * passée est archivée d'office et une sortie à venir ne l'est pas ; une ligne force l'un ou l'autre (« Désarchiver »,
- * « Quitter »). N'affecte ni les stats, ni le profil, ni les autres participants.
+ * Per-person archiving (#1459, epic #1463 P5): explicit `archived` for (outing, account). Without a row, a past outing
+ * is archived by default and an upcoming one is not; a row forces one or the other ("Un-archive",
+ * "Leave"). Affects neither stats, nor the profile, nor the other participants.
  */
 export const outingArchive = sqliteTable(
   'outing_archive',
@@ -254,7 +254,7 @@ export const outingArchive = sqliteTable(
   (t) => [primaryKey({ columns: [t.outingId, t.userId] })],
 );
 
-/** Carnet de potes (#1359) : habitués d'un utilisateur, prénom + note seulement (aucune donnée perso en v1). */
+/** Buddy book (#1359): a user's regulars, first name + note only (no personal data in v1). */
 export const contact = sqliteTable(
   'contact',
   {
@@ -265,18 +265,18 @@ export const contact = sqliteTable(
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
     lastInvitedAt: integer('last_invited_at', { mode: 'timestamp' }),
     archived: integer('archived', { mode: 'boolean' }).notNull().default(false),
-    /** Compte copain lié à ce pote (#1432), NULL = simple prénom. */
+    /** Friend account linked to this buddy (#1432), NULL = plain first name. */
     userId: text('user_id').references(() => user.id, { onDelete: 'set null' }),
-    /** Copain d'un autre serveur lié à ce pote (#1475), NULL = non lié. Exclusif avec `user_id`. */
+    /** Friend on another server linked to this buddy (#1475), NULL = not linked. Exclusive with `user_id`. */
     remoteActorId: text('remote_actor_id').references(() => remoteActor.id, { onDelete: 'set null' }),
   },
   (t) => [index('contact_owner_idx').on(t.ownerUserId)],
 );
 
 /**
- * Relation d'amitié (#1432) : une seule ligne par paire (`pair_key` = ids triés). Un copain d'un autre serveur (#1475)
- * est une ligne où l'un des deux comptes locaux est NULL et `remote_actor_id` renseigné : `requester_id` NULL = c'est lui qui
- * a demandé, `addressee_id` NULL = c'est moi. L'amitié « deux Follow acceptés » tient en une ligne `accepted`.
+ * Friendship relation (#1432): a single row per pair (`pair_key` = sorted ids). A friend on another server (#1475)
+ * is a row where one of the two local accounts is NULL and `remote_actor_id` is set: `requester_id` NULL = they
+ * asked, `addressee_id` NULL = I asked. The "two accepted Follows" friendship fits in one `accepted` row.
  */
 export const friendship = sqliteTable(
   'friendship',
@@ -284,9 +284,9 @@ export const friendship = sqliteTable(
     id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
     requesterId: text('requester_id').references(() => user.id, { onDelete: 'cascade' }),
     addresseeId: text('addressee_id').references(() => user.id, { onDelete: 'cascade' }),
-    /** Copain d'un autre serveur (#1475) ; NULL = amitié entre deux comptes locaux. */
+    /** Friend on another server (#1475); NULL = friendship between two local accounts. */
     remoteActorId: text('remote_actor_id').references(() => remoteActor.id, { onDelete: 'cascade' }),
-    /** URL de l'activité `Follow` reçue du copain distant (pour y répondre par `Accept`/`Reject`). */
+    /** URL of the `Follow` activity received from the remote friend (to answer it with `Accept`/`Reject`). */
     remoteFollowId: text('remote_follow_id'),
     pairKey: text('pair_key').notNull(),
     status: text('status', { enum: ['pending', 'accepted'] }).notNull().default('pending'),
@@ -296,7 +296,7 @@ export const friendship = sqliteTable(
   (t) => [uniqueIndex('friendship_pair_idx').on(t.pairKey), index('friendship_addressee_idx').on(t.addresseeId)],
 );
 
-/** Lien d'invitation copain à usage unique (#1432) ; seul le hash du token est stocké. */
+/** Single-use friend invitation link (#1432); only the token's hash is stored. */
 export const friendInvite = sqliteTable('friend_invite', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   inviterId: text('inviter_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
@@ -311,21 +311,21 @@ export const invitation = sqliteTable(
   {
     id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
     outingId: text('outing_id').notNull().references(() => outing.id, { onDelete: 'cascade' }),
-    /** Contact du carnet (#1359), NULL pour une invitation saisie à la main sans carnet. */
+    /** Buddy-book contact (#1359), NULL for an invitation typed by hand without the book. */
     contactId: text('contact_id').references(() => contact.id, { onDelete: 'set null' }),
-    /** SHA-256 (hex) du token : le token en clair n'est jamais stocké, il n'existe que dans le lien. */
+    /** SHA-256 (hex) of the token: the plain token is never stored, it only exists in the link. */
     tokenHash: text('token_hash').notNull().unique(),
-    /** Token chiffré (AES-256-GCM, `INVITE_LINK_KEY`, #1456) pour réafficher le lien ; NULL = lien créé avant, non réaffichable. */
+    /** Encrypted token (AES-256-GCM, `INVITE_LINK_KEY`, #1456) to show the link again; NULL = link created before, cannot be shown again. */
     tokenEnc: text('token_enc'),
-    /** Compte rattaché par l'invité lui-même (#1434) ; NULL = invité sans compte. */
+    /** Account attached by the guest themselves (#1434); NULL = guest without an account. */
     userId: text('user_id').references(() => user.id, { onDelete: 'set null' }),
-    /** Copain d'un autre serveur invité ou venu répondre (#1476) : sa réponse arrive par ActivityPub, jamais de lien `/i/<token>`. */
+    /** Friend on another server invited or who came to answer (#1476): their answer arrives through ActivityPub, never an `/i/<token>` link. */
     remoteActorId: text('remote_actor_id').references(() => remoteActor.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     status: text('status', { enum: INVITATION_STATUS }).notNull().default('pending'),
     comment: text('comment'),
     origin: text('origin', { enum: ['personal', 'open_link', 'self', 'remote'] }).notNull().default('personal'),
-    /** Qui a créé ce lien (#1457) : compte connecté, ou invitation d'un invité sans compte. Sert à limiter la révocation en publique. */
+    /** Who created this link (#1457): signed-in account, or invitation of a guest without an account. Used to limit revocation on public outings. */
     createdByUserId: text('created_by_user_id').references(() => user.id, { onDelete: 'set null' }),
     createdByInvitationId: text('created_by_invitation_id'),
     revokedAt: integer('revoked_at', { mode: 'timestamp' }),
@@ -336,7 +336,7 @@ export const invitation = sqliteTable(
   (t) => [index('invitation_outing_idx').on(t.outingId), index('invitation_user_idx').on(t.userId), index('invitation_remote_idx').on(t.remoteActorId)],
 );
 
-/** Sortie d'un autre serveur (#1476) : copie en cache, le serveur de l'organisateur reste la référence. Ni lien `/i/`, ni email. */
+/** Outing from another server (#1476): cached copy, the organiser's server remains the reference. No `/i/` link, no email. */
 export const remoteOuting = sqliteTable(
   'remote_outing',
   {
@@ -352,7 +352,7 @@ export const remoteOuting = sqliteTable(
     meetingLabel: text('meeting_label'),
     level: text('level', { enum: OUTING_LEVELS }).notNull().default('sportif'),
     ebike: text('ebike', { enum: OUTING_EBIKE }).notNull().default('yes'),
-    /** Trace figée (`singletrack:outing`) : géométrie, stats, attribution et licence. */
+    /** Frozen track (`singletrack:outing`): geometry, stats, attribution and licence. */
     track: text('track', { mode: 'json' }).$type<import('@/lib/outings/snapshot').TrackSnapshot | null>(),
     status: text('status', { enum: OUTING_STATUS }).notNull().default('planned'),
     visibility: text('visibility', { enum: OUTING_VISIBILITIES }).notNull().default('invite'),
@@ -365,8 +365,8 @@ export const remoteOuting = sqliteTable(
 );
 
 /**
- * Ma réponse (compte local) à une sortie distante (#1476). `pending` sans réponse = invité, pas encore répondu.
- * `state` : `sent` (envoyée, pas de réponse du serveur), `accepted`, `rejected` (+ `reason` : `full` / `closed` / `forbidden`).
+ * My answer (local account) to a remote outing (#1476). `pending` without an answer = guest, not answered yet.
+ * `state`: `sent` (sent, no answer from the server), `accepted`, `rejected` (+ `reason`: `full` / `closed` / `forbidden`).
  */
 export const remoteResponse = sqliteTable(
   'remote_response',
@@ -376,14 +376,14 @@ export const remoteResponse = sqliteTable(
     answer: text('answer', { enum: ['pending', 'yes', 'maybe', 'no'] }).notNull().default('pending'),
     state: text('state', { enum: ['none', 'sent', 'accepted', 'rejected'] }).notNull().default('none'),
     reason: text('reason'),
-    /** Identifiant (URL `/ap/joins/<id>`) de ma dernière activité, pour rapprocher l'`Accept` / `Reject`. */
+    /** Id (URL `/ap/joins/<id>`) of my last activity, to match the `Accept` / `Reject`. */
     joinId: text('join_id'),
     updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   },
   (t) => [primaryKey({ columns: [t.remoteOutingId, t.userId] }), index('remote_response_user_idx').on(t.userId)],
 );
 
-/** Serveur bloqué par l'admin (#1477) : rien n'est accepté ni envoyé. `source` : saisie à la main ou import d'une liste partagée. */
+/** Server blocked by the admin (#1477): nothing is accepted or sent. `source`: typed by hand or imported from a shared list. */
 export const federationBlock = sqliteTable('federation_block', {
   domain: text('domain').primaryKey(),
   reason: text('reason'),
@@ -391,7 +391,7 @@ export const federationBlock = sqliteTable('federation_block', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 });
 
-/** Compte distant bloqué par un compte local (#1477) : ses demandes de copain et ses invitations n'arrivent plus. */
+/** Remote account blocked by a local account (#1477): its friend requests and invitations no longer arrive. */
 export const remoteActorBlock = sqliteTable(
   'remote_actor_block',
   {
@@ -402,7 +402,7 @@ export const remoteActorBlock = sqliteTable(
   (t) => [primaryKey({ columns: [t.userId, t.remoteActorId] })],
 );
 
-/** Journal des activités refusées (#1477) : domaine, motif, type d'activité. Jamais de contenu personnel. */
+/** Log of rejected activities (#1477): domain, reason, activity type. Never personal content. */
 export const federationLog = sqliteTable(
   'federation_log',
   {
@@ -415,7 +415,7 @@ export const federationLog = sqliteTable(
   (t) => [index('federation_log_at_idx').on(t.at)],
 );
 
-/** Signalement d'une sortie distante par un compte local (#1477) : copie pour l'admin ; un `Flag` part au serveur d'origine. */
+/** Report of a remote outing by a local account (#1477): copy for the admin; a `Flag` goes to the origin server. */
 export const federationReport = sqliteTable(
   'federation_report',
   {
@@ -431,8 +431,8 @@ export const federationReport = sqliteTable(
 );
 
 /**
- * Trace réellement roulée (#1412) : un GPX par personne et par sortie (nouveau téléversement = remplacement).
- * `invitation_id` NULL = l'organisateur (`author_user_id`). Géométrie simplifiée à 5 m ; stats calculées à l'import.
+ * Actually ridden track (#1412): one GPX per person and per outing (new upload = replacement).
+ * `invitation_id` NULL = the organiser (`author_user_id`). Geometry simplified to 5 m; stats computed at import.
  */
 export const outingRide = sqliteTable(
   'outing_ride',
@@ -443,9 +443,9 @@ export const outingRide = sqliteTable(
     authorUserId: text('author_user_id').references(() => user.id, { onDelete: 'set null' }),
     geometry: text('geometry', { mode: 'json' }).$type<import('@/lib/geo/types').TrackGeometry>().notNull(),
     distanceM: real('distance_m').notNull(),
-    /** NULL si le GPX n'a pas d'altitude. */
+    /** NULL if the GPX has no elevation. */
     gainM: real('gain_m'),
-    /** Temps de déplacement (hors pauses) ; NULL si le GPX n'a pas d'horodatage. */
+    /** Moving time (breaks excluded); NULL if the GPX has no timestamps. */
     movingSec: integer('moving_sec'),
     elapsedSec: integer('elapsed_sec'),
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
@@ -453,7 +453,7 @@ export const outingRide = sqliteTable(
   (t) => [index('outing_ride_outing_idx').on(t.outingId)],
 );
 
-/** Photos d'une sortie (#1413). Fichiers dans `data/media/<sortie>/` (JPEG sans EXIF) ; lat/lon = position EXIF gardée seulement pour placer la photo sur la carte. */
+/** Outing photos (#1413). Files in `data/media/<outing>/` (JPEG without EXIF); lat/lon = EXIF position kept only to place the photo on the map. */
 export const outingPhoto = sqliteTable(
   'outing_photo',
   {
@@ -470,7 +470,7 @@ export const outingPhoto = sqliteTable(
   (t) => [index('outing_photo_outing_idx').on(t.outingId)],
 );
 
-/** Fil de discussion d'une sortie (#1358). `invitation_id` NULL = message de l'organisateur. Suppression douce. */
+/** Discussion thread of an outing (#1358). `invitation_id` NULL = organiser's message. Soft delete. */
 export const outingComment = sqliteTable(
   'outing_comment',
   {
@@ -486,8 +486,8 @@ export const outingComment = sqliteTable(
   (t) => [index('outing_comment_outing_idx').on(t.outingId, t.createdAt)],
 );
 
-/** Jeton d'abonnement agenda de l'organisateur (#1357) : toutes ses sorties dans un flux webcal. En clair (c'est un
- *  lien personnel qu'il doit pouvoir revoir), régénérable ; régénérer invalide l'ancien lien. */
+/** Organiser's calendar subscription token (#1357): all their outings in one webcal feed. In clear (it is a
+ *  personal link they must be able to see again), can be regenerated; regenerating invalidates the old link. */
 export const calendarFeed = sqliteTable('calendar_feed', {
   userId: text('user_id').primaryKey().references(() => user.id, { onDelete: 'cascade' }),
   token: text('token').notNull().unique(),
@@ -498,12 +498,12 @@ export type OutingRow = typeof outing.$inferSelect;
 export type ContactRow = typeof contact.$inferSelect;
 export type InvitationRow = typeof invitation.$inferSelect;
 
-// Massifs forestiers du Var et niveaux de risque incendie (#1349).
-/** Contours des massifs (préfecture du Var), rafraîchis au plus une fois par saison. */
+// Var forest massifs and fire risk levels (#1349).
+/** Massif outlines (Var prefecture), refreshed at most once per season. */
 export const massif = sqliteTable('massif', {
   code: text('code').primaryKey(),
   name: text('name').notNull(),
-  /** GeoJSON MultiPolygon, coordonnées [lon, lat]. */
+  /** GeoJSON MultiPolygon, coordinates [lon, lat]. */
   geometry: text('geometry', { mode: 'json' }).$type<import('@/lib/fire/types').MassifGeometry>().notNull(),
   bboxMinLon: real('bbox_min_lon').notNull(),
   bboxMinLat: real('bbox_min_lat').notNull(),
@@ -511,20 +511,20 @@ export const massif = sqliteTable('massif', {
   bboxMaxLat: real('bbox_max_lat').notNull(),
 });
 
-/** Niveau (1 vert … 5 noir) d'un massif pour un jour (`YYYY-MM-DD`, Europe/Paris). */
+/** Level (1 green … 5 black) of a massif for a day (`YYYY-MM-DD`, Europe/Paris). */
 export const massifLevel = sqliteTable(
   'massif_level',
   {
     date: text('date').notNull(),
     massifCode: text('massif_code').notNull(),
     level: integer('level').notNull(),
-    /** Second entier du fichier officiel (procédure / ZAPEF). */
+    /** Second integer of the official file (procedure / ZAPEF). */
     extra: integer('extra').notNull().default(0),
   },
   (t) => [uniqueIndex('massif_level_pk').on(t.date, t.massifCode)],
 );
 
-/** Une ligne par jour interrogé : `ok` (fichier lu), `none` (pas de fichier : hors saison), `error`. */
+/** One row per queried day: `ok` (file read), `none` (no file: out of season), `error`. */
 export const massifDay = sqliteTable('massif_day', {
   date: text('date').primaryKey(),
   status: text('status', { enum: ['ok', 'none', 'error'] }).notNull(),

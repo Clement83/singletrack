@@ -5,7 +5,7 @@ import { changeHandle, getHandle } from '@/lib/federation/handle';
 
 export const dynamic = 'force-dynamic';
 
-/** Privé. Mon identifiant fédéré (#1474) : `GET` → `{handle, address, canChange}` ; `PUT {handle}` : unique modification (400/409 avec un code traduit côté client). */
+/** Private. My federated identifier (#1474): `GET` → `{handle, address, canChange}`; `PUT {handle}`: single change (400/409 with a code translated on the client). */
 export async function GET() {
   let user;
   try { user = await assertUser(); } catch (e) { return unauthorized(e); }

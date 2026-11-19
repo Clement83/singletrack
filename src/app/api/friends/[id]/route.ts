@@ -4,7 +4,7 @@ import { removeFederated, respondFederated } from '@/lib/federation/friends';
 
 export const dynamic = 'force-dynamic';
 
-/** Privé. `{ action: 'accept' | 'decline' }` : répondre à une demande reçue (destinataire seulement). */
+/** Private. `{ action: 'accept' | 'decline' }`: answer a received request (recipient only). */
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   let user;
   try { user = await assertUser(); } catch (e) { return unauthorized(e); }
@@ -14,7 +14,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   return Response.json({ error: r.error }, { status: r.error === 'not_found' ? 404 : 422 });
 }
 
-/** Privé. Retire un copain ou annule une demande envoyée. */
+/** Private. Removes a friend or cancels a sent request. */
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   let user;
   try { user = await assertUser(); } catch (e) { return unauthorized(e); }

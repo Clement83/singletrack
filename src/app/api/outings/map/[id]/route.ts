@@ -4,7 +4,7 @@ import { getMapOutingTrack } from '@/lib/outings/map';
 
 export const dynamic = 'force-dynamic';
 
-/** `GET /api/outings/map/<id>` (#1596) : parcours figé + profil d'une sortie ouverte sur la carte. Mêmes droits que la liste (anonyme = `public` seulement) ; non visible ⇒ 404. Jamais de slug ni d'id de trace. */
+/** `GET /api/outings/map/<id>` (#1596): frozen route + profile of an outing opened on the map. Same rights as the list (anonymous = `public` only); not visible ⇒ 404. Never a track slug or id. */
 export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { user, rejected } = await readViewer(req);
   if (rejected) return rejected;

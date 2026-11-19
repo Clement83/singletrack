@@ -5,7 +5,7 @@ import { rideHandlers } from '@/lib/outings/ride-http';
 
 export const dynamic = 'force-dynamic';
 
-// Privé : propriétaire de la sortie seulement (404 sinon). Il voit sa trace et celles des invités.
+// Private: owner of the outing only (404 otherwise). They see their track and the guests'.
 const h = rideHandlers(async (_r, p) => organizerContext(getDb().db, (await assertUser()).id, p.slug), (_r, p) => `o:${p.slug}`);
 type C = { params: Promise<Record<string, string>> };
 const guard = (fn: (req: Request, c: C) => Promise<Response>) => async (req: Request, c: C) => {

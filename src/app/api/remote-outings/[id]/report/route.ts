@@ -5,7 +5,7 @@ import { rateLimit } from '@/lib/outings/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
-/** Privé (#1477). `{ reason?: string }` : signaler une sortie d'un autre serveur (copie pour l'admin local + `Flag` au serveur d'origine). */
+/** Private (#1477). `{ reason?: string }`: report an outing from another server (copy for the local admin + `Flag` to the origin server). */
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   let user;
   try { user = await assertUser(); } catch (e) { return unauthorized(e); }

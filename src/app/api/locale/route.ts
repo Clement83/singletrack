@@ -8,9 +8,9 @@ import { LOCALE_COOKIE, isLocale } from '@/i18n/config';
 export const dynamic = 'force-dynamic';
 
 /**
- * Changer de langue (#1400) : `POST {locale: 'fr' | 'en'}`. Public (un invité sans compte peut aussi changer).
- * Pose le cookie NEXT_LOCALE (1 an) et, si quelqu'un est connecté, enregistre la préférence du compte
- * (langue de ses mails). Le client recharge ensuite la page (`router.refresh()`).
+ * Change language (#1400): `POST {locale: 'fr' | 'en'}`. Public (a guest without an account can change it too).
+ * Sets the NEXT_LOCALE cookie (1 year) and, if someone is signed in, saves the account preference
+ * (language of their emails). The client then reloads the page (`router.refresh()`).
  */
 export async function POST(req: Request) {
   const body = (await req.json().catch(() => null)) as { locale?: unknown } | null;

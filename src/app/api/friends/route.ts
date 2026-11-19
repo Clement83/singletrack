@@ -6,7 +6,7 @@ import { rateLimit } from '@/lib/outings';
 
 export const dynamic = 'force-dynamic';
 
-/** Privé. Mes copains, demandes reçues et envoyées (prénoms seulement). */
+/** Private. My friends, received and sent requests (first names only). */
 export async function GET() {
   let user;
   try { user = await assertUser(); } catch (e) { return unauthorized(e); }
@@ -14,8 +14,8 @@ export async function GET() {
 }
 
 /**
- * Privé. `{ email }` ou `{ address }` (`paul@autre-serveur`, #1475) : demande d'amitié. Même réponse que le compte existe ou non.
- * `address` exige `FEDERATION=on` (422 `federationOff` sinon).
+ * Private. `{ email }` or `{ address }` (`paul@other-server`, #1475): friend request. Same answer whether the account exists or not.
+ * `address` requires `FEDERATION=on` (422 `federationOff` otherwise).
  */
 export async function POST(req: Request) {
   let user;

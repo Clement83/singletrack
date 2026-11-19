@@ -4,7 +4,7 @@ import { duplicateOuting, type DuplicateInput } from '@/lib/outings';
 
 export const dynamic = 'force-dynamic';
 
-/** Privé, organisateur seulement. `POST /api/outings/<slug>/duplicate {date, time, trackSource}` → `{ slug }` de la nouvelle sortie (#1360). */
+/** Private, organiser only. `POST /api/outings/<slug>/duplicate {date, time, trackSource}` → `{ slug }` of the new outing (#1360). */
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   let user;
   try {

@@ -4,7 +4,7 @@ import { kmlResponse } from '@/lib/outings/export';
 
 export const dynamic = 'force-dynamic';
 
-/** Public (lien perso de l'invité, #1351) : KML de la trace figée dans la sortie. */
+/** Public (guest's personal link, #1351): KML of the track frozen in the outing. */
 export async function GET(_req: Request, { params }: { params: Promise<{ token: string }> }) {
   const found = getInvitationByToken(getDb().db, (await params).token);
   if (!found) return new Response('Not found', { status: 404 });

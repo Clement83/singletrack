@@ -5,7 +5,7 @@ import { rateLimit } from '@/lib/outings';
 
 export const dynamic = 'force-dynamic';
 
-/** Privé. Crée un lien d'invitation copain à usage unique (le token n'est renvoyé que cette fois). */
+/** Private. Creates a single-use friend invitation link (the token is only returned this once). */
 export async function POST() {
   let user;
   try { user = await assertUser(); } catch (e) { return unauthorized(e); }

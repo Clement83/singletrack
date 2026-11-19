@@ -4,7 +4,7 @@ import { listMapOutings, type MapBbox } from '@/lib/outings/map';
 
 export const dynamic = 'force-dynamic';
 
-/** Sans session (#1589) : seulement les sorties `public` ; connecté : celles que le compte voit. `GET /api/outings/map?bbox=minLon,minLat,maxLon,maxLat` — sorties à venir visibles par le compte dans l'emprise (#1461). */
+/** Without a session (#1589): `public` outings only; signed in: those the account can see. `GET /api/outings/map?bbox=minLon,minLat,maxLon,maxLat` — upcoming outings visible to the account within the extent (#1461). */
 export async function GET(req: Request) {
   const { user, rejected } = await readViewer(req);
   if (rejected) return rejected;

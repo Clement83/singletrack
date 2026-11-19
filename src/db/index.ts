@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import * as schema from './schema';
 
-// Le serveur standalone fait un chdir : le dossier est donc configurable (MIGRATIONS_DIR).
+// The standalone server does a chdir: the folder is therefore configurable (MIGRATIONS_DIR).
 const MIGRATIONS = process.env.MIGRATIONS_DIR ?? path.join(process.cwd(), 'src/db/migrations');
 
 export function openDb(url = process.env.DATABASE_URL ?? './data/singletrack.db') {
@@ -22,7 +22,7 @@ export type Db = ReturnType<typeof openDb>['db'];
 
 let cached: ReturnType<typeof openDb> | undefined;
 
-/** Connexion unique par processus ; les migrations sont appliquées à la première ouverture. */
+/** Single connection per process; migrations are applied on first opening. */
 export function getDb() {
   cached ??= openDb();
   return cached;

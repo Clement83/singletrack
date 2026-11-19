@@ -5,8 +5,8 @@ import { reopenJoinedOuting } from '@/lib/outings';
 export const dynamic = 'force-dynamic';
 
 /**
- * Privé. `POST /api/outings/<id>/open` (#1444) : page participant d'une sortie rejointe avec son compte.
- * Déchiffre le lien existant de l'invitation liée (#1456, aucune régénération) et renvoie `{ path: '/i/<token>' }`.
+ * Private. `POST /api/outings/<id>/open` (#1444): participant page of an outing joined with one's account.
+ * Decrypts the existing link of the linked invitation (#1456, no regeneration) and returns `{ path: '/i/<token>' }`.
  */
 export async function POST(_req: Request, { params }: { params: Promise<{ slug: string }> }) {
   let user;
