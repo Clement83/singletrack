@@ -1,7 +1,7 @@
 import tokens from '../../../design/tokens.json';
 
-/** Thèmes déclarés dans design/tokens.json : en ajouter un là-bas suffit à le proposer ici. */
+/** Themes declared in design/tokens.json: adding one there is enough to offer it here. */
 export const THEMES: { id: string; name: string }[] = tokens.themes.map(({ id, name }) => ({ id, name }));
 
-/** Chartes graphiques déclarées dans design/tokens.json (#1624), indépendantes du clair/sombre. */
+/** Visual charters declared in design/tokens.json (#1624), independent of light/dark. */
 export const CHARTES: { id: string; name: string }[] = tokens.chartes.map(({ id, name }) => ({ id, name }));

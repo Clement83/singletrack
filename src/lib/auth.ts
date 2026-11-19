@@ -14,17 +14,17 @@ import { signInCodeMail, signInLink } from './mail-templates';
 export const OTP_MINUTES = 10;
 
 /**
- * Better Auth, connexion SANS mot de passe (#1377) : l'email reçoit un code à 6 chiffres, un lien et un QR code.
- * Un compte par email ; email inconnu ⇒ compte créé à la première connexion (prénom demandé sur /bienvenue),
- * sauf si AUTH_DISABLE_SIGNUP=true. Comptes aussi créables par `npm run user:create`.
- * Cookie de session httpOnly ; `secure` via AUTH_SECURE_COOKIES=true (HTTPS, #1374).
- * Rate limiting (production) par IP, lue dans X-Forwarded-For posé par nginx.
+ * Better Auth, PASSWORDLESS sign-in (#1377): the email receives a 6-digit code, a link and a QR code.
+ * One account per email; unknown email ⇒ account created on first sign-in (first name asked on /bienvenue),
+ * unless AUTH_DISABLE_SIGNUP=true. Accounts can also be created with `npm run user:create`.
+ * httpOnly session cookie; `secure` through AUTH_SECURE_COOKIES=true (HTTPS, #1374).
+ * Rate limiting (production) per IP, read from the X-Forwarded-For set by nginx.
  */
 export function signUpDisabled() {
   return process.env.AUTH_DISABLE_SIGNUP === 'true';
 }
 
-/** Langue du mail de connexion (#1401) : celle du compte s'il existe, sinon celle de la page qui demande le code. */
+/** Language of the sign-in email (#1401): the account's if it exists, otherwise the one of the page asking for the code. */
 export function mailLocale(db: Db, email: string, headers?: Headers | null) {
   const known = db.select({ locale: schema.user.locale }).from(schema.user).where(eq(schema.user.email, email.toLowerCase())).get()?.locale;
   if (known) return known;
@@ -41,17 +41,17 @@ export function createAuth(db: Db = getDb().db, opts: { disableSignUp?: boolean;
     trustedOrigins: process.env.AUTH_TRUSTED_ORIGINS?.split(',').filter(Boolean),
     database: drizzleAdapter(db, { provider: 'sqlite', schema }),
     emailAndPassword: { enabled: false },
-    // Session longue : on ne redemande pas un code à chaque sortie.
+    // Long session: no new code asked on every outing.
     session: { expiresIn: 60 * 24 * 3600, updateAge: 24 * 3600 },
     rateLimit: {
       enabled: process.env.NODE_ENV === 'production',
-      // Par IP : 10 envois de code par heure, 10 essais de code par minute (en plus des 3 essais par code).
+      // Per IP: 10 code sends per hour, 10 code attempts per minute (on top of the 3 attempts per code).
       customRules: {
         '/email-otp/send-verification-otp': { window: 3600, max: 10 },
         '/sign-in/email-otp': { window: 60, max: 10 },
       },
     },
-    // Handle fédéré (#1474) : généré dès que le compte a un prénom (création en CLI, ou saisie sur /bienvenue), jamais depuis l'email.
+    // Federated handle (#1474): generated as soon as the account has a first name (CLI creation, or entered on /bienvenue), never from the email.
     databaseHooks: {
       user: {
         create: { after: async (u) => void ensureHandle(db, u.id) },
@@ -77,7 +77,7 @@ export function createAuth(db: Db = getDb().db, opts: { disableSignUp?: boolean;
   });
 }
 
-/** En-tête portant la page d'origine à l'envoi du code (#1595) : Better Auth ne transmet que email + type. */
+/** Header carrying the original page when the code is sent (#1595): Better Auth only passes email + type. */
 export const NEXT_HEADER = 'x-login-next';
 function headerOf(ctx: { request?: Request; headers?: Headers } | null | undefined, name: string) {
   return ctx?.request?.headers?.get(name) ?? ctx?.headers?.get(name) ?? undefined;
@@ -86,7 +86,7 @@ function headerOf(ctx: { request?: Request; headers?: Headers } | null | undefin
 export type Auth = ReturnType<typeof createAuth>;
 
 let cached: Auth | undefined;
-/** Instance unique par processus, créée à la demande (pas d'ouverture de base au build). */
+/** Single instance per process, created on demand (no database opened at build time). */
 export function getAuth() {
   cached ??= createAuth();
   return cached;

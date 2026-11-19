@@ -4,21 +4,21 @@ import type { MailMessage } from './mail';
 import { translatorFor } from '@/i18n/server';
 import { isLocale, DEFAULT_LOCALE } from '@/i18n/config';
 
-// Couleurs lues dans la source unique des tokens (thème clair : les clients mail gèrent mal le sombre).
+// Colours read from the single token source (light theme: mail clients handle dark mode poorly).
 const c = (name: string) => tokens.color.find((t) => t.name === name)!.value.light;
 
 export const esc = (s: string) =>
   s.replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]!);
 
-/** Lien de connexion : email et code dans le fragment (#), jamais envoyé au serveur ni écrit dans les logs nginx. */
+/** Sign-in link: email and code in the fragment (#), never sent to the server nor written in the nginx logs. */
 export function signInLink(baseUrl: string, email: string, otp: string, next?: string) {
-  // `next` (page d'origine, #1595) : déjà validé par `safeNext`, relu et revalidé côté client.
+  // `next` (original page, #1595): already validated by `safeNext`, re-read and re-validated on the client.
   return `${baseUrl.replace(/\/$/, '')}/login/lien#${new URLSearchParams({ e: email, c: otp, ...(next ? { n: next } : {}) })}`;
 }
 
 /**
- * Mail de connexion (#1377) : code à 6 chiffres, bouton, et QR code (mail lu sur PC, connexion sur le téléphone).
- * Dans la langue du destinataire (#1401) : celle de son compte, sinon celle de la page qui a demandé le code.
+ * Sign-in email (#1377): 6-digit code, button, and QR code (email read on a PC, sign-in on the phone).
+ * In the recipient's language (#1401): their account's, otherwise the one of the page that asked for the code.
  */
 export async function signInCodeMail(to: string, otp: string, url: string, minutes: number, locale?: string | null): Promise<MailMessage> {
   const lang = isLocale(locale) ? locale : DEFAULT_LOCALE;
@@ -51,7 +51,7 @@ export async function signInCodeMail(to: string, otp: string, url: string, minut
   };
 }
 
-/** Mail « un copain t'invite à une sortie » (#1458) : sobre, un bouton vers le lien personnel. Langue = compte du destinataire. */
+/** "A friend invites you to an outing" email (#1458): plain, one button to the personal link. Language = recipient's account. */
 export function friendInviteMail(
   to: string, d: { inviter: string; title: string; date: string; url: string }, locale?: string | null,
 ): MailMessage {
@@ -76,8 +76,8 @@ export function friendInviteMail(
 }
 
 /**
- * Mail « sortie supprimée » (annulée) ou « sortie confiée » (#1459) : sobre, un bouton si un lien existe.
- * Langue = compte du destinataire.
+ * "Outing deleted" (cancelled) or "outing handed over" email (#1459): plain, one button if a link exists.
+ * Language = recipient's account.
  */
 export function outingNoticeMail(
   to: string, d: { kind: 'cancelled' | 'transferred'; who: string; title: string; date: string; url: string | null }, locale?: string | null,

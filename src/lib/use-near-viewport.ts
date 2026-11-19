@@ -3,15 +3,15 @@
 import { useEffect, useState, type RefObject } from 'react';
 
 /**
- * `true` dès que l'élément approche de l'écran (marge `margin`), et le reste ensuite (#1371) :
- * sert à ne charger MapLibre (~1 Mo de JS) que lorsque la carte va être vue, pas à l'hydratation.
+ * `true` as soon as the element nears the screen (margin `margin`), and stays so (#1371):
+ * used to load MapLibre (~1 MB of JS) only when the map is about to be seen, not at hydration.
  */
 export function useNearViewport(ref: RefObject<Element | null>, margin = '300px'): boolean {
   const [near, setNear] = useState(false);
-  // Élément réellement observé : l'élément peut n'être monté qu'après le premier rendu (#1425), donc
-  // l'effet tourne à chaque rendu et ne (ré)observe que si l'élément a changé.
+  // Element actually observed: it may only be mounted after the first render (#1425), so
+  // the effect runs on every render and only (re)observes if the element changed.
   const [observed, setObserved] = useState<Element | null>(null);
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- volontairement sans dépendances (voir ci-dessus)
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- deliberately without dependencies (see above)
   useEffect(() => {
     if (ref.current !== observed) setObserved(ref.current);
   });

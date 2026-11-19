@@ -1,6 +1,6 @@
 import type { Auth } from './auth';
 
-/** Crée un compte en CLI (#1344, #1377) : pas de mot de passe, la personne se connecte avec le code reçu par mail. */
+/** Creates an account from the CLI (#1344, #1377): no password, the person signs in with the code received by email. */
 export async function createUser(auth: Auth, input: { email: string; name: string }) {
   const ctx = await auth.$context;
   const email = input.email.trim().toLowerCase();

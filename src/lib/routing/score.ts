@@ -3,10 +3,10 @@ import { geometryStats } from '@/lib/geo';
 import { slopeSegments } from '@/lib/geo/slopes';
 
 /**
- * Notation des itinéraires (#1385, barème validé par Clément en #1379) : coût en « km-effort » = distance +
- * pénalité de montée. Sous un seuil de pente, seule la distance compte ; au-delà, chaque 100 m de D+ vaut
- * ~1 km à 5 %, ~2 km à 10 %, ~4 km à 15 % (`2^((pente − 5) / 5)`, croît plus vite que la pente).
- * Deux jeux de réglages : musculaire et VAE (le moteur absorbe les montées moyennes).
+ * Route scoring (#1385, scale validated by the maintainer in #1379): cost in "effort-km" = distance +
+ * climbing penalty. Below a slope threshold, only distance counts; above it, each 100 m of gain is worth
+ * ~1 km at 5 %, ~2 km at 10 %, ~4 km at 15 % (`2^((slope − 5) / 5)`, grows faster than the slope).
+ * Two sets of settings: muscle bike and e-bike (the motor absorbs medium climbs).
  */
 export type Rider = 'muscle' | 'ebike';
 export const RIDERS: Rider[] = ['muscle', 'ebike'];
@@ -16,7 +16,7 @@ export const RIDER_SETTINGS: Record<Rider, { thresholdPct: number; weight: numbe
   ebike: { thresholdPct: 8, weight: 0.5, detourK: 1, profile: 'singletrack-vae' },
 };
 
-/** Pénalité (km) pour 100 m de D+ à une pente donnée (%). 0 sous le seuil du cycliste. */
+/** Penalty (km) per 100 m of gain at a given slope (%). 0 below the rider's threshold. */
 export function climbPenaltyPer100m(gradePct: number, rider: Rider): number {
   const s = RIDER_SETTINGS[rider];
   if (gradePct <= s.thresholdPct) return 0;
@@ -25,7 +25,7 @@ export function climbPenaltyPer100m(gradePct: number, rider: Rider): number {
 
 export type RouteScore = { km: number; gainM: number | null; lossM: number | null; effortKm: number; score: number };
 
-/** Score d'une géométrie : sans altitude, la distance seule (pas de pénalité inventée). */
+/** Score of a geometry: without elevation, distance only (no made-up penalty). */
 export function scoreRoute(geometry: TrackGeometry, rider: Rider): RouteScore {
   const st = geometryStats(geometry);
   const km = st.distanceM / 1000;
@@ -41,9 +41,9 @@ export function scoreRoute(geometry: TrackGeometry, rider: Rider): RouteScore {
 export type Candidate<T> = { route: T; score: RouteScore };
 
 /**
- * Meilleur candidat : score le plus bas parmi ceux dont le détour est proportionné à l'effort évité par rapport
- * au plus court (`km_en_plus ≤ k × effort_évité`). « 10 km de plus pour éviter une petite montée, non ; 1 km
- * de plus pour éviter une grosse montée, oui. »
+ * Best candidate: lowest score among those whose detour is proportionate to the effort avoided compared
+ * with the shortest (`extra_km ≤ k × effort_avoided`). "10 km more to avoid a small climb, no; 1 km
+ * more to avoid a big climb, yes."
  */
 export function chooseRoute<T>(candidates: Candidate<T>[], rider: Rider): { best: Candidate<T>; shortest: Candidate<T> } {
   if (!candidates.length) throw new Error('no candidate');

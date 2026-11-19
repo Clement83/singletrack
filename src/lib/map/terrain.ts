@@ -1,8 +1,8 @@
 import type { RasterDEMSourceSpecification, TerrainSpecification } from 'maplibre-gl';
 
 /**
- * Relief en 3D (#1667, epic #1666) : tuiles d'altitude Terrarium d'AWS Open Data (gratuites, sans clé,
- * ~30 m en France, SRTM). Même format que des tuiles IGN générées plus tard : seule l'URL changerait.
+ * 3D relief (#1667, epic #1666): Terrarium elevation tiles from AWS Open Data (free, no key,
+ * ~30 m in France, SRTM). Same format as IGN tiles generated later: only the URL would change.
  */
 export const DEM_SOURCE_ID = 'dem';
 
@@ -16,20 +16,20 @@ export const DEM_SOURCE: RasterDEMSourceSpecification = {
     '<a href="https://registry.opendata.aws/terrain-tiles/">Mapzen Terrain Tiles</a> (AWS Open Data, SRTM…)',
 };
 
-/** Relief un peu accentué : les collines du Var restent lisibles sans paraître caricaturales. */
+/** Slightly exaggerated relief: the Var hills stay readable without looking cartoonish. */
 export const TERRAIN_EXAGGERATION = 1.5;
 
 export const TERRAIN: TerrainSpecification = { source: DEM_SOURCE_ID, exaggeration: TERRAIN_EXAGGERATION };
 
-/** Inclinaison donnée à l'activation (à plat = 0 à la désactivation). */
+/** Pitch given on activation (flat = 0 on deactivation). */
 export const TERRAIN_PITCH = 60;
 
-/** Inclinaison cible quand on bascule la 3D. */
+/** Target pitch when toggling 3D. */
 export function terrainPitch(on: boolean): number {
   return on ? TERRAIN_PITCH : 0;
 }
 
-/** Tuile d'altitude (service worker : mise en cache comme le fond de carte). */
+/** Elevation tile (service worker: cached like the basemap). */
 export function isDemTileUrl(url: URL): boolean {
   return url.hostname === 's3.amazonaws.com' && url.pathname.startsWith('/elevation-tiles-prod/terrarium/');
 }

@@ -1,6 +1,6 @@
 /**
- * Envoi de mails via Resend (#1376) — API HTTP, sans dépendance.
- * Sans RESEND_API_KEY (dev, tests), le mail n'est pas envoyé : une ligne de log seulement (sans le code).
+ * Sending emails through Resend (#1376) — HTTP API, no dependency.
+ * Without RESEND_API_KEY (dev, tests), the email is not sent: a log line only (without the code).
  */
 export type MailAttachment = { filename: string; content: string /* base64 */; contentId?: string /* image inline : src="cid:…" */ };
 export type MailMessage = { to: string; subject: string; html: string; text: string; attachments?: MailAttachment[] };
@@ -28,7 +28,7 @@ export const sendMail: Mailer = async (m) => {
   if (!res.ok) throw new Error(`[mail] Resend ${res.status} : ${(await res.text()).slice(0, 200)}`);
 };
 
-/** Envoi sans attendre (la réponse HTTP ne dépend pas du mail : pas de fuite par le temps de réponse). */
+/** Sends without waiting (the HTTP response does not depend on the email: no leak through response time). */
 export function sendInBackground(mailer: Mailer, m: MailMessage | Promise<MailMessage>) {
   Promise.resolve(m)
     .then(mailer)

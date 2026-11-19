@@ -3,8 +3,8 @@
 import { useTranslations } from 'next-intl';
 
 /**
- * Texte d'un code d'erreur renvoyé par l'API (#1402 : les routes renvoient des codes, jamais de phrases).
- * Code inconnu ⇒ message générique.
+ * Text of an error code returned by the API (#1402: routes return codes, never sentences).
+ * Unknown code ⇒ generic message.
  */
 export function useErrorText() {
   const t = useTranslations('errors');

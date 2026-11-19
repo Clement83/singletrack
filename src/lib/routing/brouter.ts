@@ -10,10 +10,10 @@ export class RoutingError extends Error {
   }
 }
 
-/** Profil BRouter « plus court » de référence (#1340) ; les profils singletrack (#1385) sont dans `RIDER_SETTINGS`. */
+/** Reference "shortest" BRouter profile (#1340); the singletrack profiles (#1385) are in `RIDER_SETTINGS`. */
 export const ROUTING_PROFILE = 'mtb';
 
-/** URL de la requête BRouter (`lonlats=lon,lat|lon,lat`). */
+/** BRouter request URL (`lonlats=lon,lat|lon,lat`). */
 export function buildRouteUrl(from: [number, number], to: [number, number], base = config.brouterUrl, profile = ROUTING_PROFILE, alt = 0): string {
   const q = new URLSearchParams({
     lonlats: `${from[0]},${from[1]}|${to[0]},${to[1]}`,
@@ -24,7 +24,7 @@ export function buildRouteUrl(from: [number, number], to: [number, number], base
   return `${base}/brouter?${q}`;
 }
 
-/** Extrait la ligne [lon, lat, ele] d'une réponse GeoJSON BRouter. */
+/** Extracts the [lon, lat, ele] line from a BRouter GeoJSON answer. */
 export function parseRoute(json: unknown): Position[] {
   const geom = (json as { features?: { geometry?: { type?: string; coordinates?: unknown } }[] })?.features?.[0]?.geometry;
   if (geom?.type !== 'LineString' || !Array.isArray(geom.coordinates) || geom.coordinates.length < 2) {
@@ -35,7 +35,7 @@ export function parseRoute(json: unknown): Position[] {
   );
 }
 
-/** Calcule l'itinéraire VTT entre deux points via BRouter (auto-hébergé, jamais exposé au navigateur). */
+/** Computes the mountain-bike route between two points through BRouter (self-hosted, never exposed to the browser). */
 export async function routeBetween(
   from: [number, number], to: [number, number], fetchImpl: typeof fetch = fetch, profile = ROUTING_PROFILE, alt = 0, ign: EnrichOptions = {},
 ): Promise<Position[]> {
@@ -46,7 +46,7 @@ export async function routeBetween(
     throw new RoutingError('Le service de routage ne répond pas.', 503);
   }
   if (!res.ok) {
-    // BRouter répond en texte brut : « from-position not mapped in existing datafile », « no track found »...
+    // BRouter answers in plain text: "from-position not mapped in existing datafile", "no track found"...
     const msg = (await res.text().catch(() => '')).trim().slice(0, 200);
     throw new RoutingError(msg || 'Itinéraire introuvable.', res.status === 400 ? 422 : 502);
   }
@@ -54,9 +54,9 @@ export async function routeBetween(
 }
 
 /**
- * #1516 : l'altitude BRouter (SRTM) est remplacée par celle de l'IGN dès le routage, pour que le profil et le D+ en direct
- * (et la notation des alternatives) soient ceux de la trace enregistrée (#1515). Cache partagé ; si l'IGN ne répond pas,
- * on garde l'altitude BRouter.
+ * #1516: BRouter's elevation (SRTM) is replaced by IGN's right at routing time, so that the live profile and gain
+ * (and the scoring of alternatives) are those of the saved track (#1515). Shared cache; if IGN does not answer,
+ * BRouter's elevation is kept.
  */
 export async function withIgnElevation(coordinates: Position[], ign: EnrichOptions = {}): Promise<Position[]> {
   try {
@@ -67,7 +67,7 @@ export async function withIgnElevation(coordinates: Position[], ign: EnrichOptio
   }
 }
 
-/** Candidats calculés en parallèle (#1385) : le plus court (`mtb`) et le profil du cycliste avec ses alternatives. */
+/** Candidates computed in parallel (#1385): the shortest (`mtb`) and the rider's profile with its alternatives. */
 export function candidateRequests(rider: Rider): { profile: string; alt: number }[] {
   const p = RIDER_SETTINGS[rider].profile;
   return [{ profile: ROUTING_PROFILE, alt: 0 }, { profile: p, alt: 0 }, { profile: p, alt: 1 }, { profile: p, alt: 2 }];
@@ -76,9 +76,9 @@ export function candidateRequests(rider: Rider): { profile: string; alt: number 
 export type ScoredRoute = { coordinates: Position[]; profile: string; alt: number; score: RouteScore };
 
 /**
- * Itinéraire noté (#1385) : tous les candidats, le meilleur selon `chooseRoute`, et la justification à afficher
- * quand il diffère du plus court (« +0,9 km, −140 m de D+ »). Un candidat en échec est ignoré ; tous en
- * échec ⇒ l'erreur du premier.
+ * Scored route (#1385): every candidate, the best one according to `chooseRoute`, and the justification to show
+ * when it differs from the shortest ("+0.9 km, −140 m of gain"). A failing candidate is ignored; all
+ * failing ⇒ the first one's error.
  */
 export async function routeScored(from: [number, number], to: [number, number], rider: Rider, fetchImpl: typeof fetch = fetch, ign: EnrichOptions = {}) {
   const reqs = candidateRequests(rider);
@@ -88,7 +88,7 @@ export async function routeScored(from: [number, number], to: [number, number], 
     if (s.status === 'fulfilled') ok.push({ coordinates: s.value, ...reqs[i], score: scoreRoute({ type: 'LineString', coordinates: s.value }, rider) });
   });
   if (!ok.length) throw (settled[0] as PromiseRejectedResult).reason;
-  // Doublons (même longueur au mètre près) : on garde le premier.
+  // Duplicates (same length to the metre): the first one is kept.
   const unique = ok.filter((c, i) => ok.findIndex((d) => Math.abs(d.score.km - c.score.km) < 0.001 && d.score.gainM === c.score.gainM) === i);
   const { best, shortest } = chooseRoute(unique.map((c) => ({ route: c, score: c.score })), rider);
   const note = best.route === shortest.route ? null : {

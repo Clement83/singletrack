@@ -1,9 +1,9 @@
 import { sourceEnabled } from '@/lib/config';
 import { FORECAST_DAYS, HOURLY_VARS, PAST_DAYS, parseForecast, summarize, weatherTiming, type Forecast, type WeatherInfo } from './forecast';
 
-// Appels Open-Meteo (#1350), côté serveur uniquement : jamais depuis le navigateur d'un invité.
-// Sans clé (usage non commercial). Cache mémoire par point arrondi à 0,01° (≈ 1 km) :
-// 1 h pour une réponse, 10 min pour un échec (on ne martèle pas une API en panne).
+// Open-Meteo calls (#1350), server side only: never from a guest's browser.
+// No key (non-commercial use). Memory cache per point rounded to 0.01° (≈ 1 km):
+// 1 h for an answer, 10 min for a failure (a failing API is not hammered).
 
 const API = process.env.OPEN_METEO_URL ?? 'https://api.open-meteo.com/v1/forecast';
 const OK_TTL = 60 * 60_000;
@@ -42,7 +42,7 @@ async function load(lat: number, lon: number): Promise<Forecast | null> {
   }
 }
 
-/** Prévision au point, mise en cache ; `null` si l'API ne répond pas ou répond n'importe quoi. */
+/** Forecast at the point, cached; `null` if the API does not answer or answers nonsense. */
 export function getForecast(lat: number, lon: number, now = Date.now()): Promise<Forecast | null> {
   const key = `${lat.toFixed(2)},${lon.toFixed(2)}`;
   const hit = cache.get(key);
@@ -55,12 +55,12 @@ export function getForecast(lat: number, lon: number, now = Date.now()): Promise
   return entry.value;
 }
 
-/** Vide le cache (tests). */
+/** Clears the cache (tests). */
 export const clearWeatherCache = () => cache.clear();
 
 /**
- * Météo d'une sortie (départ, durée estimée, point de RDV). N'appelle Open-Meteo que si la sortie est dans
- * l'horizon de prévision ; toute panne donne `unavailable` : la page ne casse jamais.
+ * Weather of an outing (start, estimated duration, meeting point). Only calls Open-Meteo if the outing is within
+ * the forecast horizon; any failure gives `unavailable`: the page never breaks.
  */
 export async function outingWeather(
   o: { startsAt: Date; meetingLat: number; meetingLon: number },

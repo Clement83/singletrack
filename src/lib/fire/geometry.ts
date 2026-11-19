@@ -13,7 +13,7 @@ function inRing(lon: number, lat: number, ring: Ring): boolean {
   return inside;
 }
 
-/** Point dans un MultiPolygon (anneau extérieur, trous exclus). */
+/** Point in a MultiPolygon (outer ring, holes excluded). */
 export function pointInMassif(lon: number, lat: number, g: MassifGeometry): boolean {
   for (const poly of g.coordinates) {
     if (inRing(lon, lat, poly[0]) && !poly.slice(1).some((h) => inRing(lon, lat, h))) return true;
@@ -41,7 +41,7 @@ export function bboxOfMassif(g: MassifGeometry): [number, number, number, number
 
 const STEP_M = 50;
 
-/** Points de la ligne, densifiés tous les ~50 m (une trace simplifiée peut enjamber un petit massif). */
+/** Points of the line, densified every ~50 m (a simplified track may step over a small massif). */
 function* densePoints(coords: number[][]): Generator<[number, number]> {
   for (let i = 0; i < coords.length; i++) {
     const p = coords[i];
@@ -56,7 +56,7 @@ function* densePoints(coords: number[][]): Generator<[number, number]> {
   }
 }
 
-/** Codes des massifs traversés par la trace (au moins un point dans le massif), triés. */
+/** Codes of the massifs crossed by the track (at least one point inside the massif), sorted. */
 export function massifsCrossed(geometry: TrackGeometry, massifs: MassifShape[]): string[] {
   const lines = geometry.type === 'LineString' ? [geometry.coordinates] : geometry.coordinates;
   const found = new Set<string>();

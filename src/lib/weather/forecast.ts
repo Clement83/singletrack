@@ -1,19 +1,19 @@
-// Météo des sorties (#1350) : lecture d'une réponse Open-Meteo et résumé sur le créneau d'une sortie.
-// Logique pure (aucun appel réseau ici), testée avec une vraie réponse dans tests/fixtures/weather/.
+// Outing weather (#1350): reading an Open-Meteo answer and summary over an outing's slot.
+// Pure logic (no network call here), tested with a real answer in tests/fixtures/weather/.
 
-/** Variables horaires demandées à Open-Meteo (`timeformat=unixtime`, `timezone=Europe/Paris`). */
+/** Hourly variables asked from Open-Meteo (`timeformat=unixtime`, `timezone=Europe/Paris`). */
 export const HOURLY_VARS = ['temperature_2m', 'precipitation_probability', 'precipitation', 'wind_speed_10m', 'wind_gusts_10m', 'weather_code'] as const;
-/** Jours de prévision demandés (maximum Open-Meteo) et jours passés (pluie des 48 h avant la sortie). */
+/** Forecast days requested (Open-Meteo maximum) and past days (rain of the 48 h before the outing). */
 export const FORECAST_DAYS = 16;
 export const PAST_DAYS = 2;
 
 export type Hour = {
-  /** Début de l'heure, en ms. */
+  /** Start of the hour, in ms. */
   t: number;
   temp: number | null;
-  /** Probabilité de pluie, %. */
+  /** Probability of rain, %. */
   pop: number | null;
-  /** Cumul de l'heure, mm. */
+  /** Total for the hour, mm. */
   rain: number | null;
   wind: number | null;
   gust: number | null;
@@ -23,7 +23,7 @@ export type Forecast = { hours: Hour[]; days: { sunrise: number; sunset: number 
 
 const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 
-/** Valide et normalise une réponse Open-Meteo ; lève une erreur si le format n'est pas celui attendu. */
+/** Validates and normalises an Open-Meteo answer; throws if the format is not the expected one. */
 export function parseForecast(json: unknown): Forecast {
   const j = json as { hourly?: Record<string, unknown[]>; daily?: Record<string, unknown[]> } | null;
   const h = j?.hourly;
@@ -51,7 +51,7 @@ export function parseForecast(json: unknown): Forecast {
   return { hours, days };
 }
 
-/** Familles de temps (codes WMO d'Open-Meteo), de la plus clémente à la plus sévère. */
+/** Weather families (Open-Meteo WMO codes), mildest to most severe. */
 export type Sky = 'clear' | 'cloudy' | 'fog' | 'drizzle' | 'rain' | 'snow' | 'storm';
 const SKY_ORDER: Sky[] = ['clear', 'cloudy', 'fog', 'drizzle', 'rain', 'snow', 'storm'];
 
@@ -67,17 +67,17 @@ export function skyOf(code: number | null): Sky | null {
   return 'cloudy';
 }
 
-/** Seuils des alertes (source unique, ajustables ici). */
+/** Alert thresholds (single source, tunable here). */
 export const THRESHOLDS = {
-  /** Probabilité de pluie (%) à partir de laquelle on prévient. */
+  /** Probability of rain (%) from which we warn. */
   rainProb: 50,
-  /** Cumul sur le créneau (mm) : à surveiller / sortie compromise. */
+  /** Total over the slot (mm): to watch / outing compromised. */
   rainMm: 2,
   rainMmDanger: 10,
-  /** Rafales (km/h) : à surveiller / dangereux. */
+  /** Gusts (km/h): to watch / dangerous. */
   gust: 50,
   gustDanger: 80,
-  /** Pluie des 48 h précédentes (mm) au-delà de laquelle le terrain est sans doute gras. */
+  /** Rain of the previous 48 h (mm) beyond which the ground is probably muddy. */
   muddy48h: 10,
 };
 
@@ -93,11 +93,11 @@ export type WeatherOk = {
   gustMax: number | null;
   popMax: number | null;
   rainMm: number;
-  /** Pluie des 48 h avant le départ (mm), `null` si ces heures ne sont pas dans la réponse. */
+  /** Rain of the 48 h before the start (mm), `null` if those hours are not in the answer. */
   rain48h: number | null;
-  /** Coucher du soleil du jour de la sortie (ms). */
+  /** Sunset on the outing's day (ms). */
   sunset: number | null;
-  /** Fin estimée de la sortie (ms). */
+  /** Estimated end of the outing (ms). */
   endsAt: number;
   flags: WeatherFlag[];
   tone: WeatherTone;
@@ -105,7 +105,7 @@ export type WeatherOk = {
 
 export type WeatherInfo =
   | { kind: 'past' }
-  /** Au-delà de l'horizon : prévision disponible à partir de `availableFrom` (ms). */
+  /** Beyond the horizon: forecast available from `availableFrom` (ms). */
   | { kind: 'beyond'; availableFrom: number }
   | { kind: 'unavailable' }
   | WeatherOk;
@@ -119,19 +119,19 @@ const sum = (v: (number | null)[]) => v.reduce<number>((a, x) => a + (x ?? 0), 0
 const round1 = (v: number) => Math.round(v * 10) / 10;
 
 /**
- * Situation d'une sortie avant tout appel réseau : passée, trop lointaine (au-delà de l'horizon de prévision),
- * ou `null` = il faut une prévision.
+ * Situation of an outing before any network call: past, too far ahead (beyond the forecast horizon),
+ * or `null` = a forecast is needed.
  */
 export function weatherTiming(startsAt: number, durationMin: number, now: number): WeatherInfo | null {
   const endsAt = startsAt + durationMin * 60_000;
   if (endsAt < now) return { kind: 'past' };
-  // Open-Meteo couvre FORECAST_DAYS jours à partir d'aujourd'hui : un jour de marge pour la fin du créneau.
+  // Open-Meteo covers FORECAST_DAYS days from today: one day of margin for the end of the slot.
   const span = (FORECAST_DAYS - 1) * DAY;
   if (endsAt > now + span) return { kind: 'beyond', availableFrom: endsAt - span };
   return null;
 }
 
-/** Résumé de la prévision sur le créneau de la sortie (départ → départ + durée estimée, 1 h minimum), au RDV. */
+/** Summary of the forecast over the outing's slot (start → start + estimated duration, 1 h minimum), at the meeting point. */
 export function summarize(f: Forecast, startsAt: number, durationMin: number): WeatherInfo {
   const endsAt = startsAt + Math.max(durationMin, 60) * 60_000;
   const slot = f.hours.filter((h) => h.t + HOUR > startsAt && h.t < endsAt);

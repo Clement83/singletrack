@@ -1,12 +1,12 @@
 import { getCurrentUser } from '@/lib/current-user';
 import { clientIp, rateLimit } from '@/lib/outings/rate-limit';
 
-/** Lectures de la carte sans session (#1589) : 120 requêtes / minute / IP pour un anonyme. */
+/** Map reads without a session (#1589): 120 requests / minute / IP for an anonymous visitor. */
 export const ANON_READ_LIMIT = 120;
 
 /**
- * Qui lit ? Session facultative (`user` nul = anonyme). Un anonyme est limité en débit (429) ; un connecté ne l'est pas ici.
- * `rejected` : réponse à renvoyer telle quelle.
+ * Who is reading? Optional session (`user` null = anonymous). An anonymous visitor is rate-limited (429); a signed-in one is not here.
+ * `rejected`: response to return as is.
  */
 export async function readViewer(req: Request): Promise<{ user: { id: string } | null; rejected?: Response }> {
   const user = await getCurrentUser().catch(() => null);
@@ -18,8 +18,8 @@ export async function readViewer(req: Request): Promise<{ user: { id: string } |
 }
 
 /**
- * Cache HTTP : une réponse anonyme ne contient que du public (`public`, partageable) ; connecté, `private`.
- * `Vary: Cookie` : un cache partagé ne mélange jamais les deux.
+ * HTTP cache: an anonymous response only contains public data (`public`, shareable); signed in, `private`.
+ * `Vary: Cookie`: a shared cache never mixes the two.
  */
 export function readCacheHeaders(anonymous: boolean, maxAge = 60): Record<string, string> {
   return { 'Cache-Control': anonymous ? `public, max-age=${maxAge}, must-revalidate` : `private, max-age=${maxAge}, must-revalidate`, Vary: 'Cookie' };

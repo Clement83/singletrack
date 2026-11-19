@@ -5,20 +5,20 @@ import { getInvitationByToken } from '@/lib/outings/service';
 import { hashToken, newToken } from '@/lib/outings/tokens';
 
 /**
- * Copains (#1432) : relation d'amitié entre comptes. Pas d'annuaire : on ne trouve quelqu'un que par son
- * email exact, ou par un lien à usage unique. Un email inconnu et un email connu donnent la même réponse.
+ * Friends (#1432): friendship relation between accounts. No directory: someone can only be found by their
+ * exact email, or through a single-use link. An unknown and a known email give the same answer.
  */
 
 export type FriendResult<T = unknown> = ({ ok: true } & T) | { ok: false; error: string };
 
 export const pairKey = (a: string, b: string) => (a < b ? `${a}:${b}` : `${b}:${a}`);
-/** Clé de paire d'un copain d'un autre serveur (#1475) : un compte local et un acteur distant. */
+/** Pair key of a friend on another server (#1475): a local account and a remote actor. */
 export const remotePairKey = (userId: string, remoteActorId: string) => `${userId}:r:${remoteActorId}`;
 
 const findPair = (db: Db, a: string, b: string) =>
   db.select().from(friendship).where(eq(friendship.pairKey, pairKey(a, b))).get();
 
-/** Retire le lien carnet ↔ compte des deux côtés quand l'amitié disparaît (`b` NULL : copain distant `remoteActorId`). */
+/** Removes the buddy book ↔ account link on both sides when the friendship disappears (`b` NULL: remote friend `remoteActorId`). */
 function unlinkContacts(db: Db, a: string | null, b: string | null, remoteActorId: string | null = null) {
   if (a && b) {
     db.update(contact).set({ userId: null }).where(and(eq(contact.ownerUserId, a), eq(contact.userId, b))).run();
@@ -29,8 +29,8 @@ function unlinkContacts(db: Db, a: string | null, b: string | null, remoteActorI
 }
 
 /**
- * Demande par email. Réponse identique que le compte existe ou non (pas d'énumération des comptes).
- * Si l'autre personne m'avait déjà demandé, la demande croisée vaut acceptation.
+ * Request by email. Same answer whether the account exists or not (no account enumeration).
+ * If the other person had already asked me, the crossed request counts as acceptance.
  */
 export function requestByEmail(db: Db, userId: string, emailInput: unknown): FriendResult {
   const email = typeof emailInput === 'string' ? emailInput.trim().toLowerCase() : '';
@@ -47,21 +47,21 @@ export function requestByEmail(db: Db, userId: string, emailInput: unknown): Fri
   return { ok: true };
 }
 
-/** Crée un lien à usage unique ; le token en clair n'est renvoyé qu'ici. */
+/** Creates a single-use link; the plain token is only returned here. */
 export function createInviteLink(db: Db, userId: string): { token: string; path: string } {
   const token = newToken();
   db.insert(friendInvite).values({ inviterId: userId, tokenHash: hashToken(token) }).run();
   return { token, path: `/copains/invitation/${token}` };
 }
 
-/** Prénom de l'inviteur d'un lien encore valide (pour l'écran d'acceptation), sinon null. */
+/** First name of the inviter of a still-valid link (for the acceptance screen), otherwise null. */
 export function peekInvite(db: Db, token: string): { inviterName: string } | null {
   const row = db.select({ name: user.name, usedAt: friendInvite.usedAt }).from(friendInvite)
     .innerJoin(user, eq(user.id, friendInvite.inviterId)).where(eq(friendInvite.tokenHash, hashToken(token))).get();
   return row && !row.usedAt ? { inviterName: row.name } : null;
 }
 
-/** Utilise un lien : copains immédiatement (le lien vaut accord de l'inviteur). Usage unique. */
+/** Uses a link: friends immediately (the link counts as the inviter's agreement). Single use. */
 export function redeemInvite(db: Db, userId: string, token: string): FriendResult<{ friendId: string }> {
   const inv = db.select().from(friendInvite).where(eq(friendInvite.tokenHash, hashToken(token))).get();
   if (!inv || inv.usedAt) return { ok: false, error: 'not_found' };
@@ -82,12 +82,12 @@ export function redeemInvite(db: Db, userId: string, token: string): FriendResul
   });
 }
 
-/** Copain d'un autre serveur concerné par une réponse ou un retrait : l'appelant (asynchrone) lui envoie l'activité. */
+/** Friend on another server concerned by an answer or a removal: the (asynchronous) caller sends them the activity. */
 export type RemoteSide = { remoteActorId: string; followId: string | null; wasAccepted: boolean };
 const remoteSide = (f: { remoteActorId: string | null; remoteFollowId: string | null; status: string }): RemoteSide | undefined =>
   f.remoteActorId ? { remoteActorId: f.remoteActorId, followId: f.remoteFollowId, wasAccepted: f.status === 'accepted' } : undefined;
 
-/** Seul le destinataire répond : accepter, ou refuser (la demande disparaît, sans trace pour le demandeur). */
+/** Only the recipient answers: accept, or decline (the request disappears, without a trace for the requester). */
 export function respondToRequest(db: Db, userId: string, id: string, action: unknown): FriendResult<{ remote?: RemoteSide }> {
   if (action !== 'accept' && action !== 'decline') return { ok: false, error: 'invalid' };
   const f = db.select().from(friendship)
@@ -98,7 +98,7 @@ export function respondToRequest(db: Db, userId: string, id: string, action: unk
   return { ok: true, remote: remoteSide(f) };
 }
 
-/** Retire un copain ou annule une demande envoyée (l'un ou l'autre des deux comptes). */
+/** Removes a friend or cancels a sent request (either of the two accounts). */
 export function removeFriendship(db: Db, userId: string, id: string): FriendResult<{ remote?: RemoteSide }> {
   const f = db.select().from(friendship)
     .where(and(eq(friendship.id, id), or(eq(friendship.requesterId, userId), eq(friendship.addresseeId, userId)))).get();
@@ -108,14 +108,14 @@ export function removeFriendship(db: Db, userId: string, id: string): FriendResu
   return { ok: true, remote: remoteSide(f) };
 }
 
-/** `userId` NULL = copain d'un autre serveur : `remote` donne son adresse (jamais d'email) et son profil sur son serveur. */
+/** `userId` NULL = friend on another server: `remote` gives their address (never an email) and their profile on their server. */
 export type FriendEntry = {
   id: string; userId: string | null; name: string;
   remote?: { actorId: string; handle: string; domain: string; profileUrl: string };
 };
 export type FriendsView = { friends: FriendEntry[]; incoming: FriendEntry[]; outgoing: FriendEntry[] };
 
-/** Mes copains et mes demandes, locaux ou d'un autre serveur (une seule notion). Seul le prénom de l'autre est exposé, jamais son email. */
+/** My friends and my requests, local or on another server (a single notion). Only the other's first name is exposed, never their email. */
 export function listFriends(db: Db, userId: string): FriendsView {
   const rows = db.select().from(friendship)
     .where(or(eq(friendship.requesterId, userId), eq(friendship.addresseeId, userId))).all();
@@ -140,13 +140,13 @@ export function listFriends(db: Db, userId: string): FriendsView {
   return view;
 }
 
-/** Acteurs distants dont je suis copain accepté (pour P6 : sorties « copains » reçues de leur serveur). */
+/** Remote actors I am an accepted friend of (for P6: "friends" outings received from their server). */
 export const remoteFriendActorIds = (db: Db, userId: string): string[] =>
   db.select({ r: friendship.remoteActorId }).from(friendship)
     .where(and(eq(friendship.status, 'accepted'), or(eq(friendship.requesterId, userId), eq(friendship.addresseeId, userId)))).all()
     .flatMap((x) => (x.r ? [x.r] : []));
 
-/** Copain distant accepté, retrouvé par son URL d'acteur (P6 : droit de voir ma sortie « copains »). */
+/** Accepted remote friend, found by their actor URL (P6: right to see my "friends" outing). */
 export const isRemoteFriend = (db: Db, userId: string, actorUrl: string): boolean => {
   const a = db.select({ id: remoteActor.id }).from(remoteActor).where(eq(remoteActor.actorUrl, actorUrl)).get();
   return !!a && remoteFriendActorIds(db, userId).includes(a.id);
@@ -155,8 +155,8 @@ export const isRemoteFriend = (db: Db, userId: string, actorUrl: string): boolea
 export const areFriends = (db: Db, a: string, b: string) => findPair(db, a, b)?.status === 'accepted';
 
 /**
- * Lie (ou délie avec `null`) un pote du carnet à un copain accepté. Un compte ne lie qu'un pote par carnet.
- * Copain d'un autre serveur : `remoteActorId` (exclusif avec `friendUserId`).
+ * Links (or unlinks with `null`) a buddy-book entry to an accepted friend. An account links only one entry per book.
+ * Friend on another server: `remoteActorId` (exclusive with `friendUserId`).
  */
 export function linkContact(db: Db, ownerId: string, contactId: string, friendUserId: unknown, remoteActorId?: unknown): FriendResult {
   const c = db.select().from(contact).where(and(eq(contact.id, contactId), eq(contact.ownerUserId, ownerId))).get();
@@ -180,10 +180,10 @@ export function linkContact(db: Db, ownerId: string, contactId: string, friendUs
 }
 
 /**
- * Rattacher un invité à son compte (#1434). Le lien perso reste la seule preuve : qui l'a en main peut le rattacher.
- * Décision : acceptation implicite — l'organisateur a créé ce lien nominatif pour cette personne (accord de sa part) et
- * l'invité demande lui-même le rattachement (accord de la sienne) : ils deviennent copains tout de suite, sans demande à accepter.
- * Le pote du carnet lié à l'invitation est aussi lié au compte s'il ne l'est pas déjà.
+ * Attach a guest to their account (#1434). The personal link stays the only proof: whoever holds it can attach it.
+ * Decision: implicit acceptance — the organiser created this named link for this person (their agreement) and
+ * the guest asks for the attachment themselves (theirs): they become friends straight away, without a request to accept.
+ * The buddy-book entry linked to the invitation is also linked to the account if it is not already.
  */
 export function claimInvitation(db: Db, userId: string, token: string): FriendResult<{ organizerId: string | null }> {
   const found = getInvitationByToken(db, token);
@@ -195,11 +195,11 @@ export function claimInvitation(db: Db, userId: string, token: string): FriendRe
     .where(and(eq(invitation.outingId, inv.outingId), eq(invitation.userId, userId))).get();
   if (other) return { ok: false, error: 'alreadyOnOuting' };
   return db.transaction((tx) => {
-    // Condition `user_id IS NULL` : deux rattachements simultanés, un seul passe.
+    // `user_id IS NULL` condition: two simultaneous attachments, only one goes through.
     const done = tx.update(invitation).set({ userId, updatedAt: new Date() })
       .where(and(eq(invitation.id, inv.id), isNull(invitation.userId))).run();
     if (!done.changes) return { ok: false as const, error: 'alreadyClaimed' };
-    const org = o.ownerId; // publique : pas d'organisateur, donc pas de copain créé
+    const org = o.ownerId; // public: no organiser, so no friend created
     if (org) {
       const existing = findPair(tx as unknown as Db, userId, org);
       if (!existing) {

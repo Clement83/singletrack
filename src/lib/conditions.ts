@@ -3,9 +3,9 @@ import type { HuntingInfo } from '@/lib/hunting';
 import type { WeatherInfo } from '@/lib/weather';
 
 /**
- * Verdict global du bloc « Conditions » (#1350) à partir de ses fournisseurs indépendants (météo, incendie,
- * chasse plus tard). Un fournisseur sans donnée (« non disponible », hors saison…) est neutre :
- * il n'empêche pas « tout est bon » si un autre fournisseur donne une info rassurante.
+ * Overall verdict of the "Conditions" block (#1350) from its independent providers (weather, fire,
+ * hunting later). A provider without data ("not available", out of season…) is neutral:
+ * it does not prevent "all good" if another provider gives reassuring information.
  */
 export type OverallTone = 'ok' | 'warn' | 'danger' | 'unknown';
 
@@ -20,8 +20,8 @@ export function overallTone(input: { fire?: FireTone; weather?: WeatherInfo }): 
 }
 
 /**
- * Niveau d'une rubrique du bloc compact (#1454), une icône colorée par fournisseur :
- * `ok` vert, `warn` orange, `danger` rouge, `black` noir (incendie niveau 5), `none` gris (pas de donnée, hors du Var).
+ * Level of an item of the compact block (#1454), one coloured icon per provider:
+ * `ok` green, `warn` orange, `danger` red, `black` black (fire level 5), `none` grey (no data, outside the Var).
  */
 export type TileLevel = 'ok' | 'warn' | 'danger' | 'black' | 'none';
 
@@ -29,7 +29,7 @@ export function weatherLevel(weather?: WeatherInfo): TileLevel {
   return weather?.kind === 'ok' ? weather.tone : 'none';
 }
 
-/** Incendie : niveaux 1-2 vert, 3 orange, 4 rouge, 5 noir ; « aucun massif traversé » vert ; le reste gris. */
+/** Fire: levels 1-2 green, 3 orange, 4 red, 5 black; "no massif crossed" green; the rest grey. */
 export function fireTileLevel(input: { fireInfo?: FireInfo; fire?: 1 | 2 | 3 | 4 | 5; outsideVar?: boolean }): TileLevel {
   if (input.outsideVar) return 'none';
   const info = input.fireInfo;
@@ -42,7 +42,7 @@ export function fireTileLevel(input: { fireInfo?: FireInfo; fire?: 1 | 2 | 3 | 4
   return level <= 2 ? 'ok' : level === 3 ? 'warn' : level === 4 ? 'danger' : 'black';
 }
 
-/** Chasse : vert = pas de chasse ce jour-là, orange = jour de chasse ou de battue, gris = inconnu. Sans effet sur le verdict. */
+/** Hunting: green = no hunting that day, orange = hunting or driven-hunt day, grey = unknown. No effect on the verdict. */
 export function huntingTileLevel(hunting?: HuntingInfo, outsideVar?: boolean): TileLevel {
   if (outsideVar || !hunting) return 'none';
   return hunting.tone === 'ok' ? 'ok' : hunting.tone === 'caution' ? 'warn' : 'none';

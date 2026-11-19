@@ -5,21 +5,21 @@ export type FireTone = 'danger' | 'warn' | 'ok' | 'muted';
 
 export type FireMessage = {
   tone: FireTone;
-  /** Phrase courte (ligne « Incendie » du bloc Conditions). */
+  /** Short sentence ("Fire" line of the Conditions block). */
   short: string;
-  /** Bannière bien visible (accès interdit ou déconseillé), sinon absente. */
+  /** Prominent banner (access forbidden or not advised), otherwise absent. */
   banner?: string;
-  /** Précision sous la ligne. */
+  /** Detail under the line. */
   note?: string;
 };
 
-/** Traducteur du namespace `fire` (`getTranslations('fire')`, `useTranslations('fire')`, `translatorFor`). */
+/** Translator of the `fire` namespace (`getTranslations('fire')`, `useTranslations('fire')`, `translatorFor`). */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type FireT = (key: any, values?: any) => string;
 
 const list = (names: string[], locale: string) => new Intl.ListFormat(locale, { type: 'conjunction' }).format(names);
 
-/** Ton seul (verdict), sans texte : écran d'organisation d'une sortie (#1407). */
+/** Tone only (verdict), no text: outing organisation screen (#1407). */
 export function fireTone(info: FireInfo): FireTone {
   if (info.kind === 'ok') {
     if (info.massifs.some((m) => accessOf(m.level) === 'forbidden')) return 'danger';
@@ -29,7 +29,7 @@ export function fireTone(info: FireInfo): FireTone {
   return info.kind === 'none' ? 'ok' : 'muted';
 }
 
-/** Texte à afficher pour une trace/sortie à une date, dans la langue du traducteur (#1401), ton simple de la charte. */
+/** Text to show for a track/outing on a date, in the translator's language (#1401), simple tone of the charter. */
 export function fireMessage(info: FireInfo, t: FireT, locale = 'fr'): FireMessage {
   const massifs = (names: string[]) => t(names.length > 1 ? 'massifMany' : 'massifOne', { names: list(names, locale) });
   switch (info.kind) {
@@ -58,5 +58,5 @@ export function fireMessage(info: FireInfo, t: FireT, locale = 'fr'): FireMessag
   }
 }
 
-/** Vrai si le niveau fermé (rouge/noir) concerne la trace ce jour-là. */
+/** True if the closed level (red/black) concerns the track that day. */
 export const isFireBlocked = (i: FireInfo) => i.kind === 'ok' && i.massifs.some((m) => accessOf(m.level) === 'forbidden');

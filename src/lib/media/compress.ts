@@ -3,7 +3,7 @@ import { readExifGps, type GpsPos } from './exif';
 export const COMPRESS_MAX_PX = 2000;
 const EXIF_HEAD = 256 * 1024;
 
-/** Position EXIF lue dans l'original (le canvas efface l'EXIF : on la lit avant) ; le serveur ne publie jamais l'EXIF. */
+/** EXIF position read from the original (the canvas strips EXIF: it is read first); the server never publishes EXIF. */
 export async function readFilePosition(file: File): Promise<GpsPos | null> {
   try {
     return readExifGps(new Uint8Array(await file.slice(0, EXIF_HEAD).arrayBuffer()));
@@ -13,9 +13,9 @@ export async function readFilePosition(file: File): Promise<GpsPos | null> {
 }
 
 /**
- * Réduit une photo avant l'envoi (2000 px max, JPEG 82 %) : un cliché de téléphone de 6 Mo passe en ~500 Ko,
- * ce qui compte sur la 4G d'un sentier. Rotation EXIF appliquée par le navigateur. Si le navigateur ne sait pas
- * décoder le fichier (HEIC hors Safari…), on renvoie l'original et le serveur tranche.
+ * Shrinks a photo before upload (2000 px max, JPEG 82 %): a 6 MB phone shot becomes ~500 KB,
+ * which matters on a trail's 4G. EXIF rotation applied by the browser. If the browser cannot
+ * decode the file (HEIC outside Safari…), the original is returned and the server decides.
  */
 export async function compressImage(file: File): Promise<Blob> {
   try {

@@ -1,5 +1,5 @@
-// Chiffres selon la langue (charte, #1401) : en français virgule décimale et espace insécable avant l'unité ;
-// en anglais point décimal. Fuseau toujours Europe/Paris.
+// Numbers by language (charter, #1401): in French a decimal comma and a non-breaking space before the unit;
+// in English a decimal point. Time zone always Europe/Paris.
 const NBSP = '\u00a0';
 type Lang = string;
 const en = (l: Lang) => l.startsWith('en');
@@ -15,7 +15,7 @@ export function formatElevation(m: number, locale: Lang = 'fr'): string {
   return en(locale) ? `+${n}${NBSP}m` : `${n}${NBSP}m${NBSP}D+`;
 }
 
-/** Altitude ou dénivelé simple (« 350 m »), « — » si inconnu. */
+/** Simple elevation or gain ("350 m"), "—" if unknown. */
 export function formatMeters(m: number | null | undefined, locale: Lang = 'fr'): string {
   return m == null ? '—' : `${Math.round(m).toLocaleString(tag(locale))}${NBSP}m`;
 }
@@ -28,7 +28,7 @@ export function formatDuration(minutes: number, locale: Lang = 'fr'): string {
   return m === 0 ? `${h}${NBSP}h` : `${h}${NBSP}h${NBSP}${String(m).padStart(2, '0')}`;
 }
 
-/** « dim. 16 nov. · 8 h 00 » ; en anglais « Sun 16 Nov · 08:00 ». */
+/** « dim. 16 nov. · 8 h 00 »; in English "Sun 16 Nov · 08:00". */
 export function formatOutingDate(date: Date, locale: Lang = 'fr', timeZone = 'Europe/Paris'): string {
   const day = date.toLocaleDateString(tag(locale), { weekday: 'short', day: 'numeric', month: 'short', timeZone });
   const [h, m] = date

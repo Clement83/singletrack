@@ -7,8 +7,8 @@ import { isDone, listClaimedHistory, listHistory } from '@/lib/outings/history';
 import { outingPermissions, type OutingFacts } from '@/lib/outings/permissions';
 
 /**
- * Profil et stats (#1433). Visibilité `private` (défaut : soi et ses copains) ou `public` (tout compte connecté).
- * Les stats réutilisent `listHistory` (#1411) : aucun calcul en double. Jamais d'email ni de participants exposés.
+ * Profile and stats (#1433). Visibility `private` (default: oneself and one's friends) or `public` (any signed-in account).
+ * Stats reuse `listHistory` (#1411): no duplicated computation. Never an email or participants exposed.
  */
 export const VISIBILITIES = ['private', 'public'] as const;
 export type Visibility = (typeof VISIBILITIES)[number];
@@ -26,8 +26,8 @@ export function setVisibility(db: Db, userId: string, value: unknown): { ok: tru
 }
 
 /**
- * Visibilité des sorties (#1442) : `public` (tout compte connecté), `friends` (copains acceptés), `invite` (invités par lien seulement).
- * Le défaut du compte préremplit chaque nouvelle sortie, qui peut le surcharger.
+ * Outing visibility (#1442): `public` (any signed-in account), `friends` (accepted friends), `invite` (link guests only).
+ * The account default pre-fills each new outing, which may override it.
  */
 export { OUTING_VISIBILITIES };
 export type OutingVisibility = (typeof OUTING_VISIBILITIES)[number];
@@ -39,15 +39,15 @@ export function getDefaultOutingVisibility(db: Db, userId: string): OutingVisibi
 }
 
 export function setDefaultOutingVisibility(db: Db, userId: string, value: unknown): { ok: true } | { ok: false; error: string } {
-  // « Publique » fige la sortie (sans propriétaire) : jamais un réglage par défaut du compte (#1455).
+  // "Public" freezes the outing (no owner): never an account default (#1455).
   if (!isOutingVisibility(value) || value === 'public') return { ok: false, error: 'invalid' };
   db.update(user).set({ defaultOutingVisibility: value, updatedAt: new Date() }).where(eq(user.id, userId)).run();
   return { ok: true };
 }
 
 /**
- * Visibilité par défaut des traces (#1588) : `public` | `friends` | `private`, une préférence pour les traces
- * dessinées (défaut `public`) et une pour les traces importées (défaut `private`).
+ * Default track visibility (#1588): `public` | `friends` | `private`, one preference for drawn
+ * tracks (default `public`) and one for imported tracks (default `private`).
  */
 export { TRACK_VISIBILITIES };
 export type TrackVisibility = (typeof TRACK_VISIBILITIES)[number];
@@ -66,7 +66,7 @@ export function setDefaultTrackVisibility(db: Db, userId: string, origin: TrackO
   return { ok: true };
 }
 
-/** Charte graphique du compte (#1625) : id déclaré dans design/tokens.json ; inconnu ⇒ `classique`. */
+/** Visual charter of the account (#1625): id declared in design/tokens.json; unknown ⇒ `classique`. */
 export const isCharte = (v: unknown): v is string => CHARTES.some((c) => c.id === v);
 
 export function getCharte(db: Db, userId: string): string {
@@ -80,7 +80,7 @@ export function setCharte(db: Db, userId: string, value: unknown): { ok: true } 
   return { ok: true };
 }
 
-/** Un compte connecté peut-il voir cette sortie ? Délègue à `outingPermissions` (#1455), source unique des droits. */
+/** Can a signed-in account see this outing? Delegates to `outingPermissions` (#1455), single source of rights. */
 export function canSeeOuting(db: Db, viewerId: string, o: OutingFacts): boolean {
   return outingPermissions(db, { userId: viewerId }, o).canView;
 }
@@ -93,13 +93,13 @@ export type Profile = {
   isFriend: boolean;
   visibility: Visibility;
   totals: { outings: number; distanceM: number; gainM: number; lastAt: Date | null };
-  /** Sorties terminées du profil (titre, date, distance), sans lien : la page organisateur reste privée. */
+  /** Completed outings of the profile (title, date, distance), without a link: the organiser page stays private. */
   rides: ProfileRide[];
-  /** Sorties du visiteur (donc ouvrables par lui) auxquelles ce profil a répondu « je viens » via son carnet. */
+  /** The visitor's outings (so openable by them) that this profile answered "I'm in" to through their buddy book. */
   shared: ProfileRide[];
 };
 
-/** Profil visible par `viewerId`, ou `null` (⇒ 404, sans distinguer « inconnu » de « privé »). */
+/** Profile visible to `viewerId`, or `null` (⇒ 404, without telling "unknown" from "private"). */
 export function getProfile(db: Db, viewerId: string, profileId: string, now = new Date()): Profile | null {
   const u = db.select({ id: user.id, name: user.name }).from(user).where(eq(user.id, profileId)).get();
   if (!u || !u.name) return null;
@@ -109,7 +109,7 @@ export function getProfile(db: Db, viewerId: string, profileId: string, now = ne
   if (!isSelf && !isFriend && visibility !== 'public') return null;
 
   const history = listHistory(db, profileId, now);
-  // Sorties rejointes via un lien rattaché au compte (#1434) : comptent dans les stats, sans lien (page organisateur privée).
+  // Outings joined through a link attached to the account (#1434): counted in the stats, without a link (organiser page private).
   const claimed = listClaimedHistory(db, profileId, now);
   const entries = [...history.entries, ...claimed].sort((a, b) => b.startsAt.getTime() - a.startsAt.getTime());
   const totals = {

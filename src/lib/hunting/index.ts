@@ -1,46 +1,46 @@
 /**
- * Chasse dans le Var (#1354) — « minimum garanti » : saison et périodes de battue au sanglier d'après les
- * arrêtés préfectoraux, en configuration versionnée. Aucune source de battues déclarées n'est exploitable
- * (pas d'API ni de licence de réutilisation, voir l'étude en commentaire du ticket) : on n'affiche donc
- * jamais « pas de battue », seulement « battues possibles » et des liens vers les cartes de référence.
+ * Hunting in the Var (#1354) — "guaranteed minimum": season and wild boar driven-hunt periods from the
+ * prefectoral orders, as versioned configuration. No source of declared hunts is usable
+ * (no API or reuse licence, see the study in the ticket comment): so we never show
+ * "no driven hunt", only "driven hunts possible" and links to the reference maps.
  *
- * Mettre à jour chaque printemps à la parution des arrêtés de la saison suivante (fdc83.com/reglementations).
+ * Update every spring when the next season's orders are published (fdc83.com/reglementations).
  */
 
 export type HuntingKind =
-  /** Ouverture générale : toutes espèces, battues au sanglier. */
+  /** General opening: every species, wild boar driven hunts. */
   | 'general'
-  /** Battues au sanglier tous les jours (préouverture, ou prolongation après la fermeture générale). */
+  /** Wild boar driven hunts every day (early opening, or extension after the general closing). */
   | 'boarDrive'
-  /** Battues d'été au sanglier par les seuls détenteurs d'une autorisation préfectorale. */
+  /** Summer wild boar driven hunts by holders of a prefectoral authorisation only. */
   | 'boarAuthorized'
-  /** Tout acte de chasse suspendu ce jour-là. */
+  /** Any hunting suspended that day. */
   | 'suspended'
-  /** Pas de chasse ce jour-là. */
+  /** No hunting that day. */
   | 'closed'
-  /** Date hors des arrêtés connus. */
+  /** Date outside the known orders. */
   | 'unknown';
 
 export type HuntingPeriod = { from: string; to: string; kind: Exclude<HuntingKind, 'closed' | 'unknown'> };
 
 export type HuntingSeason = {
-  /** Première et dernière date couvertes par les arrêtés de la saison (hors de ces dates : « inconnu »). */
+  /** First and last date covered by the season's orders (outside them: "unknown"). */
   from: string;
   to: string;
   periods: HuntingPeriod[];
-  /** Arrêtés de référence. */
+  /** Reference orders. */
   sources: string[];
 };
 
 /**
- * Campagne 2026-2027 — arrêtés préfectoraux du Var lus le 2026-11-12 :
- * - DDTM/SAF/BCFSP/2026-046 du 12 mai 2026 (ouverture et clôture) : ouverture générale le 13 septembre 2026
- *   à 7 h, fermeture le 28 février 2027 au soir ; sanglier en battue du 13 septembre 2026 au 31 mars 2027 ;
- *   tout acte de chasse suspendu le 12 septembre 2026 ;
- * - DDTM/SAF/BCFSP/2026-045 du 12 mai 2026 (ouverture anticipée) : sanglier et renard en battue tous les
- *   jours du 15 août au 11 septembre 2026 ;
- * - arrêté « battue au 1er juin 2026 » : battues au sanglier du 1er juin au 14 août 2026 pour les détenteurs
- *   d'une autorisation préfectorale.
+ * 2026-2027 season — Var prefectoral orders read on 2026-11-12:
+ * - DDTM/SAF/BCFSP/2026-046 of 12 May 2026 (opening and closing): general opening on 13 September 2026
+ *   at 7 am, closing on 28 February 2027 in the evening; wild boar driven hunts from 13 September 2026 to 31 March 2027;
+ *   any hunting suspended on 12 September 2026;
+ * - DDTM/SAF/BCFSP/2026-045 of 12 May 2026 (early opening): wild boar and fox driven hunts every
+ *   day from 15 August to 11 September 2026;
+ * - "driven hunt from 1 June 2026" order: wild boar driven hunts from 1 June to 14 August 2026 for holders
+ *   of a prefectoral authorisation.
  */
 export const VAR_HUNTING_SEASONS: HuntingSeason[] = [
   {
@@ -61,22 +61,22 @@ export const VAR_HUNTING_SEASONS: HuntingSeason[] = [
   },
 ];
 
-/** Cartes de battues déclarées retenues par l'étude (consultation seulement, aucune n'est exhaustive). */
+/** Maps of declared driven hunts kept by the study (viewing only, none is complete). */
 export const HUNTING_MAPS = [
   { name: 'Ça chasse ?', url: 'https://ca-chasse.com/' },
   { name: 'CynePortail', url: 'https://www.cyneportail.fr/declarations/timeline' },
 ] as const;
 
-/** Réglementation de la saison (Fédération des chasseurs du Var). */
+/** Season regulations (Var hunters' federation). */
 export const HUNTING_RULES_URL = 'https://www.fdc83.com/reglementations/';
 
-/** `caution` : des battues sont possibles ce jour-là ; `ok` : pas de chasse ; `unknown` : dates pas publiées. */
+/** `caution`: driven hunts are possible that day; `ok`: no hunting; `unknown`: dates not published. */
 export type HuntingTone = 'caution' | 'ok' | 'unknown';
 
 export type HuntingInfo = {
   kind: HuntingKind;
   tone: HuntingTone;
-  /** Dernier jour de la période en cours (périodes de chasse seulement). */
+  /** Last day of the current period (hunting periods only). */
   until?: string;
 };
 
@@ -84,7 +84,7 @@ const TONE: Record<HuntingKind, HuntingTone> = {
   general: 'caution', boarDrive: 'caution', boarAuthorized: 'caution', suspended: 'ok', closed: 'ok', unknown: 'unknown',
 };
 
-/** Situation de la chasse dans le Var à une date civile (`YYYY-MM-DD`, Europe/Paris). */
+/** Hunting situation in the Var on a calendar date (`YYYY-MM-DD`, Europe/Paris). */
 export function huntingInfo(date: string, seasons: HuntingSeason[] = VAR_HUNTING_SEASONS): HuntingInfo {
   const season = seasons.find((s) => s.from <= date && date <= s.to);
   if (!season) return { kind: 'unknown', tone: 'unknown' };

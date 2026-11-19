@@ -4,7 +4,7 @@ import { emailOTPClient } from 'better-auth/client/plugins';
 
 export const authClient = createAuthClient({ plugins: [emailOTPClient()] });
 
-/** Clé de message (`auth.errors.*`, messages/<langue>.json) d'une erreur de connexion par code (#1377, #1400). */
+/** Message key (`auth.errors.*`, messages/<lang>.json) of a code sign-in error (#1377, #1400). */
 export type OtpErrorKey = 'rateLimited' | 'invalidCode' | 'expired' | 'tooManyAttempts' | 'invalidEmail' | 'generic';
 
 export function otpError(e: { code?: string; status?: number }): OtpErrorKey {

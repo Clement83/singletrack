@@ -3,15 +3,15 @@ import { redirect } from 'next/navigation';
 import { getAuth } from './auth';
 
 /**
- * Seule porte d'entrée pour savoir « qui est connecté » : si l'auth change (ex. en-tête Authelia
- * `Remote-User` à l'exposition, #1339), seul ce fichier est à adapter.
+ * Single entry point to know "who is signed in": if auth changes (e.g. an Authelia `Remote-User`
+ * header at exposure, #1339), only this file has to change.
  */
 export async function getCurrentUser() {
   const session = await getAuth().api.getSession({ headers: await headers() });
   return session?.user ?? null;
 }
 
-/** Pages et layouts privés : redirige vers /login sans session. */
+/** Private pages and layouts: redirects to /login without a session. */
 export async function requireUser() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');
@@ -24,14 +24,14 @@ export class UnauthorizedError extends Error {
   }
 }
 
-/** Server Actions et Route Handlers d'écriture : lève UnauthorizedError (à traduire en 401). */
+/** Write Server Actions and Route Handlers: throws UnauthorizedError (to translate into 401). */
 export async function assertUser() {
   const user = await getCurrentUser();
   if (!user) throw new UnauthorizedError();
   return user;
 }
 
-/** Réponse 401 standard pour les Route Handlers privés : `try { await assertUser() } catch (e) { return unauthorized(e) }`. */
+/** Standard 401 response for private Route Handlers: `try { await assertUser() } catch (e) { return unauthorized(e) }`. */
 export function unauthorized(e: unknown) {
   if (e instanceof UnauthorizedError) return Response.json({ error: 'unauthorized' }, { status: 401 });
   throw e;

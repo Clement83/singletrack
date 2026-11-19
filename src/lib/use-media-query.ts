@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from 'react';
 
-/** `true` si la media query correspond. Côté serveur : `false` (mobile first). */
+/** `true` if the media query matches. On the server: `false` (mobile first). */
 export function useMediaQuery(query: string): boolean {
   return useSyncExternalStore(
     (onChange) => {
@@ -15,5 +15,5 @@ export function useMediaQuery(query: string): boolean {
   );
 }
 
-/** Point de rupture desktop de la charte (barre latérale, panneau à la place du sheet). */
+/** Desktop breakpoint of the charter (side bar, panel instead of the sheet). */
 export const DESKTOP = '(min-width: 1024px)';

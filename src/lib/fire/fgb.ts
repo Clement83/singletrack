@@ -1,7 +1,7 @@
 import { deserialize } from 'flatgeobuf/lib/mjs/geojson.js';
 import type { MassifFeature } from './types';
 
-/** Lit `massifs_83.fgb` (FlatGeoBuf) → un massif par entité (`ID`, `NOM_MASSIF`, MultiPolygon). */
+/** Reads `massifs_83.fgb` (FlatGeoBuf) → one massif per feature (`ID`, `NOM_MASSIF`, MultiPolygon). */
 export async function readMassifsFgb(buf: ArrayBuffer | Uint8Array): Promise<MassifFeature[]> {
   const out: MassifFeature[] = [];
   for await (const f of deserialize(buf instanceof Uint8Array ? buf : new Uint8Array(buf)) as AsyncIterable<{

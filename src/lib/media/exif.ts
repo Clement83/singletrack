@@ -1,7 +1,7 @@
 /**
- * Lecture minimale du GPS dans l'EXIF d'un JPEG (#1413). Pur, sans dépendance : utilisé côté navigateur
- * (la compression par canvas efface l'EXIF, on lit donc la position AVANT) et côté serveur (repli).
- * On ne lit RIEN d'autre (ni appareil, ni numéro de série, ni date).
+ * Minimal reading of the GPS in a JPEG's EXIF (#1413). Pure, no dependency: used in the browser
+ * (canvas compression strips EXIF, so the position is read BEFORE) and on the server (fallback).
+ * NOTHING else is read (no camera, no serial number, no date).
  */
 export type GpsPos = { lat: number; lon: number };
 
@@ -19,7 +19,7 @@ export function readExifGps(buf: Uint8Array): GpsPos | null {
       off += 2 + len;
     }
   } catch {
-    /* fichier tronqué ou illisible : pas de position */
+    /* truncated or unreadable file: no position */
   }
   return null;
 }

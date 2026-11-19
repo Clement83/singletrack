@@ -9,9 +9,9 @@ export const dayUrl = (date: string) => `${SOURCE_BASE}/import_data/${compactDat
 export type MassifDayLevel = { level: FireLevel; extra: number };
 
 /**
- * Lit le fichier du jour : `{"massifs": {"835": [niveau, procédure], …}}`.
- * Niveaux : 1 vert, 2 jaune, 3 orange, 4 rouge, 5 noir (0 = pas de donnée, ignoré).
- * Renvoie `null` si le format n'est pas reconnu — l'appelant affiche alors « donnée indisponible ».
+ * Reads the day's file: `{"massifs": {"835": [level, procedure], …}}`.
+ * Levels: 1 green, 2 yellow, 3 orange, 4 red, 5 black (0 = no data, ignored).
+ * Returns `null` if the format is not recognised — the caller then shows "data unavailable".
  */
 export function parseDayFile(json: unknown): Map<string, MassifDayLevel> | null {
   const massifs = (json as { massifs?: unknown } | null)?.massifs;
@@ -27,7 +27,7 @@ export function parseDayFile(json: unknown): Map<string, MassifDayLevel> | null 
   return out.size ? out : null;
 }
 
-/** Accès : `ok` (vert/jaune), `warn` (orange : déconseillé), `forbidden` (rouge/noir). */
+/** Access: `ok` (green/yellow), `warn` (orange: not advised), `forbidden` (red/black). */
 export function accessOf(level: FireLevel): 'ok' | 'warn' | 'forbidden' {
   return level >= 4 ? 'forbidden' : level === 3 ? 'warn' : 'ok';
 }
@@ -35,7 +35,7 @@ export function accessOf(level: FireLevel): 'ok' | 'warn' | 'forbidden' {
 export const worstLevel = (levels: FireLevel[]): FireLevel | undefined =>
   levels.length ? (Math.max(...levels) as FireLevel) : undefined;
 
-/** Libellé de massif lisible : « MONTS TOULONNAIS » → « Monts Toulonnais ». */
+/** Readable massif label: "MONTS TOULONNAIS" → "Monts Toulonnais". */
 export function massifLabel(name: string): string {
   return name
     .toLowerCase()

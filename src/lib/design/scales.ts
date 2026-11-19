@@ -1,6 +1,6 @@
-// Échelles métier du design system (#1363). Une couleur d'échelle n'est jamais affichée sans
-// son libellé : libellés dans les catalogues de traduction (`scales.*`, #1401), couleurs ici.
-// Les classes Tailwind sont écrites en entier pour être détectées au build.
+// Domain scales of the design system (#1363). A scale colour is never shown without
+// its label: labels in the translation catalogues (`scales.*`, #1401), colours here.
+// Tailwind classes are written in full so they are detected at build time.
 
 export type Difficulty = 'green' | 'blue' | 'red' | 'black';
 export const DIFFICULTY: Record<Difficulty, { dot: string }> = {
@@ -10,7 +10,7 @@ export const DIFFICULTY: Record<Difficulty, { dot: string }> = {
   black: { dot: 'bg-diff-black' },
 };
 
-/** Niveaux d'accès aux massifs (carte préfectorale du Var). */
+/** Access levels to the massifs (Var prefecture map). */
 export type FireLevel = 1 | 2 | 3 | 4 | 5;
 export const FIRE: Record<FireLevel, { dot: string }> = {
   1: { dot: 'bg-fire-1' },

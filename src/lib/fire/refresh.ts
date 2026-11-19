@@ -3,15 +3,15 @@ import { addDays, parisDate, parisHour } from './dates';
 import { readMassifsFgb } from './fgb';
 import { backfillTrackMassifs, fetchDay, fetchMassifsFile, getMassifs, saveMassifs, shouldFetch, type Fetcher } from './store';
 
-/** Importe les contours (une fois par saison) puis recalcule les massifs traversés de chaque trace. */
+/** Imports the outlines (once per season) then recomputes the massifs crossed by each track. */
 export async function syncMassifs(db: Db, load: () => Promise<ArrayBuffer> = fetchMassifsFile): Promise<{ massifs: number; tracks: number }> {
   const massifs = saveMassifs(db, await readMassifsFgb(await load()));
   return { massifs, tracks: backfillTrackMassifs(db) };
 }
 
 /**
- * Passe quotidienne : contours si absents, puis niveaux d'aujourd'hui et de demain.
- * Appelée au démarrage et chaque heure par le planificateur ; la plupart des passes ne font aucun appel réseau.
+ * Daily pass: outlines if missing, then today's and tomorrow's levels.
+ * Called at start-up and every hour by the scheduler; most passes make no network call.
  */
 export async function refreshFire(db: Db, now = new Date(), fetcher?: Fetcher): Promise<string[]> {
   const done: string[] = [];
@@ -33,7 +33,7 @@ export async function refreshFire(db: Db, now = new Date(), fetcher?: Fetcher): 
 
 let timer: NodeJS.Timeout | undefined;
 
-/** Planificateur interne (pas de cron externe) : première passe 20 s après le démarrage, puis toutes les heures. */
+/** Internal scheduler (no external cron): first pass 20 s after start-up, then every hour. */
 export function startFireScheduler(db: Db) {
   if (timer) return;
   const tick = () => void refreshFire(db).catch((e) => console.error('[fire]', e));

@@ -9,7 +9,7 @@ import type { MassifFeature } from './types';
 
 const cache = new WeakMap<Db, MassifShape[]>();
 
-/** Massifs en base (mémoïsés : ~100 Ko de polygones). Vide tant que `sync:massifs` n'a pas tourné. */
+/** Massifs in the database (memoised: ~100 KB of polygons). Empty until `sync:massifs` has run. */
 export function getMassifs(db: Db): MassifShape[] {
   let m = cache.get(db);
   if (!m) {
@@ -23,7 +23,7 @@ export function getMassifs(db: Db): MassifShape[] {
   return m;
 }
 
-/** Remplace les contours des massifs. */
+/** Replaces the massif outlines. */
 export function saveMassifs(db: Db, features: MassifFeature[]): number {
   db.transaction((tx) => {
     tx.delete(massif).run();
@@ -36,13 +36,13 @@ export function saveMassifs(db: Db, features: MassifFeature[]): number {
   return features.length;
 }
 
-/** Massifs traversés par une géométrie ; `null` si les contours ne sont pas encore importés. */
+/** Massifs crossed by a geometry; `null` if the outlines are not imported yet. */
 export function massifsForGeometry(db: Db, g: TrackGeometry): string[] | null {
   const m = getMassifs(db);
   return m.length ? massifsCrossed(g, m) : null;
 }
 
-/** Recalcule les massifs traversés de toutes les traces (après import des contours). */
+/** Recomputes the crossed massifs of every track (after importing the outlines). */
 export function backfillTrackMassifs(db: Db): number {
   const rows = db.select({ id: track.id, geometry: track.geometry }).from(track).all();
   const shapes = getMassifs(db);
@@ -68,7 +68,7 @@ export function saveDay(db: Db, date: string, status: 'ok' | 'none' | 'error', l
   });
 }
 
-/** Niveaux d'un jour, par code de massif ; vide si pas de donnée. */
+/** Levels of a day, by massif code; empty if no data. */
 export function getLevels(db: Db, date: string, codes?: string[]): Map<string, MassifDayLevel> {
   const rows = db
     .select()
@@ -78,12 +78,12 @@ export function getLevels(db: Db, date: string, codes?: string[]): Map<string, M
   return new Map(rows.map((r) => [r.massifCode, { level: r.level as MassifDayLevel['level'], extra: r.extra }]));
 }
 
-// ---- Récupération (jamais depuis une page : job quotidien seulement) ----
+// ---- Fetching (never from a page: daily job only) ----
 
 export type Fetcher = (url: string) => Promise<{ status: number; text: () => Promise<string> }>;
 const defaultFetch: Fetcher = (url) => fetch(url, { headers: { 'User-Agent': 'singletrack/1.0', Accept: '*/*' }, signal: AbortSignal.timeout(20_000) });
 
-/** Récupère le fichier d'un jour. Absent (404) = pas de restriction publiée ; format inconnu = erreur. */
+/** Fetches a day's file. Absent (404) = no restriction published; unknown format = error. */
 export async function fetchDay(db: Db, date: string, fetcher: Fetcher = defaultFetch, now = new Date()): Promise<'ok' | 'none' | 'error'> {
   try {
     const res = await fetcher(dayUrl(date));
@@ -103,10 +103,10 @@ export async function fetchDay(db: Db, date: string, fetcher: Fetcher = defaultF
 const HOUR = 3_600_000;
 
 /**
- * Doit-on interroger la préfecture pour ce jour ? Un seul appel utile par jour :
- * - déjà lu (`ok`) → non ; hors saison → non (on ne dérange pas le serveur d'octobre à mai) ;
- * - le lendemain n'est publié que vers 18 h–19 h : pas avant 19 h (heure de Paris) ;
- * - après un échec ou une absence, on réessaie au plus toutes les 3 h.
+ * Should the prefecture be queried for this day? A single useful call per day:
+ * - already read (`ok`) → no; out of season → no (the server is left alone from October to May);
+ * - the next day is only published around 6–7 pm: not before 7 pm (Paris time);
+ * - after a failure or an absence, retry at most every 3 h.
  */
 export function shouldFetch(db: Db, date: string, today: string, parisHourNow: number, now: Date): boolean {
   if (!inSeason(date)) return false;

@@ -1,9 +1,9 @@
-/** Paramètres de la carte qu'un retour après connexion peut rapporter (#1591) : vue (#1577) et filtres (`src/lib/tracks/filters.ts`). */
+/** Map parameters that a return after sign-in may carry (#1591): view (#1577) and filters (`src/lib/tracks/filters.ts`). */
 const MAP_PARAM = /^[a-zA-Z]{1,16}$/;
 
 /**
- * Retour après connexion : la page d'un lien invité `/i/<token>` (#1434) ou la carte `/` avec sa vue (#1591, `?t=&z=&lat=&lng=`),
- * jamais une URL libre (pas de redirection ouverte).
+ * Return after sign-in: the page of a guest link `/i/<token>` (#1434) or the map `/` with its view (#1591, `?t=&z=&lat=&lng=`),
+ * never a free URL (no open redirect).
  */
 export function safeNext(value: unknown): string | undefined {
   if (typeof value !== 'string' || value.length > 1000) return undefined;

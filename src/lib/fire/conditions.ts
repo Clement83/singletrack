@@ -7,12 +7,12 @@ import { getDayRecord, getLevels, getMassifs } from './store';
 export type MassifStatus = { code: string; name: string; level: FireLevel; extra: number };
 
 /**
- * Situation d'une trace (liste de massifs traversés) à une date :
- * - `unknown` : contours non importés / massifs jamais calculés ;
- * - `none` : la trace ne traverse aucun massif réglementé ;
- * - `off_season` : hors période de restriction (aucun fichier, normal) ;
- * - `pending` : en saison, niveau pas encore publié (publié la veille vers 19 h) ;
- * - `unavailable` : en saison, donnée manquante ou illisible ;
+ * Situation of a track (list of crossed massifs) on a date:
+ * - `unknown`: outlines not imported / massifs never computed;
+ * - `none`: the track crosses no regulated massif;
+ * - `off_season`: outside the restriction period (no file, normal);
+ * - `pending`: in season, level not published yet (published the day before around 7 pm);
+ * - `unavailable`: in season, data missing or unreadable;
  * - `ok` : niveaux connus.
  */
 export type FireInfo =
