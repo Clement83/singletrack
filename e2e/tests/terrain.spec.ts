@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
-// Relief 3D (#1668, epic #1666) : la carte des traces s'ouvre à plat ; le bouton « 3D » active le relief
-// et incline la vue, un second clic revient à plat. Tuiles simulées : le test ne dépend ni d'AWS ni du fond.
+// 3D relief (#1668, epic #1666): the track map opens flat; the "3D" button turns the relief on
+// and tilts the view, a second click goes back to flat. Mocked tiles: the test depends neither on AWS nor on the basemap.
 const BLANK_PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 
 type Win = { __explorerMap?: { isStyleLoaded(): boolean; getPitch(): number; getTerrain(): { source: string } | null } };

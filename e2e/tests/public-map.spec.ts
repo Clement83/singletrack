@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
-// Carte publique (#1591) : un visiteur **sans cookie** explore la carte, ouvre une trace et télécharge son GPX ;
-// les actions réservées mènent à la connexion avec retour sur la même vue. Données simulées comme dans explorer-panel.
+// Public map (#1591): a visitor **without a cookie** explores the map, opens a track and downloads its GPX;
+// restricted actions lead to sign-in with a return to the same view. Mocked data as in explorer-panel.
 test.use({ extraHTTPHeaders: {} });
 
 const BLANK_PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
@@ -15,7 +15,7 @@ async function load(page: Page, url: string) {
 }
 
 test('visiteur : carte sans compte, fiche + GPX, « Préparer une sortie » mène à la connexion avec la vue', async ({ page }) => {
-  // Sans session : la carte répond (pas de redirection), les autres pages restent privées.
+  // Without a session: the map answers (no redirect), the other pages stay private.
   await load(page, '/');
   await expect(page).toHaveURL(/^[^?]*\/(\?.*)?$/);
   const c = await page.evaluate(() => (window as unknown as Win).__explorerMap!.getCenter());
@@ -31,7 +31,7 @@ test('visiteur : carte sans compte, fiche + GPX, « Préparer une sortie » mèn
   } }));
   await load(page, '/?q=e2e');
 
-  // Mode visiteur : ni « Mes traces », ni import, ni création ; « Se connecter » à la place du menu.
+  // Visitor mode: no "My tracks", no import, no creation; "Sign in" instead of the menu.
   await expect(page.getByRole('button', { name: 'Mes traces' })).toHaveCount(0);
   await expect(page.getByRole('link', { name: /Créer une trace|Importer un GPX/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Mon compte' })).toHaveCount(0);

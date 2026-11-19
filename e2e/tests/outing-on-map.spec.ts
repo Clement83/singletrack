@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-// #1596 : toucher une sortie sur la carte affiche son parcours figé coloré par pente, la légende et le profil (données simulées).
+// #1596: tapping an outing on the map shows its frozen route coloured by slope, the legend and the profile (mocked data).
 const BLANK_PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 type Win = { __explorerMap?: { isStyleLoaded(): boolean; getCenter(): { lng: number; lat: number }; querySourceFeatures(id: string): unknown[] } };
 
@@ -32,17 +32,17 @@ test('sortie : parcours coloré + légende + profil, retiré à la fermeture ; a
   await page.getByRole('button', { name: /Sortie e2e/ }).click();
   await expect.poll(openLine).toBeGreaterThan(0);
   await expect(page.getByRole('button', { name: 'Pentes' })).toBeVisible();
-  // #1599 : le panneau est un OutingView (description avec retours à la ligne, RDV, qui vient), sans météo.
+  // #1599: the panel is an OutingView (description with line breaks, meeting point, who's coming), without weather.
   await expect(page.locator('[data-outing-view="panel"]')).toContainText('Ligne 1');
   await expect(page.locator('[data-outing-view="panel"] p.whitespace-pre-line')).toContainText('Ligne 2');
   await expect(page.getByTestId('outing-panel-footer').getByRole('slider')).toBeVisible();
   expect(await page.content()).not.toContain('e2e-trace-slug');
-  // Fermer le panneau retire le tracé.
+  // Closing the panel removes the line.
   await page.getByRole('button', { name: 'Fermer' }).first().click();
   await expect.poll(openLine).toBe(0);
 });
 
-// #1639 : « Voir la fiche » du pied du panneau navigue vers la fiche de la sortie (desktop souris, mobile tactile 375 px).
+// #1639: "See the page" in the panel footer navigates to the outing page (desktop mouse, mobile touch 375 px).
 for (const mode of ['desktop', 'mobile'] as const) {
   test.describe(`#1639 ${mode}`, () => {
     if (mode === 'mobile') test.use({ viewport: { width: 375, height: 700 }, hasTouch: true, isMobile: true });

@@ -45,9 +45,9 @@ test('éditeur : glisser un point le déplace et recalcule le tronçon', async (
   await waitRouted(page, 1);
   const after = (await segments(page))[0].coords;
   expect(after[after.length - 1]).not.toEqual(before[before.length - 1]);
-  // Le départ n'a pas bougé.
+  // The start point did not move.
   const start = (await waypointCenters(page))[0];
-  expect(Math.hypot(start.x - a.x, start.y - a.y)).toBeLessThan(12); // l'aimant peut recaler le départ sur la route
+  expect(Math.hypot(start.x - a.x, start.y - a.y)).toBeLessThan(12); // the magnet may snap the start onto the road
 });
 
 test('éditeur : glisser la ligne insère un point et le place', async ({ page }) => {
@@ -63,7 +63,7 @@ test('éditeur : glisser la ligne insère un point et le place', async ({ page }
 test('éditeur : une alternative proposée se choisit d’un clic', async ({ page }) => {
   await openEditor(page);
   await twoPoints(page);
-  // BRouter ne propose pas toujours d'alternative pour un tronçon court : le scénario s'arrête alors là.
+  // BRouter does not always offer an alternative for a short segment: the scenario then stops there.
   await expect.poll(() => altCount(page), { timeout: 15_000 }).toBeGreaterThanOrEqual(0);
   test.skip((await altCount(page)) === 0, 'aucune alternative proposée par BRouter sur ce tronçon');
   const [alt] = await altLines(page);
@@ -74,7 +74,7 @@ test('éditeur : une alternative proposée se choisit d’un clic', async ({ pag
   expect((await segments(page))[0].coords).not.toEqual(before);
 });
 
-// Bugs de l'epic #1521 : scénarios écrits ici en `fixme`, activés par chaque ticket (retirer `.fixme`).
+// Bugs of epic #1521: scenarios written here as `fixme`, enabled by each ticket (remove `.fixme`).
 test.fixme('#1524 : un point posé sur une route prend (pas d’annulation, pas de ligne droite)', async ({ page }) => {
   await openEditor(page);
   await twoPoints(page);
@@ -91,7 +91,7 @@ test.fixme('#1525 : tirer un point vers une route voisine suit la route', async 
 });
 
 test.fixme('#1526 : modifier le milieu d’un circuit ne recalcule que les tronçons touchés', async () => {
-  // Ouvrir une trace existante (`/t/<slug>/edit`), déplacer un point du milieu, vérifier que les autres tronçons gardent leur tracé.
+  // Open an existing track (`/t/<slug>/edit`), move a middle point, check that the other segments keep their route.
 });
 
 test.fixme('#1527 : des alternatives sont proposées après chaque modification', async ({ page }) => {
@@ -100,11 +100,11 @@ test.fixme('#1527 : des alternatives sont proposées après chaque modification'
   expect(await altCount(page)).toBeGreaterThan(0);
 });
 
-// #1642 : paire « nouveau / ancien » après un glisser. Dépend des chemins réels de BRouter : sans paire proposée, le scénario s'arrête.
+// #1642: "new / old" pair after a drag. Depends on BRouter's real paths: without a proposed pair, the scenario stops.
 test('éditeur : deux chemins après un glisser, clic sur l’autre, « Garder ce chemin » ne laisse qu’un tracé', async ({ page }) => {
   await openEditor(page);
   const { b } = await twoPoints(page);
-  // Il faut des points posés de chaque côté du point tiré pour qu'une déviation élargie existe.
+  // Points must be placed on both sides of the dragged point for a widened detour to exist.
   await clickAt(page, { x: b.x + 120, y: b.y - 40 });
   await clickAt(page, { x: b.x + 240, y: b.y });
   await waitRouted(page, 3);

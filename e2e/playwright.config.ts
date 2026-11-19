@@ -1,12 +1,12 @@
 import fs from 'node:fs';
 import { defineConfig, devices } from '@playwright/test';
 
-// Tests de bout en bout (#1523) : un vrai Chromium contre l'app du conteneur `app` (BRouter réel).
-// Desktop souris d'abord (décision #1528) ; le mobile tactile (`hasTouch`, 375 px) viendra avec #1537.
+// End-to-end tests (#1523): a real Chromium against the app of the `app-e2e` container (real BRouter).
+// Desktop mouse first (decision #1528); mobile touch (`hasTouch`, 375 px) will come with #1537.
 const baseURL = process.env.E2E_BASE_URL ?? 'http://app-e2e:3000';
 
-// Le cookie de session est `Secure` (AUTH_SECURE_COOKIES) et Chromium ne l'envoie pas à une origine HTTP interne :
-// on le passe donc en en-tête `Cookie` sur toutes les requêtes (session écrite par scripts/e2e-session.ts).
+// The session cookie is `Secure` (AUTH_SECURE_COOKIES) and Chromium does not send it to an internal HTTP origin:
+// so it is passed as a `Cookie` header on every request (session written by scripts/e2e-session.ts).
 const cookieHeader = (() => {
   try {
     const st = JSON.parse(fs.readFileSync('.auth/state.json', 'utf8')) as { cookies: { name: string; value: string }[] };
@@ -18,7 +18,7 @@ const cookieHeader = (() => {
 
 export default defineConfig({
   testDir: './tests',
-  // Un seul compte de test, une seule base : pas de parallélisme entre fichiers.
+  // A single test account, a single database: no parallelism between files.
   workers: 1,
   fullyParallel: false,
   timeout: 90_000,
@@ -40,7 +40,7 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1280, height: 800 },
-        // Origine HTTP interne jugée sûre (géolocalisation, API réservées aux contextes sécurisés).
+        // Internal HTTP origin treated as secure (geolocation, APIs restricted to secure contexts).
         launchOptions: { chromiumSandbox: false, args: [`--unsafely-treat-insecure-origin-as-secure=${baseURL}`, "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] },
       },
     },

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
-// Carte des traces : fiche dans le panneau (#1582), aperçu au survol (#1583), plus de sélection multiple (#1584). Les données sont simulées (départs + géométries) : le test
-// ne dépend pas du contenu de la base. Desktop souris ; le mobile tactile viendra avec #1537.
+// Track map: sheet in the panel (#1582), preview on hover (#1583), no more multi-selection (#1584). The data is mocked (start points + geometries): the test
+// does not depend on the database content. Desktop mouse; mobile touch will come with #1537.
 const BLANK_PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 
 type Win = { __explorerMap?: { isStyleLoaded(): boolean; getCenter(): { lng: number; lat: number }; project(l: number[]): { x: number; y: number }; querySourceFeatures(id: string): { properties: { slug: string } }[] } };
@@ -17,7 +17,7 @@ const mk = (slug: string, lon: number, lat: number) => ({
   slug, name: slug, start: [lon, lat], distanceKm: 10, gainM: 200, difficulty: 'blue', loop: true, source: 'user', status: 'published', bbox: [lon, lat, lon + 0.01, lat + 0.01],
 });
 
-// #1582 : un départ ou une ligne de liste ouvre la fiche **dans le panneau** (pas de navigation), tracé et profil compris.
+// #1582: a start point or a list row opens the sheet **in the panel** (no navigation), line and profile included.
 const sheetOf = (s: ReturnType<typeof mk>) => {
   const [x, y] = s.start as number[];
   const coords = [[x, y, 100], [x + 0.005, y + 0.005, 180], [x + 0.01, y + 0.01, 140]];
@@ -33,7 +33,7 @@ const sheetOf = (s: ReturnType<typeof mk>) => {
 test('panneau : un départ commun liste ses traces, une ligne ouvre la fiche sans quitter la carte, Retour', async ({ page }) => {
   await load(page, '/');
   const c = await page.evaluate(() => (window as unknown as Win).__explorerMap!.getCenter());
-  // Deux traces au même parking, une troisième seule.
+  // Two tracks at the same car park, a third one alone.
   const starts = [mk('e2e-a', c.lng - 0.03, c.lat), mk('e2e-b', c.lng - 0.03, c.lat), mk('e2e-c', c.lng + 0.03, c.lat)];
   await page.route(/\/api\/tracks\?.*starts=1/, (r) => r.fulfill({ json: { tracks: starts, total: 3 } }));
   await page.route(/\/api\/tracks\/e2e-[a-z]$/, (r) => r.fulfill({ json: sheetOf(starts.find((x) => r.request().url().endsWith(x.slug))!) }));
@@ -47,10 +47,10 @@ test('panneau : un départ commun liste ses traces, une ligne ouvre la fiche san
   const openLine = () => page.evaluate(() => (window as unknown as Win).__explorerMap!.querySourceFeatures('open').length);
 
   await expect(page.getByRole('button', { name: /traces?$/ }).first()).toBeVisible();
-  // Départ commun : la liste des traces d'ici (grappe ou repères superposés).
+  // Shared start: the list of tracks from here (cluster or stacked markers).
   await tap('e2e-a');
   await expect(page.getByRole('heading', { name: '2 traces partent d’ici' })).toBeVisible();
-  // #1585 : la légende des pentes n'est sur la carte que lorsqu'une trace est ouverte.
+  // #1585: the slope legend is on the map only while a track is open.
   const legend = page.getByRole('button', { name: 'Pentes' });
   await expect(legend).toHaveCount(0);
   await page.getByRole('button', { name: /e2e-b/ }).click();
@@ -63,19 +63,19 @@ test('panneau : un départ commun liste ses traces, une ligne ouvre la fiche san
   await expect(footer.getByRole('slider')).toBeVisible();
   await expect(footer.getByRole('link', { name: 'Télécharger le GPX' })).toHaveAttribute('href', '/api/t/e2e-b/gpx');
   await expect(footer.getByRole('link', { name: /Préparer une sortie/ })).toHaveAttribute('href', '/sorties/nouvelle?trace=e2e-b');
-  // Sources derrière le « ? ».
+  // Sources behind the "?".
   await panel.getByRole('button', { name: /D’où vient cette trace/ }).click();
   await expect(panel.getByText('© OpenStreetMap')).toBeVisible();
-  // Retour au groupe.
+  // Back to the group.
   await panel.getByRole('button', { name: 'Les traces d’ici' }).click();
   await expect(page.getByRole('heading', { name: '2 traces partent d’ici' })).toBeVisible();
-  // Départ seul : la fiche s'ouvre directement.
+  // Single start: the sheet opens directly.
   await tap('e2e-c');
   await expect(page).toHaveURL(/t=e2e-c/);
   await expect(page.getByTestId('track-panel').getByText(/1,4\s*km/)).toBeVisible();
 });
 
-// #1583 : survol d'une ligne du groupe → aperçu terne de sa trace sur la carte, retiré en quittant la ligne.
+// #1583: hovering a row of the group → dimmed preview of its track on the map, removed when leaving the row.
 test('survol : une ligne de liste montre sa trace en aperçu sur la carte', async ({ page }) => {
   await load(page, '/');
   const c = await page.evaluate(() => (window as unknown as Win).__explorerMap!.getCenter());
@@ -96,12 +96,12 @@ test('survol : une ligne de liste montre sa trace en aperçu sur la carte', asyn
   await expect.poll(preview).toBeGreaterThan(0);
   await page.mouse.move(box.x + box.width - 10, box.y + box.height - 10);
   await expect.poll(preview).toBe(0);
-  // Pas d'ouverture ni de changement d'URL au survol.
+  // No opening and no URL change on hover.
   await expect(page).not.toHaveURL(/t=e2e-b/);
 });
 
-// #1584 : plus de sélection multiple. Une ligne de « Dans la zone » ouvre la fiche (Retour = toute la liste) ;
-// un vieux lien `?sel=` s'ouvre normalement et le paramètre disparaît.
+// #1584: no more multi-selection. A row of "In this area" opens the sheet (Back = the whole list);
+// an old `?sel=` link opens normally and the parameter disappears.
 test('liste : une ligne ouvre la fiche, Retour revient à la liste, ancien ?sel= ignoré', async ({ page }) => {
   await load(page, '/');
   const c = await page.evaluate(() => (window as unknown as Win).__explorerMap!.getCenter());
@@ -112,7 +112,7 @@ test('liste : une ligne ouvre la fiche, Retour revient à la liste, ancien ?sel=
   await expect(page).not.toHaveURL(/sel=/);
   await page.getByRole('button', { name: /^\d+ traces?$/ }).click();
   await expect(page.getByRole('button', { name: /Ajouter .* à la sélection/ })).toHaveCount(0);
-  // #1585 : la légende des pentes n'apparaît sur la carte qu'avec une trace ouverte.
+  // #1585: the slope legend only appears on the map with an open track.
   const legend = page.getByRole('button', { name: /^Pentes/ });
   await expect(legend).toHaveCount(0);
   await page.getByRole('button', { name: /e2e-a/ }).click();
@@ -126,7 +126,7 @@ test('liste : une ligne ouvre la fiche, Retour revient à la liste, ancien ?sel=
   await expect(page.getByRole('heading', { name: 'Traces sur la carte' })).toBeVisible();
 });
 
-// #1607 : aucune erreur MapLibre « Cannot add layer … before non-existing layer » ; départs au-dessus de l'aperçu et de la trace ouverte.
+// #1607: no MapLibre error "Cannot add layer … before non-existing layer"; start points above the preview and the open track.
 test('carte : pas d’erreur « non-existing layer » et départs au-dessus de la trace ouverte', async ({ page }) => {
   const errors: string[] = [];
   page.on('console', (m) => { if (/non-existing layer/.test(m.text())) errors.push(m.text()); });
