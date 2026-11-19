@@ -1,12 +1,12 @@
 name: singletrack
 services:
-  # Production par défaut (#1644) : build `runner` (`next start`).
-  # Une modification de src/ n'est visible qu'après `docker compose up -d --build app`.
+  # Production (#1670) : image publiée par la CI (GHCR), aucune construction locale. La version est épinglée par
+  # SINGLETRACK_TAG dans .env (`edge` = dernier push sur main, `X.Y.Z` = release) ; seul un ticket de MEP la change.
+  #   docker compose -f docker-compose.yml pull app brouter && docker compose -f docker-compose.yml up -d app brouter
   app:
-    build:
-      context: .
-      target: runner
-    image: singletrack-app
+    image: ${SINGLETRACK_REGISTRY:-ghcr.io/clement83}/singletrack:${SINGLETRACK_TAG:-latest}
+    # Même utilisateur que le propriétaire de ./data (base, photos, sauvegardes).
+    user: "${APP_UID:-1000}:${APP_GID:-1000}"
     restart: unless-stopped
     # Réseau bridge par défaut (sur un hôte au pool d'adresses compose saturé, un réseau dédié est impossible).
     # Sur une installation normale, retirer `network_mode` (et `links`) : compose crée son réseau et le DNS interne.
@@ -36,7 +36,7 @@ services:
       start_period: 30s
 
   # Serveur de développement ponctuel (#1644) : `next dev`, code monté, rechargement à chaud, LAN seulement.
-  #   docker compose --profile dev up -d app-dev   → http://localhost:3701 ; puis `docker compose stop app-dev`.
+  #   docker compose -f docker-compose.yml --profile dev up -d app-dev   → port APP_DEV_PORT (3701) ; puis `docker compose stop app-dev`.
   # Base jetable `data/dev.db`, recopiée depuis `singletrack.db` à chaque lancement (jamais la base de prod).
   # Fédération coupée (sinon la file d'envoi partagée `data/federation.db` livrerait depuis la copie).
   app-dev:
@@ -81,9 +81,9 @@ services:
       retries: 5
       start_period: 90s
 
-  # Moteur de routage VTT (#1340) : appelé uniquement par `app`, aucun port publié.
+  # Moteur de routage VTT (#1340) : appelé uniquement par `app`, aucun port publié. Image publiée (#1670), même tag que `app`.
   brouter:
-    build: ./brouter
+    image: ${SINGLETRACK_REGISTRY:-ghcr.io/clement83}/singletrack-brouter:${SINGLETRACK_TAG:-latest}
     restart: unless-stopped
     network_mode: bridge
     volumes:
@@ -95,6 +95,23 @@ services:
       timeout: 10s
       retries: 5
       start_period: 20s
+
+  # Outils ponctuels (#1670 : l'image de prod n'a ni sources ni devDependencies) : synchros, comptes, recalculs.
+  #   docker compose -f docker-compose.yml run --rm tools npm run sync:osm -- 83
+  tools:
+    profiles: [tools]
+    image: ${SINGLETRACK_REGISTRY:-ghcr.io/clement83}/singletrack-tools:${SINGLETRACK_TAG:-latest}
+    user: "${APP_UID:-1000}:${APP_GID:-1000}"
+    network_mode: bridge
+    env_file: .env
+    environment:
+      DATABASE_URL: /app/data/singletrack.db
+      BROUTER_URL: http://brouter:17777
+      HOME: /tmp
+    volumes:
+      - ./data:/app/data
+    links:
+      - brouter
 
   # Serveur de l'app pour les tests e2e : build de production (`next dev` recharge la page en boucle sous Playwright, HMR + base SQLite surveillée).
   # Dossier de build `.next-build` (ignoré par git), même base et même BRouter que `app`.

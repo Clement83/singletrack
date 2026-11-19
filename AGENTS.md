@@ -12,21 +12,21 @@ Next.js 16 (App Router, TypeScript strict), Tailwind 4 + conventions shadcn/ui, 
 
 ```bash
 cp .env.example .env                              # puis renseigner les secrets (BETTER_AUTH_SECRET, INVITE_LINK_KEY…)
-docker compose up -d --build app                  # PRODUCTION (#1644, `next start`) ; en fin de run : rebuild puis healthcheck vert
-docker compose --profile dev up -d app-dev        # dev ponctuel (#1644) : next dev, rechargement à chaud, http://localhost:3701, base jetable data/dev.db ; puis `docker compose stop app-dev` (badge Next.js masqué, `devIndicators: false` #1640)
-docker compose exec app npm test                  # Vitest (code du dernier build ; sinon `exec app-dev`)
-docker compose exec app npm run test:coverage     # couverture + seuils (vitest.config.ts)
-docker compose -f docker-compose.yml --profile e2e run --rm e2e   # e2e Playwright (#1523, Chromium en conteneur, desktop souris ; -f car compose.yml est celui de distribution)
-./scripts/smoke-docker.sh                         # test de fumée de l'image de prod (hôte, Docker requis)
-docker compose exec app npm run lint              # ESLint
-docker compose exec app npx tsc --noEmit          # typecheck
-docker compose exec app npx drizzle-kit generate  # migration après modification de src/db/schema.ts
-docker compose exec app npm run tokens:check      # tokens.css à jour + contrastes
-docker compose exec app npm run elevation:recompute  # #1519 : recote IGN + recalcule D+ (traces, snapshots, trajets) ; --dry-run, --force ; sauvegarde auto dans data/backups, reprise via data/elevation-recompute.state
+docker compose -f docker-compose.yml --profile dev up -d app-dev   # dev : next dev, code monté, rechargement à chaud, port APP_DEV_PORT (3701), base jetable data/dev.db ; ensuite `docker compose stop app-dev`
+docker compose -f docker-compose.yml exec app-dev npm test                  # Vitest
+docker compose -f docker-compose.yml exec app-dev npm run test:coverage     # couverture + seuils (vitest.config.ts)
+docker compose -f docker-compose.yml exec app-dev npm run lint              # ESLint
+docker compose -f docker-compose.yml exec app-dev npx tsc --noEmit          # typecheck
+docker compose -f docker-compose.yml exec app-dev npx drizzle-kit generate  # migration après modification de src/db/schema.ts
+docker compose -f docker-compose.yml exec app-dev npm run tokens:check      # tokens.css à jour + contrastes
+docker compose -f docker-compose.yml --profile e2e run --rm e2e             # e2e Playwright (#1523, Chromium en conteneur, desktop souris)
+./scripts/smoke-docker.sh                         # test de fumée de l'image publiée (cible `release`, hôte, Docker requis)
+docker compose -f docker-compose.yml run --rm tools npm run elevation:recompute  # #1519 : recote IGN + recalcule D+ ; --dry-run, --force ; sauvegarde auto dans data/backups
+docker compose -f docker-compose.yml run --rm tools npm run sync:osm        # synchros, user:create… : image `singletrack-tools` (même tag que la prod)
 ./scripts/get-brouter-segments.sh                 # segments BRouter (≈ 770 Mo pour la France)
 ```
 
-Toute exécution de code se fait dans les conteneurs. **`docker-compose.yml` est le fichier de dev/prod maison, mais `compose.yml` (distribution) prend le pas sans `-f` : utiliser `docker compose -f docker-compose.yml …` ou `export COMPOSE_FILE=docker-compose.yml`.** Santé : `GET /api/health`.
+Toute exécution de code se fait dans les conteneurs. **`docker-compose.yml` = compose de l'instance de développement/production maison (prod sur les images publiées, `app-dev`, e2e, `tools`) ; `compose.yml` = compose de distribution, qui prend le pas sans `-f` : utiliser `docker compose -f docker-compose.yml …` ou `COMPOSE_FILE=docker-compose.yml` dans `.env`.** La prod (`app`, `brouter`) n'est **jamais construite localement** : elle tire `ghcr.io/clement83/singletrack:${SINGLETRACK_TAG}` (#1670), voir « Releases » ci-dessous. Santé : `GET /api/health`.
 
 **Dev (`app-dev`) : page qui se recharge en boucle (#1570)** — « [Fast Refresh] rebuilding » sans modification de code, chunk 404, rechargement permanent. Cause constatée : état Turbopack périmé dans le volume `next_cache_dev` (`/app/.next` de `app-dev`), pas les bases de `data/` (écritures SQLite mesurées : aucune recompilation ; une modification de `src/` recharge bien à chaud). Remède : `docker compose stop app-dev && docker run --rm -v singletrack_next_cache_dev:/n alpine sh -c 'rm -rf /n/* /n/.[!.]*' && docker compose --profile dev up -d app-dev`. `<body>` porte `suppressHydrationWarning` (extensions navigateur qui y ajoutent classes/attributs).
 
@@ -52,11 +52,30 @@ Toute exécution de code se fait dans les conteneurs. **`docker-compose.yml` est
 - **Qui vient** : bloc `OutingParticipants` sous les conditions sur `/i` et `/s` ; données par `listParticipants` (prénoms seulement, révoqués exclus), démo sur `/styleguide`.
 - **Liens secrets** : slugs UUID v4, jetons d'invitation de 256 bits (hash en base, copie chiffrée avec `INVITE_LINK_KEY`, à ne jamais changer), pages `noindex`.
 - **Migrations** : ne jamais modifier une migration déjà appliquée ou publiée, en créer une nouvelle (incident `0017`). `scripts/upgrade-test.sh` (CI) migre une base du dernier tag `vX.Y.Z` avec les migrations courantes et refuse toute migration publiée modifiée.
-- **Versions (#1485)** : semver dans `package.json` (`config.version`, injectée au build par `next.config.mjs`, affichée dans le menu et `/api/health`) ; `release-please` (`.github/workflows/release.yml`) tient `CHANGELOG.md` et crée tag + GitHub Release à partir des commits conventionnels ; le tag publie les images (#1483). Dependabot, CodeQL, `SECURITY.md`. Détail : `CONTRIBUTING.md`.
+- **Versions (#1485, #1670)** : semver dans `package.json` (`config.version`, injectée au build par `next.config.mjs`, affichée dans le menu et `/api/health`) ; `CHANGELOG.md` (Keep a Changelog) écrit par le ticket de release ; le tag `vX.Y.Z` crée la GitHub Release (`.github/workflows/release.yml`) et publie les images (#1483). Dependabot, CodeQL, `SECURITY.md`. Procédure : section « Releases ».
 - **Config par instance** (#1473) : rien de propre à un serveur dans le code. Point maison `HOME_LAT`/`HOME_LON`, zones `SYNC_ZONES`, sources `DATA_SOURCES` (`sourceEnabled()` dans `src/lib/config.ts` ; incendie et chasse = Var seulement, `fireApplies`/`huntingApplies`). Installation : [`docs/install.md`](docs/install.md). `.env.example` fait foi pour les variables.
 - **Sources de données** : OpenStreetMap (ODbL), Geotrek, import GPX/KML, IGN (altitude), Open-Meteo. Respecter licences et attributions ; jamais de scraping.
 - **Secrets** : uniquement dans `.env` (hors git), jamais dans le code ni les logs.
 - **Fédération (ActivityPub, #1474)** : étude et décisions dans [`docs/federation.md`](docs/federation.md). Code dans `src/lib/federation/` (Fedify 2.4.5 : `index.ts` = singleton sur `globalThis`, acteur, NodeInfo, boîte d'entrée ; `handle.ts` = règle du handle ; `keys.ts` + `crypto.ts` = clés RSA par compte, privée chiffrée avec `FEDERATION_KEY_ENC` (à ne jamais changer) ; `remote-actors.ts` = cache des comptes distants ; `config.ts` = `FEDERATION=on|off`, origine publique tirée de `PUBLIC_URL`/`BETTER_AUTH_URL`, jamais d'un en-tête). **Fédération active par défaut dès que `FEDERATION_KEY_ENC` existe** (#1477 ; `FEDERATION=off` la coupe) : `off` ⇒ `/.well-known/webfinger|nodeinfo`, `/nodeinfo`, `/ap/*` répondent 404 ; `on` : `src/proxy.ts` appelle Fedify **avant** la redirection vers `/login`. File d'envoi et KV Fedify dans `data/federation.db` (réessais exponentiels ~48 h). Fedify doit rester dans `serverExternalPackages` (une seule copie). Handle : `user.handle`, généré à la saisie du prénom (hook Better Auth + rattrapage au démarrage), modifiable une fois (`/api/profile/handle`, menu utilisateur, adresse `handle@domaine` visible si la fédération est active). **Copains entre serveurs (#1475)** : `src/lib/federation/friends.ts` (adresse `paul@serveur`, Follow/Accept/Reject/Undo, `friendship.remote_actor_id`), détail dans `docs/federation.md` §9 ; `listFriends` & co. gèrent locaux et distants sans doublon. **Sorties entre serveurs (#1476)** : `src/lib/federation/outings.ts` (Event + pièce jointe `singletrack:outing`, adressage par visibilité, `Join`/`TentativeAccept`/`Leave` → `Accept`/`Reject`, caches `remote_outing` / `remote_response`), branchements `src/lib/outings/federation-hook.ts`, détail dans `docs/federation.md` §10. **Sécurité et modération (#1477)** : `moderation.ts` (serveurs et comptes bloqués, `LIMITS`, journal des refus, signalements, anti-spam), `inbox-guard.ts` (filtre taille / blocage / débit avant Fedify, dans `src/proxy.ts`), admin = `ADMIN_EMAILS` + `/admin/federation` (`src/lib/admin.ts`), détail `docs/federation.md` §11 ; tout nouvel envoi passe par `safeDeliver` / `send` qui respectent les blocs. Test d'intégration à deux instances : `docker compose exec app npx tsx scripts/federation-two-instances.ts`.
+
+## Releases
+
+Production runs **only** on images published by CI (`.github/workflows/images.yml`): `edge` on every push to `main`, `X.Y.Z`, `X.Y` and `latest` on a `vX.Y.Z` tag (amd64 + arm64). Nothing is built on the server.
+
+**Regular ticket** (feature, fix, refactor): commit on `main` locally; **no push, no tag, no production pull**. Test on `app-dev` (and e2e). The change reaches production with the next release.
+
+**Release ticket** (title `[MEP]`; every epic ends with one, depending on its last sub-ticket):
+
+1. Clean working tree; tests, lint, `tsc --noEmit`, `tokens:check` and e2e green on `app-dev`.
+2. Pick the version from the commits since the last tag (`git log $(git describe --tags --abbrev=0 2>/dev/null)..HEAD --oneline`): while in `0.x`, a `feat` bumps the minor, only `fix`es bump the patch; a breaking change bumps the minor (major after `1.0.0`).
+3. Set `version` in `package.json` and `package-lock.json` (`npm version X.Y.Z --no-git-tag-version` in `app-dev`).
+4. Move `## [Unreleased]` in `CHANGELOG.md` to `## [X.Y.Z] - YYYY-MM-DD`, grouped by `Added` / `Changed` / `Fixed` / `Removed`, written for users, in English; leave an empty `## [Unreleased]` above it.
+5. Commit `chore(release): vX.Y.Z`, tag `git tag -a vX.Y.Z -m "vX.Y.Z"`, push `main` and the tag (`git push origin main vX.Y.Z`).
+6. Wait until the **Images** and **Release** workflows are green for the tag (GitHub API: `/repos/<owner>/singletrack/actions/runs?event=push&branch=vX.Y.Z`). The Release workflow fails if the tag does not match `package.json` or the CHANGELOG section is missing.
+7. Deploy the published images (instance-specific steps: `AGENTS.local.md`): pin `SINGLETRACK_TAG=X.Y.Z`, `pull`, `up -d`, healthcheck green, `/api/health` returns the new version.
+8. **Rollback**: set `SINGLETRACK_TAG` back to the previous version, `pull`, `up -d`. Migrations only move forward: if the release added one, check that the previous version still starts before rolling back (otherwise restore the database backup taken before the deploy).
+
+Never move or delete a published tag; a bad release is fixed by a new patch release.
 
 ## Tests
 

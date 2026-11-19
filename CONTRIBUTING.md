@@ -6,15 +6,15 @@ Merci de votre intérêt. Pas de CLA : vous gardez vos droits sur vos contributi
 
 ```bash
 cp .env.example .env        # renseigner BETTER_AUTH_SECRET et INVITE_LINK_KEY (openssl rand -base64 32)
-docker compose up -d --build
+docker compose -f docker-compose.yml --profile dev up -d app-dev
 ```
 
-L'application tourne en mode développement sur `http://localhost:3700` (rechargement à chaud). Toutes les commandes se lancent dans le conteneur :
+L'application tourne en mode développement sur `http://localhost:3701` (rechargement à chaud). Toutes les commandes se lancent dans le conteneur :
 
 ```bash
-docker compose exec app npm test
-docker compose exec app npm run lint
-docker compose exec app npx tsc --noEmit
+docker compose -f docker-compose.yml exec app-dev npm test
+docker compose -f docker-compose.yml exec app-dev npm run lint
+docker compose -f docker-compose.yml exec app-dev npx tsc --noEmit
 ```
 
 Tests de bout en bout (éditeur, vrai Chromium via Playwright, profil `e2e` jamais lancé par défaut ; `-f` car `compose.yml` est le compose de distribution) :
@@ -36,6 +36,6 @@ Un compte `e2e@singletrack.test` et sa session sont posés en base par `scripts/
 
 ## Versions et publication
 
-Semver, version dans `package.json` (affichée dans le menu du compte et `GET /api/health`). `release-please` maintient une PR « release X.Y.Z » (bump + `CHANGELOG.md`) ; la fusionner crée le tag `vX.Y.Z` et la GitHub Release, et le tag publie les images versionnées (`images.yml`). Pour que le tag déclenche `images.yml` automatiquement, définir le secret `RELEASE_PLEASE_TOKEN` (un tag créé par `GITHUB_TOKEN` ne lance aucun workflow). Dependabot (npm groupé sauf `next-intl`, Actions, images Docker), CodeQL et `SECURITY.md` complètent le dispositif.
+Semver, version dans `package.json` (affichée dans le menu du compte et `GET /api/health`). Une release est faite par un mainteneur : version dans `package.json`, section `## [X.Y.Z]` de `CHANGELOG.md`, puis tag `vX.Y.Z` ; le tag crée la GitHub Release (`release.yml`, notes = section du CHANGELOG) et publie les images versionnées (`images.yml`). Procédure complète : section « Releases » d'`AGENTS.md`. Dependabot (npm groupé sauf `next-intl`, Actions, images Docker), CodeQL et `SECURITY.md` complètent le dispositif.
 - Une PR = un sujet. Décrivez le « pourquoi ».
 - Ne jamais committer de secret ni de donnée personnelle.

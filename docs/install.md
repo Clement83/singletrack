@@ -68,21 +68,21 @@ Idempotent. Après un ajout de tuiles : `docker compose restart brouter`. Le ser
 ## 3. Démarrer
 
 ```bash
-docker compose up -d --build
-docker compose ps           # app et brouter « healthy » (la 1re compilation dure 1 à 2 minutes)
-curl http://localhost:3700/api/health
+docker compose -f docker-compose.yml --profile dev up -d app-dev
+docker compose -f docker-compose.yml ps     # app-dev et brouter « healthy » (la 1re compilation dure 1 à 2 minutes)
+curl http://localhost:3701/api/health
 ```
 
 La base SQLite est créée et migrée au démarrage, dans `./data/`.
 
-> **Mode dev ou production ?** Le `docker-compose.yml` livré est en mode dev (rechargement à chaud, code monté). Pour une installation durable, utilisez l'image de production : dans `docker-compose.yml`, remplacez `target: dev` par `target: runner`, passez `NODE_ENV` à `production`, et remplacez les volumes de `app` par le seul `- ./data:/app/data` (les commentaires du fichier le rappellent). Sur un hôte sans souci de réseau compose, vous pouvez aussi retirer `network_mode: bridge` et `links`.
+> **Mode dev ou production ?** Depuis le code source, `docker-compose.yml` lance l'application en mode développement (`app-dev` : rechargement à chaud, code monté, port 3701). Son service `app` (production) n'est **pas construit localement** : il utilise les images publiées, comme `compose.yml`. Pour une installation durable, utilisez donc le compose de distribution (en haut de cette page). Sur un hôte sans souci de réseau compose, vous pouvez retirer `network_mode: bridge` et `links`.
 
 ## 4. Premier compte et premières données
 
 La connexion se fait **sans mot de passe** (code, lien et QR code reçus par mail). Soit ouvrez l'URL et connectez-vous avec votre adresse (compte créé à la première connexion tant que `AUTH_DISABLE_SIGNUP=false`), soit créez le compte :
 
 ```bash
-docker compose exec app npm run user:create -- --email vous@example.org --name Prénom
+docker compose -f docker-compose.yml run --rm tools npm run user:create -- --email vous@example.org --name Prénom
 ```
 
 Sans `RESEND_API_KEY`, aucun mail ne part : le code est écrit dans les logs (`docker compose logs app`), utile pour un premier essai. Pour fermer les inscriptions ensuite : `AUTH_DISABLE_SIGNUP=true` (puis `docker compose up -d`).
@@ -90,10 +90,10 @@ Sans `RESEND_API_KEY`, aucun mail ne part : le code est écrit dans les logs (`d
 Importez les traces de vos zones (`SYNC_ZONES`, ou en argument) :
 
 ```bash
-docker compose exec app npm run sync:osm         # itinéraires VTT OSM (un département après l'autre)
-docker compose exec app npm run sync:singles     # calque des singles OSM
-docker compose exec app npm run sync:geotrek     # circuits officiels des parcs (facultatif)
-docker compose exec app npm run sync:osm -- 83 06   # zones explicites
+docker compose -f docker-compose.yml run --rm tools npm run sync:osm         # itinéraires VTT OSM (un département après l'autre)
+docker compose -f docker-compose.yml run --rm tools npm run sync:singles     # calque des singles OSM
+docker compose -f docker-compose.yml run --rm tools npm run sync:geotrek     # circuits officiels des parcs (facultatif)
+docker compose -f docker-compose.yml run --rm tools npm run sync:osm -- 83 06   # zones explicites
 ```
 
 Chaque script est idempotent : relancez-le pour rafraîchir (par exemple chaque mois, via cron).
@@ -151,8 +151,10 @@ puis copiez `data/backup.db`, `data/media/` et `.env` hors du serveur. Restaurat
 
 ```bash
 git pull
-docker compose up -d --build
+docker compose -f docker-compose.yml --profile dev up -d --build app-dev
 ```
+
+Installation sur les images publiées : `docker compose pull && docker compose up -d` (voir le haut de cette page).
 
 Les migrations s'appliquent au démarrage. Lisez l'historique git si un changement de `.env` est annoncé (comparez avec `.env.example`).
 
