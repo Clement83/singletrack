@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button';
 import { DifficultyBadge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
-// Maquette des fondations de la charte Singletrack (#1645) : matériaux au-dessus d'une vraie carte,
-// états d'interaction, rayons concentriques, clair et sombre côte à côte.
+// Mock-up of the Singletrack charter foundations (#1645): materials over a real map,
+// interaction states, concentric radii, light and dark side by side.
 
 const HOME = { lat: 43.2, lon: 6.25 };
 
@@ -20,7 +20,7 @@ function MapButton({ label, children }: { label: string; children: React.ReactNo
   );
 }
 
-/** Carte réelle + couches flottantes en verre : boutons de carte, menu, toast, sheet. */
+/** Real map + floating glass layers: map buttons, menu, toast, sheet. */
 export function MaterialsDemo() {
   return (
     <div className="relative h-[560px] overflow-hidden rounded-2xl border border-border">
@@ -101,7 +101,7 @@ export function MaterialsDemo() {
   );
 }
 
-/** Même carte de contenu en clair et en sombre, côte à côte (attribut `data-theme` local). */
+/** Same content card in light and dark, side by side (local `data-theme` attribute). */
 export function ThemePair() {
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -128,7 +128,7 @@ export function ThemePair() {
   );
 }
 
-/** États : repos, survol (desktop), appui (ressort), focus clavier, désactivé. */
+/** States: rest, hover (desktop), press (spring), keyboard focus, disabled. */
 export function StatesDemo() {
   const state = 'press flex min-h-touch items-center justify-center rounded-xl border px-4 text-small font-semibold';
   return (
@@ -154,7 +154,7 @@ export function StatesDemo() {
   );
 }
 
-/** Rayons hiérarchisés et concentriques : 16 → 12 → 8 avec 4 px de marge. */
+/** Ranked and concentric radii: 16 → 12 → 8 with a 4 px inset. */
 export function ConcentricDemo() {
   return (
     <div className="flex flex-wrap items-center gap-4">

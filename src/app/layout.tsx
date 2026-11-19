@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { ClientMessages } from '@/i18n/client-messages';
-// Charte Singletrack (#1645) : Inter 4 avec axes poids + taille optique (coupe Display automatique sur les titres).
+// Singletrack charter (#1645): Inter 4 with weight + optical size axes (automatic Display cut on headings).
 import '@fontsource-variable/inter/opsz.css';
 import './globals.css';
 import { getLocale, getTranslations } from 'next-intl/server';
@@ -35,16 +35,16 @@ export const viewport: Viewport = { width: 'device-width', initialScale: 1, view
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  // Langue de la requête (#1400) : cookie NEXT_LOCALE, sinon navigateur, sinon français.
+  // Request language (#1400): NEXT_LOCALE cookie, otherwise browser, otherwise French.
   const locale = await getLocale();
-  // Charte du compte (#1625), posée côté serveur : pas de flash. Sans session : Classique.
+  // Account charter (#1625), set on the server: no flash. Without a session: Classique.
   const me = await getCurrentUser();
   const charte = me ? getCharte(getDb().db, me.id) : CHARTES[0].id;
   return (
     // suppressHydrationWarning : next-themes pose data-theme avant l'hydratation.
     <html lang={locale} data-charte={charte} suppressHydrationWarning>
       <body suppressHydrationWarning>
-        {/* Messages client par zone (#1405) : ici le strict minimum, chaque segment pose les siens. */}
+        {/* Client messages per area (#1405): the bare minimum here, each segment sets its own. */}
         <ClientMessages zone="root">
           <ThemeProvider>
             {children}

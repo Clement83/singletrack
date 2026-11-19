@@ -13,7 +13,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getTranslations('moderation.admin'))('metaTitle'), robots: { index: false, follow: false } };
 }
 
-// Administration de la fédération (#1477) : réservée aux emails de `ADMIN_EMAILS` (404 pour les autres : la page n'existe pas pour eux).
+// Federation administration (#1477): restricted to the `ADMIN_EMAILS` (404 for everyone else: the page does not exist for them).
 export default async function Page() {
   const user = await requireUser();
   if (!isAdminEmail(user.email)) notFound();

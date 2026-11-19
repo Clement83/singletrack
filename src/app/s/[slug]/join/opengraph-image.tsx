@@ -9,7 +9,7 @@ export const size = OG_SIZE;
 export const contentType = 'image/png';
 export const alt = 'Singletrack';
 
-// Aperçu du lien ouvert de groupe (#1351), celui qu'on poste dans un groupe WhatsApp. Désactivé ⇒ image générique.
+// Preview of the group open link (#1351), the one posted in a WhatsApp group. Disabled ⇒ generic image.
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
   return outingOgImage(getOutingByOpenToken(getDb().db, (await params).slug), (await getLocale()) as Locale);
 }

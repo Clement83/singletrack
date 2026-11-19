@@ -10,8 +10,8 @@ import { safeNext } from '@/lib/safe-next';
 import { authClient, otpError } from '@/lib/auth-client';
 
 /**
- * Pas de connexion automatique à l'ouverture : les antivirus de messagerie ouvrent les liens des mails,
- * ils consommeraient le code. La personne confirme d'un tap.
+ * No automatic sign-in on opening: mail antivirus software opens the links in emails,
+ * it would consume the code. The person confirms with a tap.
  */
 export function LinkSignIn() {
   const router = useRouter();
@@ -25,9 +25,9 @@ export function LinkSignIn() {
     const email = p.get('e');
     const otp = p.get('c');
     const next = safeNext(p.get('n'));
-    // Le code ne reste pas dans la barre d'adresse ni l'historique.
+    // The code does not stay in the address bar or the history.
     history.replaceState(null, '', window.location.pathname);
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- lecture unique du fragment au montage
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- single read of the fragment on mount
     setCreds(email && otp && /^\d{6}$/.test(otp) ? { email, otp, next } : null);
   }, []);
 

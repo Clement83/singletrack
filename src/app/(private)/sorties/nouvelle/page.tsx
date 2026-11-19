@@ -15,12 +15,12 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getTranslations('pages'))('newOuting'), robots: { index: false, follow: false } };
 }
 
-// Création d'une sortie depuis une fiche trace : /sorties/nouvelle?trace=<slug>
+// Creating an outing from a track sheet: /sorties/nouvelle?trace=<slug>
 export default async function Page({ searchParams }: { searchParams: Promise<{ trace?: string }> }) {
   const user = await requireUser();
   const slug = (await searchParams).trace;
-  const t = slug ? getVisibleTrack(getDb().db, slug, user.id) : undefined; // règle d'accès unique (#1589)
-  if (!t || t.status === 'draft') notFound(); // invisible ⇒ 404 (jamais 403)
+  const t = slug ? getVisibleTrack(getDb().db, slug, user.id) : undefined; // single access rule (#1589)
+  if (!t || t.status === 'draft') notFound(); // invisible ⇒ 404 (never 403)
   const tr = await getTranslations('outings');
   return (
     <main className="mx-auto flex w-full max-w-xl flex-col gap-5 px-4 pt-4">

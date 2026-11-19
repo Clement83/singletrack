@@ -5,10 +5,10 @@ import { ClientMessages } from '@/i18n/client-messages';
 
 export const dynamic = 'force-dynamic';
 
-// Zone réservée au connecté (#1344). Le proxy filtre sur le cookie ; ici la session est vérifiée pour de bon.
+// Area for signed-in users (#1344). The proxy filters on the cookie; here the session is really verified.
 export default async function PrivateLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
-  if (!user.name) redirect('/bienvenue'); // nouveau compte sans prénom (#1377)
+  if (!user.name) redirect('/bienvenue'); // new account without a first name (#1377)
   return (
     <ClientMessages zone="private">
       {children}

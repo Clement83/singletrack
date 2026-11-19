@@ -37,8 +37,8 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getTranslations('outingPage'))('metaTitle'), robots: { index: false, follow: false } };
 }
 
-// Page « organisateur » (#1341) : réservée au connecté qui a créé la sortie ; 404 pour tout autre.
-// Les invités passent par /i/<token>, jamais par ici.
+// "Organiser" page (#1341): restricted to the signed-in user who created the outing; 404 for anyone else.
+// Guests go through /i/<token>, never through here.
 export default async function Page({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ reinviter?: string }> }) {
   const user = await requireUser();
   const { db } = getDb();
@@ -56,7 +56,7 @@ export default async function Page({ params, searchParams }: { params: Promise<{
     revoked: !!i.revokedAt, shareable: perms.canRevoke(i), respondedAt: i.respondedAt?.toISOString() ?? null,
   }));
   const snap = o.trackSnapshot;
-  // #1592 : lien vers la trace d'origine seulement si ce lecteur a le droit de la voir (sinon parcours figé sans lien).
+  // #1592: link to the original track only if this reader may see it (otherwise frozen route without a link).
   const origin = o.trackId ? db.select().from(track).where(eq(track.id, o.trackId)).get() : undefined;
   const canOpenTrack = !!origin && canViewTrack(db, origin, user.id) && origin.slug === snap.slug;
   const organizerName = o.ownerId ? db.select({ name: userTable.name }).from(userTable).where(eq(userTable.id, o.ownerId)).get()?.name : undefined;
@@ -140,7 +140,7 @@ export default async function Page({ params, searchParams }: { params: Promise<{
         conditions={
       <ConditionsBlock
         weather={weather}
-        // Incendie et chasse : sources du Var seulement (#1428), « non disponible » ailleurs.
+        // Fire and hunting: Var-only sources (#1428), "not available" elsewhere.
         outsideVar={!fireApplies(o.meetingLon, o.meetingLat) && !huntingApplies(o.meetingLon, o.meetingLat)}
         fireInfo={fireInfoValue}
         hunting={huntingApplies(o.meetingLon, o.meetingLat) ? huntingInfo(parisDate(o.startsAt)) : undefined}

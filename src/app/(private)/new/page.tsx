@@ -12,9 +12,9 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getTranslations('pages'))('newTrack'), robots: { index: false, follow: false } };
 }
 
-/** Éditeur sur une carte vierge centrée sur la maison (#1340). */
+/** Editor on a blank map centred on home (#1340). */
 export default async function NewTrackPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  // Vue de la carte transmise par l'explorateur (#1577) : l'éditeur s'ouvre au même endroit.
+  // Map view passed by the explorer (#1577): the editor opens at the same place.
   const raw = await searchParams;
   const sp = new URLSearchParams(Object.entries(raw).flatMap(([k, v]) => (typeof v === 'string' ? [[k, v]] : [])));
   const v = parseMapView(sp);

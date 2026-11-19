@@ -22,7 +22,7 @@ import type { WeatherInfo } from '@/lib/weather';
 import { TrackCard, TrackCardSkeleton } from '@/components/track-card';
 import { DIFFICULTY, FIRE, RSVP, type Difficulty, type FireLevel, type Rsvp } from '@/lib/design/scales';
 
-// Météo de démonstration (#1350) : une belle matinée, puis un jour de mistral qui finit de nuit après la pluie.
+// Demo weather (#1350): a fine morning, then a mistral day that ends at night after the rain.
 const NOW = Date.UTC(2026, 10, 16, 8);
 const SUNNY: WeatherInfo = { kind: 'ok', sky: 'clear', tempMin: 12, tempMax: 15, windMax: 10, gustMax: 22, popMax: 5, rainMm: 0, rain48h: 0, sunset: NOW + 9 * 3600e3, endsAt: NOW + 3 * 3600e3, flags: [], tone: 'ok' };
 const WINDY: WeatherInfo = { kind: 'ok', sky: 'cloudy', tempMin: 9, tempMax: 13, windMax: 38, gustMax: 66, popMax: 20, rainMm: 0.4, rain48h: 18, sunset: NOW + 9 * 3600e3, endsAt: NOW + 10 * 3600e3, flags: ['wind', 'dark', 'muddy'], tone: 'warn' };
@@ -33,7 +33,7 @@ const people = (n: number): Participant[] => [
   ...NAMES.slice(0, Math.max(0, n - 1)).map((name, i) => ({ id: `p${i}`, name, status: (i % 7 === 5 ? 'maybe' : i % 7 === 6 ? 'no' : 'yes') as Participant['status'], isMe: i === 1, isOrganizer: false })),
 ];
 
-// Sortie de démonstration (#1597) : mêmes blocs pour les 4 rôles, seules les actions changent.
+// Demo outing (#1597): same blocks for the 4 roles, only the actions change.
 const DEMO_TRACK = {
   slug: 'demo', name: 'Lac de la Verne', geometry: { type: 'LineString', coordinates: [[6.22, 43.2], [6.25, 43.22], [6.3, 43.21], [6.28, 43.18]] },
   bbox: [6.22, 43.18, 6.3, 43.22], start: [6.22, 43.2], distanceM: 33000, elevationGainM: 820, elevationLossM: 820, minEle: 40, maxEle: 420,

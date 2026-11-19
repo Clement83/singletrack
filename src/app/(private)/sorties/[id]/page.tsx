@@ -16,7 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getTranslations('pages'))('outings'), robots: { index: false, follow: false } };
 }
 
-// Fiche de découverte (#1461) : désignée par l'id (jamais le slug organisateur). Déjà rattaché ⇒ sa page.
+// Discovery page (#1461): designated by the id (never the organiser slug). Already attached ⇒ their page.
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   const { id } = await params;

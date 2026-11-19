@@ -12,7 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getTranslations('join'))('metaTitle'), robots: { index: false, follow: false } };
 }
 
-// Lien ouvert de groupe (désactivé par défaut) : on tape son prénom, on reçoit son lien perso /i/<token>.
+// Group open link (disabled by default): type your first name, get your personal link /i/<token>.
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
   const slug = (await params).slug;
   const o = getOutingByOpenToken(getDb().db, slug);

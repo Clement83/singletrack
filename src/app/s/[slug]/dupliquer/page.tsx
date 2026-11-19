@@ -13,13 +13,13 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getTranslations('pages'))('duplicateOuting'), robots: { index: false, follow: false } };
 }
 
-/** +7 jours sur la date de Paris, même heure (calcul sur la date civile : insensible au changement d'heure). */
+/** +7 days on the Paris date, same time (computed on the calendar date: unaffected by the clock change). */
 function plusDays(date: string, n: number): string {
   const [y, m, d] = date.split('-').map(Number);
   return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
 }
 
-// Dupliquer une sortie (#1360) : privé, organisateur seulement (404 pour tout autre).
+// Duplicate an outing (#1360): private, organiser only (404 for anyone else).
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
   const user = await requireUser();
   const { db } = getDb();

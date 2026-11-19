@@ -6,8 +6,8 @@ import { getCurrentUser } from '@/lib/current-user';
 
 export const dynamic = 'force-dynamic';
 
-// Explorateur de traces (#1346) : carte plein écran ; barre du bas (mobile) ou latérale (≥ 1024 px) par-dessus.
-// Publique depuis #1591 : un visiteur sans compte explore les traces publiques (mode visiteur, `signedIn=false`).
+// Track explorer (#1346): full-screen map; bottom bar (mobile) or side bar (≥ 1024 px) on top.
+// Public since #1591: a visitor without an account explores the public tracks (visitor mode, `signedIn=false`).
 export default async function Home() {
   const signedIn = !!(await getCurrentUser());
   return (

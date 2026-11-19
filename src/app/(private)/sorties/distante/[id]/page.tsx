@@ -17,7 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getTranslations('pages'))('outings'), robots: { index: false, follow: false } };
 }
 
-// Sortie d'un autre serveur (#1476) : copie en cache, l'organisateur reste la référence. Météo, carte et trace viendront de la copie.
+// Outing from another server (#1476): cached copy, the organiser remains the reference. Weather, map and track will come from the copy.
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   const o = listRemoteOutings(getDb().db, user.id, { id: (await params).id })[0];
@@ -27,7 +27,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const stateText = o.state === 'none' ? null
     : o.state === 'rejected' ? t(`state.rejected.${o.reason === 'full' || o.reason === 'closed' || o.reason === 'forbidden' ? o.reason : 'other'}`, { domain: o.organizer.domain })
     : t(`state.${o.state}`, { domain: o.organizer.domain });
-  // Jamais de slug (déjà vidé à la réception) ; absent ⇒ bloc parcours masqué.
+  // Never a slug (already emptied on reception); absent ⇒ route block hidden.
   const track = o.track && o.track.geometry ? o.track : null;
   return (
     <>

@@ -8,7 +8,7 @@ import { Field, Input } from '@/components/ui/field';
 import { authClient, otpError } from '@/lib/auth-client';
 import { FINE_POINTER } from '@/lib/use-desktop-autofocus';
 
-/** Connexion sans mot de passe (#1377) : email → code reçu par mail (ou lien / QR code du même mail). */
+/** Passwordless sign-in (#1377): email → code received by email (or link / QR code from the same email). */
 export function LoginFlow({ next }: { next?: string }) {
   const router = useRouter();
   const t = useTranslations('auth');
@@ -19,7 +19,7 @@ export function LoginFlow({ next }: { next?: string }) {
   const [pending, setPending] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const codeRef = useRef<HTMLInputElement>(null);
-  // Focus sur le code quand il apparaît, seulement avec souris et clavier (#1390 : sur mobile le clavier masquerait l'écran).
+  // Focus on the code when it appears, only with mouse and keyboard (#1390: on mobile the keyboard would hide the screen).
   useEffect(() => {
     if (step === 'code' && window.matchMedia(FINE_POINTER).matches) codeRef.current?.focus();
   }, [step]);

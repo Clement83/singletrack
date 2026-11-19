@@ -17,7 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getTranslations('pages'))('profile'), robots: { index: false, follow: false } };
 }
 
-// Profil d'un utilisateur (#1433) : 404 si le visiteur n'a pas le droit de le voir (privé et pas copains).
+// A user's profile (#1433): 404 if the visitor is not allowed to see it (private and not friends).
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const me = await requireUser();
   const { id } = await params;

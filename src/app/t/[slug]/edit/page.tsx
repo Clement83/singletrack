@@ -15,16 +15,16 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /**
- * Éditeur d'une trace existante (#1340). `/t` est une base publique (liens invités) : cette page est
- * privée par `requireUser()`, pas par le proxy. Trace de l'utilisateur → modifiée en place ; trace
- * d'un autre ou importée (OSM, Geotrek...) ou `?copie=1` → on édite une copie, l'original reste intact.
+ * Editor of an existing track (#1340). `/t` is a public base (guest links): this page is
+ * private through `requireUser()`, not through the proxy. The user's track → edited in place; someone else's
+ * or imported track (OSM, Geotrek...) or `?copie=1` → a copy is edited, the original stays untouched.
  */
 export default async function EditTrackPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ copie?: string }> }) {
   const user = await requireUser();
   const { slug } = await params;
   const found = getTrackBySlug(getDb().db, slug);
   if (!found || !canViewTrack(getDb().db, found, user.id)) notFound(); // brouillon d'un autre : 404 (#1450)
-  const t = await ensureTrackElevation(getDb().db, found); // altitude IGN à la première ouverture (#1428)
+  const t = await ensureTrackElevation(getDb().db, found); // IGN elevation on first opening (#1428)
   const draft = t.status === 'draft';
   const wantCopy = (await searchParams).copie === '1' && !draft;
   const mode: EditorMode = !wantCopy && canEditInPlace(t, user.id) ? 'update' : 'copy';

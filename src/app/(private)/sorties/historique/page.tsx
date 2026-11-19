@@ -19,7 +19,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 const day = (d: Date, locale: string) => d.toLocaleDateString(locale === 'en' ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Europe/Paris' });
 
-// « Nos sorties » (#1411) : sorties terminées, cumul km / D+, et ce qu'on a fait avec chaque pote.
+// "Our outings" (#1411): completed outings, km / gain totals, and what was done with each buddy.
 export default async function Page() {
   const user = await requireUser();
   const { entries, totals, byPal } = listHistory(getDb().db, user.id);

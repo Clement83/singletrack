@@ -7,7 +7,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t('title') };
 }
 
-// Page de repli du service worker (précachée à l'installation).
+// Service worker fallback page (pre-cached at install).
 export default async function Offline() {
   const t = await getTranslations('offline');
   return (

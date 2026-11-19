@@ -3,9 +3,9 @@ import { DEFAULT_LOCALE, TIME_ZONE, isLocale, type Locale } from './config';
 import { MESSAGES } from './messages';
 
 /**
- * Traducteur hors requête (mails envoyés en arrière-plan, scripts) pour une langue donnée, typiquement
- * `user.locale` du destinataire. Langue inconnue ou absente ⇒ français. Dans une page ou une action,
- * utiliser plutôt `getTranslations()` de `next-intl/server` (langue de la requête).
+ * Translator outside a request (emails sent in the background, scripts) for a given language, typically
+ * the recipient's `user.locale`. Unknown or missing language ⇒ French. In a page or an action,
+ * use `getTranslations()` from `next-intl/server` instead (request language).
  */
 export function translatorFor(locale: string | null | undefined) {
   const l: Locale = isLocale(locale) ? locale : DEFAULT_LOCALE;

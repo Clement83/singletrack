@@ -5,9 +5,9 @@ import { feedResponse, icsEvent, publicOrigin, requestLocale } from '@/lib/outin
 export const dynamic = 'force-dynamic';
 
 /**
- * Abonnement agenda de l'invité (#1357) : `webcal://<hôte>/i/<token>/calendar.ics`. Une seule sortie ; l'agenda la
- * met à jour (UID stable, SEQUENCE) ou la barre (STATUS:CANCELLED). Lien révoqué ⇒ 404 : l'événement disparaît à la
- * prochaine synchro de l'agenda.
+ * Guest's calendar subscription (#1357): `webcal://<host>/i/<token>/calendar.ics`. A single outing; the calendar
+ * updates it (stable UID, SEQUENCE) or strikes it out (STATUS:CANCELLED). Revoked link ⇒ 404: the event disappears at the
+ * calendar's next sync.
  */
 export async function GET(req: Request, { params }: { params: Promise<{ token: string }> }) {
   const token = (await params).token;

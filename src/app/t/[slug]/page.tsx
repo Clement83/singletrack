@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return { title: t ? tr('metaTitle', { name: t.name || tr('untitled') }) : tr('notFound'), robots: { index: false, follow: false } };
 }
 
-/** Lien court et stable (#1593) : la fiche vit dans le panneau de la carte. Non visible ⇒ 404, jamais de redirection. */
+/** Short and stable link (#1593): the sheet lives in the map panel. Not visible ⇒ 404, never a redirect. */
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const user = await getCurrentUser().catch(() => null);

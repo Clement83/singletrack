@@ -18,7 +18,7 @@ function Section({ id, title, children }: { id: string; title: string; children:
   );
 }
 
-/** Référence visuelle du design system (#1363) : tous les tokens et composants, tous les thèmes. */
+/** Visual reference of the design system (#1363): every token and component, every theme. */
 export default function StyleguidePage() {
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-10 px-gutter py-8 lg:px-gutter-lg">

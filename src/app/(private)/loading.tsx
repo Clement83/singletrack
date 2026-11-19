@@ -1,6 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton';
 
-// Squelette commun des pages privées pendant le rendu serveur (#1649) : la forme d'un titre et de deux cartes.
+// Shared skeleton of the private pages during server rendering (#1649): the shape of a title and two cards.
 export default function Loading() {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-gutter py-6" aria-busy>

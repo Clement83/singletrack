@@ -1,6 +1,6 @@
-/* FICHIER GÉNÉRÉ par `npm run tokens` depuis design/tokens.json : ne pas éditer à la main. */
+/* GENERATED FILE by `npm run tokens` from design/tokens.json: do not edit by hand. */
 
-/* Thème par défaut : Clair */
+/* Default theme: Clair */
 :root,
 [data-theme='light'] {
   color-scheme: light;
@@ -70,7 +70,7 @@
   --border-width: 1px;
 }
 
-/* Thème Sombre */
+/* Theme Sombre */
 [data-theme='dark'] {
   color-scheme: dark;
   --background: #0b0c0e;
@@ -139,7 +139,7 @@
   --border-width: 1px;
 }
 
-/* Sans JS (ou avant hydratation) : suit le système. */
+/* Without JS (or before hydration): follows the system. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
     color-scheme: dark;
@@ -212,7 +212,7 @@
 
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
 
-/* Valeurs indépendantes du thème. */
+/* Theme-independent values. */
 :root {
   --duration-fast: 120ms;
   --duration-base: 200ms;

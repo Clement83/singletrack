@@ -5,7 +5,7 @@ import { translatorFor } from '@/i18n/server';
 
 export const dynamic = 'force-dynamic';
 
-/** Abonnement agenda de l'organisateur (#1357) : toutes ses sorties. Jeton dédié, régénérable (`/api/calendar-feed`). */
+/** Organiser's calendar subscription (#1357): all their outings. Dedicated token, can be regenerated (`/api/calendar-feed`). */
 export async function GET(req: Request, { params }: { params: Promise<{ token: string }> }) {
   const outings = outingsForCalendarFeed(getDb().db, (await params).token);
   if (!outings) return new Response('Not found', { status: 404 });

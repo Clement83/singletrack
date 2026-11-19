@@ -1,5 +1,5 @@
 @import 'tailwindcss';
-/* Tokens du design system (ticket 1363) : générés depuis design/tokens.json par `npm run tokens`. */
+/* Design-system tokens (ticket 1363): generated from design/tokens.json by `npm run tokens`. */
 @import './styles/tokens.css';
 
 @layer base {
@@ -13,13 +13,13 @@
   }
   body {
     @apply bg-background text-body text-foreground font-sans antialiased;
-    /* Charte Singletrack (ticket 1645) : Inter 4, axe optique automatique (coupe Display sur les grands titres),
-       « l » à queue pour distinguer l / I / 1 ; rendu net. Sans effet sur les autres familles. */
+    /* Singletrack charter (ticket 1645): Inter 4, automatic optical axis (Display cut on large headings),
+       tailed "l" to tell l / I / 1 apart; crisp rendering. No effect on the other families. */
     font-optical-sizing: auto;
     font-feature-settings: 'cv05';
     text-rendering: optimizeLegibility;
   }
-  /* Titres équilibrés, paragraphes sans veuve. */
+  /* Balanced headings, paragraphs without widows. */
   h1,
   h2,
   h3,
@@ -39,8 +39,8 @@
   ::after {
     @apply border-border;
   }
-  /* Bonnes pratiques UI (ticket 1389, skill .claude/skills/ui-ux) : Tailwind 4 a retiré le
-     `cursor: pointer` des boutons de son preflight ; tout ce qui est cliquable le retrouve ici. */
+  /* UI best practices (ticket 1389, skill .claude/skills/ui-ux): Tailwind 4 removed
+     `cursor: pointer` from buttons in its preflight; everything clickable gets it back here. */
   button:not(:disabled),
   [role='button']:not([aria-disabled='true']),
   [role='tab'],
@@ -57,7 +57,7 @@
   [aria-disabled='true'] {
     cursor: not-allowed;
   }
-  /* Pas de délai de double-tap sur mobile pour les éléments interactifs. */
+  /* No double-tap delay on mobile for interactive elements. */
   a,
   button,
   input,
@@ -68,7 +68,7 @@
   [role='button'] {
     touch-action: manipulation;
   }
-  /* Polices de charte : titres en `display`, chiffres en `figures` (aujourd'hui les mêmes familles que `sans`). */
+  /* Charter fonts: headings in `display`, figures in `figures` (today the same families as `sans`). */
   h1,
   h2,
   h3,
@@ -93,7 +93,7 @@
   }
 }
 
-/* Charte : animations courtes, coupées si l'utilisateur le demande. */
+/* Charter: short animations, turned off if the user asks for it. */
 @media (prefers-reduced-motion: reduce) {
   *,
   ::before,
@@ -105,8 +105,8 @@
   }
 }
 
-/* Carte tactile (ticket 1343) : boutons MapLibre ≥ 44 px (--spacing-touch), gestes tactiles gérés
-   par MapLibre (touch-action posé par la lib ; `cooperativeGestures` pour les cartes intégrées). */
+/* Touch map (ticket 1343): MapLibre buttons ≥ 44 px (--spacing-touch), touch gestures handled
+   by MapLibre (touch-action set by the library; `cooperativeGestures` for embedded maps). */
 .map-touch .maplibregl-ctrl-group {
   border-radius: var(--radius-2xl);
   overflow: hidden;
@@ -123,7 +123,7 @@
   font-size: 0.75rem;
 }
 
-/* Avatars « Qui vient » : entrée en fondu ≤ 200 ms (coupée par prefers-reduced-motion ci-dessus). */
+/* "Who's coming" avatars: fade-in ≤ 200 ms (turned off by prefers-reduced-motion above). */
 @keyframes avatar-in {
   from { opacity: 0; transform: scale(0.85); }
   to { opacity: 1; transform: scale(1); }
@@ -133,7 +133,7 @@
   animation-delay: calc(var(--i, 0) * 40ms);
 }
 
-/* Entrées courtes (ticket 1649) : panneau latéral desktop et voile du sheet ; coupées par prefers-reduced-motion. */
+/* Short entrances (ticket 1649): desktop side panel and sheet scrim; turned off by prefers-reduced-motion. */
 @keyframes panel-in {
   from { opacity: 0; transform: translateX(-8px); }
   to { opacity: 1; transform: none; }
@@ -149,10 +149,10 @@
   animation: fade-in var(--duration-base, 200ms) var(--ease-out) both;
 }
 
-/* Verre (ticket 1624) : couches flottantes (nav, sheet, boutons de carte, toasts). Fond `surface-glass` à
-   l'opacité `--glass-opacity` + `--glass-blur` (`none` ou `blur(…)`) selon la charte. Charte Singletrack (ticket 1645) :
-   72 % (sombre 70 %) + saturate(180%) blur(20px) ; jamais sur les cartes de contenu. Repli opaque sans backdrop-filter ou si l'utilisateur
-   demande moins de transparence. */
+/* Glass (ticket 1624): floating layers (nav, sheet, map buttons, toasts). `surface-glass` background at
+   `--glass-opacity` + `--glass-blur` (`none` or `blur(…)`) according to the charter. Singletrack charter (ticket 1645):
+   72 % (dark 70 %) + saturate(180%) blur(20px); never on content cards. Opaque fallback without backdrop-filter or when the user
+   asks for less transparency. */
 @utility glass {
   background-color: var(--surface-glass);
   @supports (backdrop-filter: blur(1px)) {
@@ -184,7 +184,7 @@
   }
 }
 
-/* États d'interaction (ticket 1645) : appui = léger enfoncement en ressort (`press`), jamais au seul survol. */
+/* Interaction states (ticket 1645): press = slight spring press-in (`press`), never on hover alone. */
 @utility press {
   transition-property: transform, background-color, color, border-color, opacity, box-shadow;
   transition-duration: var(--duration-fast);
@@ -194,8 +194,8 @@
   }
 }
 
-/* Rayon concentrique (ticket 1645) : élément imbriqué = rayon du parent − sa marge intérieure.
-   `--radius-outer` (défaut rounded-2xl) et `--inset` (défaut 4 px) se règlent sur le parent ou l'élément. */
+/* Concentric radius (ticket 1645): nested element = parent radius − its inner margin.
+   `--radius-outer` (default rounded-2xl) and `--inset` (default 4 px) are set on the parent or the element. */
 @utility concentric {
   border-radius: max(var(--radius-sm), calc(var(--radius-outer, var(--radius-2xl)) - var(--inset, 4px)));
 }

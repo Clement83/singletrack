@@ -5,11 +5,11 @@ import { ClientMessages } from '@/i18n/client-messages';
 
 export const dynamic = 'force-dynamic';
 
-// Carte des traces (#1591) : ouverte sans compte. Le visiteur ne voit que le public (filtrage côté API, #1589) ;
-// le connecté garde tout (ses traces, celles de ses copains) et son menu.
+// Track map (#1591): open without an account. The visitor only sees public data (API filtering, #1589);
+// the signed-in user keeps everything (their tracks, their friends') and their menu.
 export default async function ExploreLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
-  if (user && !user.name) redirect('/bienvenue'); // nouveau compte sans prénom (#1377)
+  if (user && !user.name) redirect('/bienvenue'); // new account without a first name (#1377)
   return (
     <ClientMessages zone="private">
       {children}

@@ -25,7 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getTranslations('pages'))('outings'), robots: { index: false, follow: false } };
 }
 
-// Ni pastille incendie ni météo ici (#1407) : la sortie porte son bloc Conditions.
+// Neither fire chip nor weather here (#1407): the outing carries its Conditions block.
 function OutingCard({ o, locale, archived = false }: { o: OutingRow; locale: string; archived?: boolean }) {
   return (
     <li className="flex flex-col gap-1">
@@ -42,7 +42,7 @@ function OutingCard({ o, locale, archived = false }: { o: OutingRow; locale: str
   );
 }
 
-// Sortie ouverte (#1443) : résumé sans lien ; « Je viens » (#1444) rejoint avec le compte, désactivé si la sortie est pleine.
+// Open outing (#1443): summary without a link; "I'm in" (#1444) joins with the account, disabled if the outing is full.
 async function OpenOutingCard({ o, locale }: { o: OpenOuting; locale: string }) {
   const t = await getTranslations('outings');
   const tl = await getTranslations('outingLabels');
@@ -68,7 +68,7 @@ async function OpenOutingCard({ o, locale }: { o: OpenOuting; locale: string }) 
   );
 }
 
-// Sortie rejointe avec mon compte (#1444) : badge Participant, « Ouvrir » régénère le lien de l'invitation liée.
+// Outing joined with my account (#1444): Participant badge, "Open" regenerates the link of the linked invitation.
 function JoinedCard({ o, locale, t, archived = false, past = false }: { o: JoinedOuting; locale: string; archived?: boolean; past?: boolean; t: (k: 'participant' | 'openBy', v?: { name: string }) => string }) {
   return (
     <li className="flex flex-col gap-2 rounded-2xl border border-border bg-card p-4 shadow-sm">
@@ -87,7 +87,7 @@ function JoinedCard({ o, locale, t, archived = false, past = false }: { o: Joine
   );
 }
 
-// Sortie d'un autre serveur (#1476) : copie en cache ; « Je viens » en un tap, la fiche pour le détail.
+// Outing from another server (#1476): cached copy; "I'm in" in one tap, the card for the detail.
 async function RemoteCard({ o, locale }: { o: RemoteOutingView; locale: string }) {
   const t = await getTranslations('remoteOutings');
   const tl = await getTranslations('outingLabels');
@@ -111,14 +111,14 @@ async function RemoteCard({ o, locale }: { o: RemoteOutingView; locale: string }
   );
 }
 
-// « Mes sorties » : à venir / passées.
+// "My outings": upcoming / past.
 export default async function Page() {
   const user = await requireUser();
   const { upcoming: allUpcoming, past: allPast } = listOutings(getDb().db, user.id);
   const open = listVisibleOutings(getDb().db, user.id);
   const allJoined = listJoinedOutings(getDb().db, user.id);
   const remote = listRemoteOutings(getDb().db, user.id);
-  // Archives (#1459) : par personne ; une sortie passée est archivée d'office, sauf choix contraire.
+  // Archives (#1459): per person; a past outing is archived by default, unless chosen otherwise.
   const overrides = archiveOverrides(getDb().db, user.id);
   const mine = [...allUpcoming, ...allPast];
   const upcoming = allUpcoming.filter((o) => !isArchivedFor(overrides, o));

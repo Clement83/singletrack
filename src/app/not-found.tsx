@@ -4,7 +4,7 @@ import { getTranslations } from 'next-intl/server';
 import { buttonVariants } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 
-// 404 aux couleurs de la charte (#1649).
+// 404 in the charter's colours (#1649).
 export default async function NotFound() {
   const t = await getTranslations('errors');
   return (

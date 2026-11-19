@@ -13,7 +13,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getTranslations('pages'))('friends'), robots: { index: false, follow: false } };
 }
 
-// Lien d'invitation copain à usage unique (#1432) : privé, il faut un compte (connexion sans mot de passe).
+// Single-use friend invitation link (#1432): private, an account is needed (passwordless sign-in).
 export default async function Page({ params }: { params: Promise<{ token: string }> }) {
   await requireUser();
   const { token } = await params;

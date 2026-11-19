@@ -29,13 +29,13 @@ import { huntingInfo } from '@/lib/hunting';
 import { fireApplies, huntingApplies } from '@/lib/osm/zones';
 
 export const dynamic = 'force-dynamic';
-// Lien personnel : jamais indexé, jamais mis en cache par un intermédiaire.
+// Personal link: never indexed, never cached by an intermediary.
 export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getTranslations('guest'))('metaTitle'), robots: { index: false, follow: false } };
 }
 
-// Page invité (#1341) : publique, sans compte. Token inconnu ou révoqué → 404 générique.
-// Mobile first : titre, date, RDV et bouton GO tiennent sans scroller à 375 px ; la trace vient dessous.
+// Guest page (#1341): public, no account. Unknown or revoked token → generic 404.
+// Mobile first: title, date, meeting point and GO button fit without scrolling at 375 px; the track comes below.
 export default async function Page({ params }: { params: Promise<{ token: string }> }) {
   const { db } = getDb();
   const token = (await params).token;
@@ -48,7 +48,7 @@ export default async function Page({ params }: { params: Promise<{ token: string
   const { invitation: inv, outing: o } = found;
   const snap = o.trackSnapshot;
   const viewer = await getCurrentUser();
-  // Rattachement (#1434) : proposé tant que l'invitation n'a pas de compte ; l'organisateur n'a pas à se rattacher à sa propre sortie.
+  // Attachment (#1434): offered while the invitation has no account; the organiser does not attach to their own outing.
   const claimState = inv.userId ? (viewer && inv.userId === viewer.id ? 'mine' : null) : viewer ? (viewer.id === o.ownerId ? null : 'available') : 'anonymous';
   const closed = isClosed(o);
   const organizerName = o.ownerId ? db.select({ name: userTable.name }).from(userTable).where(eq(userTable.id, o.ownerId)).get()?.name : undefined;
@@ -87,7 +87,7 @@ export default async function Page({ params }: { params: Promise<{ token: string
         conditions={
           <ConditionsBlock
             weather={weather}
-            // Incendie et chasse : sources du Var seulement (#1428), « non disponible » ailleurs.
+            // Fire and hunting: Var-only sources (#1428), "not available" elsewhere.
             outsideVar={!fireApplies(o.meetingLon, o.meetingLat) && !huntingApplies(o.meetingLon, o.meetingLat)}
             fireInfo={fireInfoValue}
             hunting={huntingApplies(o.meetingLon, o.meetingLat) ? huntingInfo(parisDate(o.startsAt)) : undefined}

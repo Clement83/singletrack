@@ -3,12 +3,12 @@ import { getMessages } from 'next-intl/server';
 import type { Messages } from './messages';
 
 /**
- * Messages transmis au navigateur, par zone du site (#1405) : `NextIntlClientProvider` sans `messages` explicites
- * enverrait **tout** le catalogue dans chaque page. Les composants serveur, eux, lisent le catalogue complet
- * (`getTranslations`) sans rien envoyer.
+ * Messages passed to the browser, per area of the site (#1405): `NextIntlClientProvider` without explicit `messages`
+ * would send the **whole** catalogue in every page. Server components read the full catalogue
+ * (`getTranslations`) without sending anything.
  *
- * Un provider imbriqué **remplace** les messages du parent (pas de fusion) : chaque zone liste donc tout ce
- * dont ses composants client ont besoin. `tests/i18n-client.test.ts` le vérifie par analyse des imports.
+ * A nested provider **replaces** the parent's messages (no merge): each area therefore lists everything
+ * its client components need. `tests/i18n-client.test.ts` checks it by analysing the imports.
  */
 type Ns = keyof Messages;
 const ROOT: Ns[] = ['common', 'errors'];
@@ -37,7 +37,7 @@ export async function clientMessages(zone: ClientZone) {
   return Object.fromEntries(ns.map((k) => [k, all[k]])) as Partial<Messages>;
 }
 
-/** Provider de la zone : à poser dans le layout du segment. */
+/** Provider of the area: to place in the segment's layout. */
 export async function ClientMessages({ zone, children }: { zone: ClientZone; children: React.ReactNode }) {
   return <NextIntlClientProvider messages={await clientMessages(zone)}>{children}</NextIntlClientProvider>;
 }

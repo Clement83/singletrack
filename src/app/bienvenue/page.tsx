@@ -11,7 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getTranslations('welcome'))('metaTitle'), robots: { index: false, follow: false } };
 }
 
-// Première connexion d'un nouveau compte (#1377) : on demande juste le prénom.
+// First sign-in of a new account (#1377): we just ask for the first name.
 export default async function WelcomePage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
   const next = safeNext((await searchParams).next);
   const user = await requireUser();

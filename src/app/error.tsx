@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 
-// Erreur inattendue d'un écran (#1649) : ton simple et une suite possible, jamais une page blanche.
+// Unexpected error on a screen (#1649): simple tone and a possible next step, never a blank page.
 export default function ErrorPage({ reset }: { error: Error; reset: () => void }) {
   const t = useTranslations('errors');
   return (

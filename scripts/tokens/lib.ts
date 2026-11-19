@@ -37,7 +37,7 @@ export type Tokens = {
 };
 
 export const GENERATED_HEADER =
-  '/* FICHIER GÉNÉRÉ par `npm run tokens` depuis design/tokens.json : ne pas éditer à la main. */';
+  '/* GENERATED FILE by `npm run tokens` from design/tokens.json: do not edit by hand. */';
 
 /** Value of a token for a theme, following `extends` (e.g. a trial theme → light) then the scheme (dark → dark). */
 export function resolveThemed(tokens: Tokens, value: Record<string, string>, themeId: string): string {
@@ -50,7 +50,7 @@ export function resolveThemed(tokens: Tokens, value: Record<string, string>, the
   }
   const scheme = tokens.themes.find((t) => t.id === themeId)?.scheme ?? 'light';
   if (value[scheme] !== undefined) return value[scheme];
-  throw new Error(`Aucune valeur pour le thème « ${themeId} » dans ${JSON.stringify(value)}`);
+  throw new Error(`No value for theme "${themeId}" in ${JSON.stringify(value)}`);
 }
 
 export function themeColors(tokens: Tokens, themeId: string): Record<string, string> {
@@ -142,14 +142,14 @@ export function generateCss(tokens: Tokens): string {
   const [base, ...others] = tokens.themes;
   const out: string[] = [GENERATED_HEADER, ''];
 
-  out.push(`/* Thème par défaut : ${base.name} */`, `:root,\n[data-theme='${base.id}'] {`, ...themeBlock(tokens, base), '}', '');
+  out.push(`/* Default theme: ${base.name} */`, `:root,\n[data-theme='${base.id}'] {`, ...themeBlock(tokens, base), '}', '');
   for (const t of others) {
-    out.push(`/* Thème ${t.name} */`, `[data-theme='${t.id}'] {`, ...themeBlock(tokens, t), '}', '');
+    out.push(`/* Theme ${t.name} */`, `[data-theme='${t.id}'] {`, ...themeBlock(tokens, t), '}', '');
   }
   const dark = tokens.themes.find((t) => t.scheme === 'dark');
   if (dark) {
     out.push(
-      '/* Sans JS (ou avant hydratation) : suit le système. */',
+      '/* Without JS (or before hydration): follows the system. */',
       '@media (prefers-color-scheme: dark) {',
       '  :root:not([data-theme]) {',
       ...themeBlock(tokens, dark).map((l) => `  ${l}`),
@@ -163,10 +163,10 @@ export function generateCss(tokens: Tokens): string {
 
   for (const c of tokens.chartes.slice(1)) {
     const blocks = charteBlocks(tokens, c);
-    if (blocks.length) out.push(`/* Charte ${c.name} (#1624) : seulement ce qui change par rapport à ${tokens.chartes[0].name}. */`, ...blocks);
+    if (blocks.length) out.push(`/* Charter ${c.name} (#1624): only what changes compared with ${tokens.chartes[0].name}. */`, ...blocks);
   }
 
-  out.push('/* Valeurs indépendantes du thème. */', ':root {');
+  out.push('/* Theme-independent values. */', ':root {');
   for (const m of tokens.motion) out.push(`  --duration-${m.name}: ${m.value};`);
   for (const m of tokens.map) out.push(`  --map-${m.name}: ${m.value};`);
   out.push('}', '');

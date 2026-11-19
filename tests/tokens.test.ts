@@ -65,7 +65,7 @@ describe('tokens : génération', () => {
     it('Classique reste sur :root et n’émet aucune variable de charte', () => {
       const classic = generateCss({ ...tokens, chartes: [tokens.chartes[0]] });
       expect(classic).not.toContain('data-charte');
-      expect(css.startsWith(classic.split('/* Valeurs indépendantes')[0])).toBe(true);
+      expect(css.startsWith(classic.split('/* Theme-independent values')[0])).toBe(true);
     });
 
     it('une charte d’essai change rayons, polices, ombres, verre et texte sans toucher aux composants', () => {

@@ -8,7 +8,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t('title'), robots: { index: false, follow: false } };
 }
 
-// Ouverte depuis le lien ou le QR code du mail (#1377). Le code est dans le fragment (#) : lu côté client.
+// Opened from the email's link or QR code (#1377). The code is in the fragment (#): read on the client.
 export default async function LinkSignInPage() {
   const t = await getTranslations('auth.link');
   return (
