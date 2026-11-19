@@ -1,6 +1,6 @@
 # Design system singletrack
 
-Sorties VTT entre potes : **simple, doux, et pensé pour le téléphone qu'on sort de la poche au parking.**
+Sorties VTT entre potes : **net, calme, et pensé pour le téléphone qu'on sort de la poche au parking.**
 Ce guide applique la **charte d'interface** de `AGENTS.md` (elle fait foi). Référence visuelle vivante : **`/styleguide`** (`http://192.0.2.10:3700/styleguide`).
 
 ## Comment ça marche
@@ -22,18 +22,18 @@ design/tokens.json  ──npm run tokens──▶  src/app/styles/tokens.css  �
 
 - **Modifier une couleur** : changer sa valeur dans `tokens.json`, `npm run tokens`, rebuild. Toute l'appli suit, aucun composant à toucher.
 - **Ajouter un thème** : ajouter une entrée dans `themes` (`id`, `name`, `scheme`, éventuellement `extends`) et ses valeurs dans `color[].value.<id>`. Avec `extends: "light"`, on ne déclare que ce qui change. Le thème apparaît tout seul dans le sélecteur (`ThemeSwitcher`).
-- **Deux thèmes seulement** (#1396) : **clair** (sable chaud hérité de l'ancien thème « garrigue », texte ardoise de l'icône, action principale bleu nuit, accent abricot) et **sombre** (couleurs de l'icône : fond bleu nuit, panneaux ardoise, texte crème, action principale abricot du couchant). Le thème « garrigue » a été retiré ; le mécanisme `extends` reste disponible pour un futur thème.
+- **Deux thèmes seulement** (#1396) : **clair** (neutres presque blancs, cartes blanches, texte encre, accent indigo `#4f46e5`) et **sombre** (neutres profonds `#0b0c0e` / `#141518`, texte `#ececee`, indigo clair `#a5a6ff` avec texte foncé) — charte Singletrack (#1645). Le mécanisme `extends` reste disponible pour un futur thème.
 - Thème clair / sombre / système : `next-themes` (attribut `data-theme`), choix mémorisé dans le navigateur.
 
 ### Chartes (#1624)
 
-Un second axe, **indépendant du clair/sombre** : la *charte* (`chartes` dans `tokens.json`) porte rayons, polices, ombres, couleurs et surfaces verre. Classique = la charte actuelle, sur `:root`. Une autre charte ne déclare que ce qui change : `"chartes": { "<id>": valeur }` sur un token (valeur simple, ou `{light, dark}` pour couleurs et ombres ; texte : champs partiels), `extends` pour hériter d'une autre charte.
+Un second axe, **indépendant du clair/sombre** : la *charte* (`chartes` dans `tokens.json`) porte rayons, polices, ombres, couleurs et surfaces verre. La charte de base (**Singletrack**, #1645, id `classique` conservé pour les comptes existants) est sur `:root`. Une autre charte ne déclare que ce qui change : `"chartes": { "<id>": valeur }` sur un token (valeur simple, ou `{light, dark}` pour couleurs et ombres ; texte : champs partiels), `extends` pour hériter d'une autre charte.
 
-- Génération : `[data-charte='x'][data-theme='light|dark']` (et repli `prefers-color-scheme` sans JS), uniquement les variables qui diffèrent de Classique. Tailwind lit déjà `--radius-*`, `--font-*`, `--text-*`, `--elevation-*` : aucun composant ne connaît la charte.
+- Génération : `[data-charte='x'][data-theme='light|dark']` (et repli `prefers-color-scheme` sans JS), uniquement les variables qui diffèrent de la charte de base. Tailwind lit déjà `--radius-*`, `--font-*`, `--text-*`, `--elevation-*` : aucun composant ne connaît la charte.
 - Nouveaux tokens : `surface-glass` (+ `-foreground`), `glass-opacity`, `glass-blur` (valeur de `backdrop-filter` : `none` ou `blur(16px)`), `border-width` (variable seule), polices `display` et `mono`.
-- Utilitaire **`glass`** (`globals.css`) : fond `surface-glass` à `glass-opacity` + `glass-blur`, repli opaque sans `backdrop-filter` ou sous `prefers-reduced-transparency`. Posé sur la barre de navigation, le `BottomSheet`, les boutons de carte et les toasts. Classique = 100 % / `none` : surfaces pleines.
+- Utilitaire **`glass`** (`globals.css`) : fond `surface-glass` à `glass-opacity` + `glass-blur`, repli opaque sans `backdrop-filter` ou sous `prefers-reduced-transparency`. Posé sur la barre de navigation, le `BottomSheet`, les boutons de carte et les toasts. Singletrack : 72 % (sombre 70 %) + `saturate(180%) blur(20px)`.
 - Contrastes vérifiés pour chaque charte × thème (texte sur verre contre le repli opaque).
-- **Technique nuit (#1626, `nuit`)** : sombre d'abord (fond `#0b0f14`, panneaux `#121821`, primaire vert fluo `#c6f432` avec texte foncé) ; en clair, gris froid et vert olive (`#3d6b00`) pour que texte, liens et focus passent AA. Rayons 2–8 px, ombres plus denses, verre sombre `72 %` (clair `78 %`) + `blur(16px)`. Polices auto-hébergées `@fontsource-variable/space-grotesk` (titres : `h1`–`h3`, `.text-display|title|heading`, token `display`) et `jetbrains-mono` (chiffres : `.text-stat`, `.tabular-nums`, token `figures`) ; Classique : `display` et `figures` = Inter, rien ne change. Les `@font-face` sont importés partout mais le navigateur ne télécharge un fichier que si la charte l'utilise.
+- **Technique nuit (#1626, `nuit`)** : sombre d'abord (fond `#0b0f14`, panneaux `#121821`, primaire vert fluo `#c6f432` avec texte foncé) ; en clair, gris froid et vert olive (`#3d6b00`) pour que texte, liens et focus passent AA. Rayons 2–8 px, ombres plus denses, verre sombre `72 %` (clair `78 %`) + `blur(16px)`. Polices auto-hébergées `@fontsource-variable/space-grotesk` (titres : `h1`–`h3`, `.text-display|title|heading`, token `display`) et `jetbrains-mono` (chiffres : `.text-stat`, `.tabular-nums`, token `figures`) ; charte de base : `display` et `figures` = Inter. Les `@font-face` sont importés partout mais le navigateur ne télécharge un fichier que si la charte l'utilise.
 - **Affiche de trail (#1627, `affiche`)** : clair d'abord, sable `#f2ede4`, texte noir, orange signalisation `#ff4f1a` en `accent` (sélection, texte noir dessus) ; l'action principale (`primary`, liens, nav) est un orange foncé `#c23600` en clair pour passer AA (l'orange vif ne passe pas sur sable). Contours `border-width` 2 px (`.border`, `.border-t`, `.border-b` sous `[data-charte='affiche']`), rayons 0–4 px, ombres décalées pleines (`4px 4px 0`), verre opaque (pas de flou). Sombre : fond brun-noir, contours crème, orange `#ff5a24`. Titres Anton en capitales (`@fontsource/anton/latin-400.css`, une seule graisse), corps Inter.
 - **Alpin verre (#1628, `alpin`)** : blanc givré (fond `#eaf1fb`, texte `#0d1b2a`), bleu outremer `#1f5bff` en `primary` (clair `#7aa2ff` en sombre, texte foncé dessus), accent bleu glacier `#dbe8ff`. Rayons 6–12 px, verre `60 %` (sombre `55 %`) + `blur(20px)` sur les couches flottantes seulement, ombres teintées de bleu. Manrope (`@fontsource-variable/manrope/wght.css`) pour `sans`, `display` et `figures` ; téléchargée seulement si la charte l'utilise.
 - `/styleguide` : `CharteSwitcher` (attribut `data-charte`, sans compte). Le choix par compte (#1625) est dans le menu utilisateur.
@@ -45,25 +45,35 @@ Un second axe, **indépendant du clair/sombre** : la *charte* (`chartes` dans `t
 - **Anti-couleur en dur** (ESLint, `src/**`) : interdits les hex, `rgb()`/`hsl()`/`oklch()`…, `bg-[#…]` et les couleurs de la palette Tailwind. Aussi vérifié dans les `.css` (hors `tokens.css`). Seule exception : `style={{ background: 'var(--token)' }}`.
 - Pour MapLibre (qui ne lit pas les variables CSS) : lire la valeur au runtime, `getComputedStyle(document.documentElement).getPropertyValue('--diff-red')`, et relire au changement de thème. Les réglages de la carte sont dans `--map-*`.
 
-## Principes
+## Principes — charte Singletrack (#1645)
 
-- **La carte d'abord.** Elle occupe l'écran ; l'interface flotte par-dessus (boutons ronds, barre du bas, bottom sheet).
-- **Une action principale par écran**, en `primary`, pleine largeur, en bas (`<Button size="lg">`). Le reste est secondaire ou fantôme.
-- **Doux, pas fade.** Fond crème `background`, cartes `card`, ombres `shadow-sm`/`shadow-md` au plus, `rounded-2xl` sur cartes et panneaux. Un seul accent : `primary` (bleu nuit en clair, abricot en sombre), relayé par `accent` (abricot doux) pour la sélection.
-- **Mobile first.** On dessine à 375 px puis on élargit (`lg:` = 1024 px). Rien d'uniquement au survol. Zones tactiles ≥ 44 px (`min-h-touch`, `size-touch`).
+Direction inspirée de ce qui se fait de mieux (Apple HIG pour les matériaux et la typo, Linear/Vercel/Stripe pour la densité et les détails, Komoot/Strava/Plans pour la carte), sans en copier l'identité :
+
+1. **La carte d'abord.** Elle occupe l'écran ; l'interface flotte par-dessus, en **verre** (flou 20 px + saturation 180 %, 72 % d'opacité) — barre de nav, sheet, boutons de carte, menus, toasts. **Jamais de verre sur une carte de contenu** ; repli opaque sous `prefers-reduced-transparency` ou sans `backdrop-filter`.
+2. **Neutres d'abord, un seul accent.** Gris presque blancs / presque noirs, texte encre ; l'indigo (`primary`) ne sert qu'à l'action principale, la sélection, les liens et le focus. Les couleurs métier (difficulté, incendie, pentes, réponses) gardent leur sens.
+3. **Hairlines plutôt qu'aplats.** Contours 1 px à faible contraste (`border`) pour séparer ; les champs gardent un contour ≥ 3:1 (`input`).
+4. **Profondeur en couches.** Ombres douces à 2–3 couches (contact + diffusion) ; en sombre, un reflet clair de 1 px en haut des surfaces remplace l'ombre qu'on ne voit plus.
+5. **Rayons serrés et hiérarchisés** : 4 px (cases) · 8 px (boutons, champs) · 12 px (cartes, panneaux) · 16 px (sheet, dialogues). Imbriqué = **concentrique** (rayon du parent − marge, utilitaire `concentric`).
+6. **Typo resserrée** : titres légèrement serrés (letter-spacing négatif), corps à −0,011 em, étiquettes en capitales espacées ; chiffres **tabulaires** partout où on compare (stats, profils).
+7. **Densité « produit »** sur une grille de 4 px, sans jamais rogner les zones tactiles (≥ 44 px).
+8. **Mouvement court et physique** : 120 ms pour un retour d'état, 200 ms pour une ouverture, `ease-out` franc ; ressort léger (`ease-spring`, ~3 %) à l'appui (`press`). Tout est coupé sous `prefers-reduced-motion`.
+9. **États explicites** : survol (desktop seulement), appui, focus clavier visible (anneau 2 px + 2 px d'écart), désactivé à 50 %. Jamais d'action au seul survol.
+10. **Petits détails** : titres équilibrés (`text-wrap: balance`), paragraphes sans veuve (`pretty`), sélection de texte teintée d'accent, « l » à queue d'Inter pour distinguer l / I / 1.
+11. **Une action principale par écran**, en `primary`, pleine largeur, en bas (`<Button size="lg">`). Le reste est secondaire ou fantôme.
+12. **Mobile first.** On dessine à 375 px puis on élargit (`lg:` = 1024 px).
 
 ## Couleur
 
 | Token | Usage |
 |---|---|
-| `background` / `foreground` | Page sable / bleu nuit, texte ardoise / crème |
-| `card`, `popover` | Tout ce qui flotte : sheet, cartes, nav, champs, toasts |
+| `background` / `foreground` | Page gris presque blanc / presque noir, texte encre / gris clair |
+| `card`, `popover` | Cartes de contenu, champs / menus, toasts (repli opaque du verre) |
 | `muted` / `muted-foreground` | Creux (squelettes, poignée) / texte secondaire, attributions |
 | `secondary` | Boutons secondaires |
-| `primary` / `primary-foreground` | Action principale, nav active, liens, focus (`ring`) |
-| `accent` / `accent-foreground` | Sélection douce (filtre actif, réponse choisie, survol) |
+| `primary` / `primary-foreground` | Le seul accent (indigo) : action principale, nav active, liens, focus (`ring`) |
+| `accent` / `accent-foreground` | Sélection douce indigo pâle (filtre actif, réponse choisie) |
 | `destructive`, `warning`, `success` (+ `-soft`) | États ; toujours un mot ou une icône avec la couleur |
-| `border` / `input` | Séparateurs décoratifs / contour des champs (≥ 3:1) |
+| `border` / `input` | Hairlines décoratives / contour des champs (≥ 3:1) |
 
 **Échelles métier, jamais sans libellé** (tables dans `src/lib/design/scales.ts`, badges dédiés) :
 difficulté `diff-green` Facile · `diff-blue` Moyen · `diff-red` Difficile · `diff-black` Très difficile ;
@@ -73,16 +83,31 @@ pentes `slope-up-1..5` (montée bleu → rouge) et `slope-down-1..5` (descente t
 
 ## Typographie
 
-Une seule famille, **Inter** (auto-hébergée, `@fontsource-variable/inter`), repli pile système. Hiérarchie par taille et graisse, pas par la couleur.
-Classes : `text-display` (une fois par écran), `text-title`, `text-heading`, `text-body` (16 px, défaut, aussi dans les champs), `text-small`, `text-label` (+ `uppercase`), `text-caption`, `text-stat` (+ `tabular-nums`).
+**Inter 4 variable avec axe optique** (`@fontsource-variable/inter/opsz.css`, auto-hébergée, aucun CDN), repli pile système.
+Pourquoi : déjà éprouvée sur l'interface et ses accents français, l'axe `opsz` donne gratuitement la coupe *Display* (plus serrée, plus fine) sur les grands titres et la coupe *Text* sur le corps ; chiffres tabulaires et variantes (`cv05`) natives — Geist aurait apporté une deuxième famille pour un gain marginal.
+Hiérarchie par taille, graisse et approche, pas par la couleur :
+
+| Classe | Taille / interligne | Graisse | Approche | Usage |
+|---|---|---|---|---|
+| `text-display` | 28 / 32 | 650 | −0,022 em | Titre de fiche, une fois par écran |
+| `text-title` | 20 / 26 | 620 | −0,017 em | Titre de page, en-tête du sheet |
+| `text-heading` | 17 / 24 | 600 | −0,012 em | Intertitre de bloc |
+| `text-body` | 16 / 24 | 400 | −0,011 em | Texte courant, champs (16 px : pas de zoom iOS) |
+| `text-small` | 14 / 20 | 400 | −0,006 em | Méta, aide |
+| `text-label` | 12 / 16 | 560 | +0,04 em | Étiquette en capitales (+ `uppercase`) |
+| `text-caption` | 12 / 16 | 450 | 0 | Horodatages, axes |
+| `text-stat` | 20 / 24 | 600 | −0,02 em | Valeurs de stats (tabulaires d'office) |
+
+`.text-stat` et `.tabular-nums` posent `font-variant-numeric: tabular-nums`.
 Chiffres à la française via `src/lib/format.ts` : `32,1 km`, `662 m D+`, `3 h 30`, `dim. 15 nov. · 8 h 00` (espaces insécables).
 
 ## Espace, formes, mouvement
 
-- Gouttière `px-gutter` (16 px) sur mobile, `lg:px-gutter-lg` (32 px) ; entre blocs d'une fiche `gap-block` (24 px).
-- Rayons : `rounded-xl` boutons et champs, `rounded-2xl` cartes et panneaux, `rounded-3xl` haut du sheet, `rounded-full` pilules et boutons ronds.
+- Grille de **4 px** (échelle Tailwind : `1` = 4 px). Gouttière `px-gutter` (16 px) sur mobile, `lg:px-gutter-lg` (32 px) ; entre blocs d'une fiche `gap-block` (24 px).
+- Rayons : `rounded-sm` 4 · `rounded-md` 6 · `rounded-lg` 8 (imbriqué) · `rounded-xl` 8 (boutons, champs) · `rounded-2xl` 12 (cartes, panneaux, toasts) · `rounded-3xl` 16 (sheet, dialogues) · `rounded-full` (pilules, boutons ronds). Imbriqué : `concentric` (`--radius-outer` − `--inset`, défaut 12 − 4).
+- Ombres : `shadow-sm` (contenu au repos), `shadow-md` (couches flottantes), `shadow-sheet`.
 - Tailles : `h-button-lg` (52), `h-nav` (64), `w-rail` (80), `w-panel` (400).
-- Animations 150–200 ms `ease-out`, rien qui rebondit ; tout est coupé sous `prefers-reduced-motion` (`globals.css`).
+- Durées `--duration-fast` 120 ms (défaut des transitions), `--duration-base` 200 ms, `--duration-slow` 320 ms (grands déplacements) ; courbes `ease-out` (défaut des transitions), `ease-in-out`, `ease-spring` (tokens `easing`). Utilitaire `press` : enfoncement 0,97 en ressort à l'appui.
 
 ## Ton et textes
 

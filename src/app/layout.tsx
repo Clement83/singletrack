@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { ClientMessages } from '@/i18n/client-messages';
-import '@fontsource-variable/inter';
+// Charte Singletrack (#1645) : Inter 4 avec axes poids + taille optique (coupe Display automatique sur les titres).
+import '@fontsource-variable/inter/opsz.css';
 // Charte « Technique nuit » (#1626) : @font-face seulement ; le navigateur ne télécharge un fichier que si une règle utilise la famille (Classique : jamais).
 import '@fontsource-variable/space-grotesk/wght.css';
 import '@fontsource-variable/jetbrains-mono/wght.css';

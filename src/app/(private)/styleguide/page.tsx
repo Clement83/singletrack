@@ -3,6 +3,7 @@ import tokens from '../../../../design/tokens.json';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { CharteSwitcher } from '@/components/charte-switcher';
 import { ComponentDemos } from './demos';
+import { ConcentricDemo, MaterialsDemo, StatesDemo, ThemePair } from './foundations';
 
 export const metadata: Metadata = { title: 'Styleguide · Singletrack', robots: { index: false, follow: false } };
 
@@ -31,6 +32,17 @@ export default function StyleguidePage() {
         <CharteSwitcher />
       </header>
 
+      <Section id="charte" title="Charte Singletrack">
+        <p className="text-muted-foreground">
+          Neutres raffinés, un seul accent, contours fins, ombres en couches, verre seulement au-dessus de la carte. Principes : <code className="text-small">design/README.md</code>.
+        </p>
+        <ThemePair />
+      </Section>
+
+      <Section id="materiaux" title="Matériaux sur la carte">
+        <MaterialsDemo />
+      </Section>
+
       <Section id="couleurs" title="Couleurs">
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {tokens.color.map((c) => (
@@ -55,6 +67,7 @@ export default function StyleguidePage() {
             <li key={t.name} className="flex flex-col gap-1 border-b border-border pb-4">
               <p className="text-caption text-muted-foreground">
                 text-{t.name} · {t.size}/{t.lineHeight} · {t.weight}
+                {t.letterSpacing ? ` · ${t.letterSpacing}` : ''}
               </p>
               <p
                 className={t.name === 'label' ? 'uppercase' : 'tabular-nums'}
@@ -94,6 +107,21 @@ export default function StyleguidePage() {
           {tokens.size.map((s) => (
             <li key={s.name}>
               <span className="font-semibold">{s.name}</span> · {s.value} — <span className="text-muted-foreground">{s.usage}</span>
+            </li>
+          ))}
+        </ul>
+      </Section>
+
+      <Section id="etats" title="États et rayons concentriques">
+        <StatesDemo />
+        <ConcentricDemo />
+      </Section>
+
+      <Section id="mouvement" title="Mouvement">
+        <ul className="flex flex-col gap-1 text-small">
+          {[...tokens.motion, ...tokens.easing].map((m) => (
+            <li key={m.name}>
+              <span className="font-semibold">{m.name}</span> · <code className="text-caption">{m.value}</code> — <span className="text-muted-foreground">{m.usage}</span>
             </li>
           ))}
         </ul>

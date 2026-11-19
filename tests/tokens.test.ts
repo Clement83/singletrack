@@ -28,7 +28,7 @@ describe('tokens : contrastes WCAG', () => {
   });
 
   it('chaque token a une note d’usage', () => {
-    const all = [tokens.color, tokens.text, tokens.radius, tokens.shadow, tokens.surface, tokens.chartes, tokens.size, tokens.motion, tokens.map, tokens.font].flat();
+    const all = [tokens.color, tokens.text, tokens.radius, tokens.shadow, tokens.surface, tokens.chartes, tokens.size, tokens.motion, tokens.easing ?? [], tokens.map, tokens.font].flat();
     expect(all.filter((t) => !t.usage).map((t) => t.name)).toEqual([]);
   });
 });
@@ -52,7 +52,7 @@ describe('tokens : génération', () => {
   });
 
   describe('chartes (#1624)', () => {
-    // Charte d'essai : copie de Classique, rayons à 0, polices et verre propres, clair et sombre.
+    // Charte d'essai : copie de la charte de base (Singletrack, id `classique`), rayons à 0, polices et verre propres, clair et sombre.
     const edited = structuredClone(tokens);
     edited.chartes.push({ id: 'essai', name: 'Essai', usage: 'test' });
     for (const r of edited.radius) r.chartes = { essai: '0px' };
@@ -131,9 +131,25 @@ describe('tokens : génération', () => {
       }
     });
 
-    it('le verre de Classique est opaque (aucun changement visible)', () => {
-      expect(css).toContain('--glass-opacity: 100%;');
-      expect(css).toContain('--glass-blur: none;');
+    it('charte par défaut Singletrack (#1645) : verre flouté + saturé sur les couches flottantes, repli opaque garanti par `glass`', () => {
+      expect(tokens.chartes[0].id).toBe('classique'); // id conservé pour les comptes existants
+      expect(css).toContain('--glass-opacity: 72%;');
+      expect(css).toContain('--glass-blur: saturate(180%) blur(20px);');
+      const globals = readFileSync(path.join(root, 'src/app/globals.css'), 'utf8');
+      expect(globals).toMatch(/prefers-reduced-transparency: reduce\)[\s\S]*?background-color: var\(--surface-glass\)/);
+    });
+
+    it('charte par défaut Singletrack (#1645) : rayons serrés et hiérarchisés (4 → 16 px)', () => {
+      const px = tokens.radius.map((r) => parseInt(String(r.value), 10));
+      expect(px).toEqual([...px].sort((a, b) => a - b));
+      expect(Math.min(...px)).toBeGreaterThanOrEqual(4);
+      expect(Math.max(...px)).toBeLessThanOrEqual(16);
+    });
+
+    it('courbes d’animation (#1645) : `--ease-*` dans @theme et courbe par défaut des transitions', () => {
+      expect(css).toContain('  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);');
+      expect(css).toMatch(/  --ease-spring: linear\(/);
+      expect(css).toContain('  --default-transition-timing-function: var(--ease-out);');
     });
   });
 
