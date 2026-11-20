@@ -34,6 +34,7 @@ import { OutingsLayer, useMapOutings } from './outings-layer';
 import { useOutingsPref } from './outings-pref';
 import { SingleTip, SinglesLayer, SinglesStatus, useSingleTip, useSingles, useSinglesPref } from './singles-layer';
 import { SlopeLegend } from '@/components/map/slope-legend';
+import { Flyover, useFlyoverLink } from '@/components/map/flyover';
 import { OpenTrackLayers, TrackPanelBody, TrackPanelFooter, useOutingTrack, useTrackSheet } from './track-panel';
 import { nearestProfileIndex } from '@/lib/elevation';
 import { ElevationProfile } from '@/components/elevation-profile';
@@ -266,6 +267,7 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
   const openOutingId = panel?.kind === 'outing' ? panel.id : null;
   const outingTrack = useOutingTrack(openOutingId);
   const openLine = panel?.kind === 'outing' ? outingTrack : sheet;
+  const flyover = useFlyoverLink(); // 3D flyover (#1690)
   const lineKey = openOutingId ? `outing:${openOutingId}` : openSlug;
   const [scrub, setScrub] = useState<{ slug: string; i: number } | null>(null);
   const [lineOver, setLineOver] = useState<{ slug: string; i: number } | null>(null);
@@ -403,7 +405,8 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
         <Source id="preview" type="geojson" data={previewLine}>
           <Layer id="preview-line" beforeId="clusters" type="line" layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': colors.preview, 'line-width': 3.5, 'line-opacity': 0.5 }} />
         </Source>
-        {openLine && <OpenTrackLayers sheet={openLine} colors={colors} mapRef={mapRef} marked={profileCursor ?? lineCursor} beforeId="clusters" />}
+        {openLine && <OpenTrackLayers sheet={openLine} colors={colors} mapRef={mapRef} marked={flyover.active ? null : profileCursor ?? lineCursor} beforeId="clusters" />}
+        {openLine && <Flyover key={lineKey} geometry={openLine.geometry} profile={openLine.profile} link={flyover} />}
       </BaseMap>
 
       {/* Floating bar: search + filters. Shifted right of the panel on desktop. */}
@@ -466,12 +469,14 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
           panel?.kind === 'outing' && selectedOuting ? (
             <div className="flex flex-col gap-3" data-testid="outing-panel-footer">
               {outingTrack && outingTrack.profile.length > 1 && (
-                <ElevationProfile points={outingTrack.profile} slopes legend={false} compact={!desktop} cursor={lineCursor} onScrub={(p) => setScrub(p ? { slug: `outing:${selectedOuting.id}`, i: p.index } : null)} />
+                <div {...flyover.seekProps}>
+                  <ElevationProfile points={outingTrack.profile} slopes legend={false} compact={!desktop} cursor={flyover.active ? flyover.cursor : lineCursor} onScrub={(p) => { flyover.trackHover(p ? p.index : null); setScrub(p ? { slug: `outing:${selectedOuting.id}`, i: p.index } : null); }} />
+                </div>
               )}
               <Button asChild size="lg">{signedIn ? <Link href={`/sorties/${selectedOuting.id}`}>{tOut('seeOuting')}</Link> : <LoginLink>{tOut('seeOuting')}</LoginLink>}</Button>
             </div>
           ) : panel?.kind === 'track' && sheet ? (
-            <TrackPanelFooter sheet={sheet} signedIn={signedIn} onVisibility={setSheetVisibility} compact={!desktop} cursor={lineCursor} onScrub={(i) => setScrub(i === null ? null : { slug: sheet.slug, i })} />
+            <TrackPanelFooter flyover={flyover} sheet={sheet} signedIn={signedIn} onVisibility={setSheetVisibility} compact={!desktop} cursor={lineCursor} onScrub={(i) => setScrub(i === null ? null : { slug: sheet.slug, i })} />
           ) : panel?.kind === 'filters' ? (
             <Button size="lg" onClick={() => setPanel({ kind: 'list' })}>{t('seeN', { n: total })}</Button>
           ) : undefined

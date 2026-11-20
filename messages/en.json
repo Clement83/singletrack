@@ -114,7 +114,15 @@
     "slopes": "Slopes",
     "slopesHint": "Gentle → steep, in the direction of the arrow.",
     "terrainOn": "Show terrain in 3D",
-    "terrainOff": "Back to the flat map"
+    "terrainOff": "Back to the flat map",
+    "flyoverStart": "3D flyover",
+    "flyoverPlay": "Play",
+    "flyoverPause": "Pause",
+    "flyoverStop": "Stop the flyover",
+    "flyoverReplay": "Replay",
+    "flyoverSpeed": "Speed ×{speed}",
+    "flyoverBike": "Bike",
+    "flyoverLabel": "Flyover"
   },
   "editor": {
     "title": {

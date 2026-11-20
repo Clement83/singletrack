@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { ElevationProfile } from '@/components/elevation-profile';
 import { SlopeRouteLayer } from '@/components/map/slope-route-layer';
 import { KmMarkers } from '@/components/map/km-markers';
+import type { FlyoverLink } from '@/components/map/flyover';
 import { ProfileCursorMarker } from '@/components/map/profile-cursor-marker';
 import { Badge, DifficultyBadge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -175,7 +176,7 @@ export function TrackPanelBody({ sheet, loading, error, backLabel, onBack }: { s
 
 /** Panel footer: elevation profile synchronised with the map, then "Plan an outing", GPX and the "…" menu. */
 /** `signedIn=false` (visitor, #1591): "Plan an outing" and "Edit a copy" lead to sign-in, which brings back to the same view. */
-export function TrackPanelFooter({ sheet, cursor, onScrub, compact, onVisibility, signedIn = true }: { sheet: PanelSheet; cursor: number | null; onScrub: (i: number | null) => void; compact: boolean; onVisibility?: (v: TrackVisibilityValue) => void; signedIn?: boolean }) {
+export function TrackPanelFooter({ sheet, cursor, onScrub, compact, onVisibility, signedIn = true, flyover }: { flyover?: FlyoverLink; sheet: PanelSheet; cursor: number | null; onScrub: (i: number | null) => void; compact: boolean; onVisibility?: (v: TrackVisibilityValue) => void; signedIn?: boolean }) {
   const t = useTranslations('track');
   const tp = useTranslations('explorer.panel');
   const tv = useTranslations('trackVisibility');
@@ -216,7 +217,9 @@ export function TrackPanelFooter({ sheet, cursor, onScrub, compact, onVisibility
   return (
     <div className="flex flex-col gap-3" data-testid="track-panel-footer">
       {sheet.profile.length > 1 && (
-        <ElevationProfile points={sheet.profile} slopes legend={false} compact={compact} cursor={cursor} onScrub={(p) => onScrub(p ? p.index : null)} />
+        <div {...flyover?.seekProps}>
+          <ElevationProfile points={sheet.profile} slopes legend={false} compact={compact} cursor={flyover?.active ? flyover.cursor : cursor} onScrub={(p) => { flyover?.trackHover(p ? p.index : null); onScrub(p ? p.index : null); }} />
+        </div>
       )}
       {more && (
         <div id={moreId} className="grid grid-cols-2 gap-2">

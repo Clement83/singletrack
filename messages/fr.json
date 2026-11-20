@@ -114,7 +114,15 @@
     "slopes": "Pentes",
     "slopesHint": "Doux → raide, dans le sens de la flèche.",
     "terrainOn": "Afficher le relief en 3D",
-    "terrainOff": "Revenir à la carte à plat"
+    "terrainOff": "Revenir à la carte à plat",
+    "flyoverStart": "Survol en 3D",
+    "flyoverPlay": "Lecture",
+    "flyoverPause": "Pause",
+    "flyoverStop": "Arrêter le survol",
+    "flyoverReplay": "Rejouer",
+    "flyoverSpeed": "Vitesse ×{speed}",
+    "flyoverBike": "Vélo",
+    "flyoverLabel": "Survol"
   },
   "editor": {
     "title": {

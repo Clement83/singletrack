@@ -8,6 +8,7 @@ import BaseMap from '@/components/BaseMap';
 import { SlopeRouteLayer } from '@/components/map/slope-route-layer';
 import { KmMarkers } from '@/components/map/km-markers';
 import { TrackTip, useTrackTip } from '@/components/map/track-tip';
+import { Flyover, type FlyoverLink } from '@/components/map/flyover';
 import { ProfileCursorMarker } from '@/components/map/profile-cursor-marker';
 import { nearestProfileIndex, type LocatedProfilePoint } from '@/lib/elevation';
 import type { SlopeCollection } from '@/lib/geo/slope-features';
@@ -29,13 +30,15 @@ type Props = {
   interactive?: boolean;
   /** Map embedded in a scrolling page (two fingers). `false` in full screen. */
   embedded?: boolean;
+  /** 3D flyover (#1690), desktop: link with the profile. Absent = no button. */
+  flyover?: FlyoverLink;
 };
 
 /**
  * Sheet map (#1391), isolated in its own module (#1371): react-map-gl and MapLibre are only
  * downloaded when the map gets close, never at page hydration.
  */
-export default function TrackDetailMap({ geometry, bbox, start, end, profile, data, colors, mapRef, marked, setHover, interactive = true, embedded = true }: Props) {
+export default function TrackDetailMap({ geometry, bbox, start, end, profile, data, colors, mapRef, marked, setHover, interactive = true, embedded = true, flyover }: Props) {
   const t = useTranslations('track');
   // "km from the start" tooltip (#1535): mouse hover, finger tap; elevation from the profile.
   const { tip, onMove, onTap, clear } = useTrackTip((e) =>
@@ -65,7 +68,8 @@ export default function TrackDetailMap({ geometry, bbox, start, end, profile, da
         <span className="flex size-9 items-center justify-center rounded-full bg-foreground text-background shadow-md" role="img" aria-label={t('end')}><Flag className="size-5" /></span>
       </Marker>
       <TrackTip tip={tip} />
-      {marked && <ProfileCursorMarker mapRef={mapRef} lon={marked.lon} lat={marked.lat} />}
+      {flyover && <Flyover geometry={geometry} profile={profile} link={flyover} barClassName={embedded ? undefined : 'bottom-40 right-16'} />}
+      {marked && !flyover?.active && <ProfileCursorMarker mapRef={mapRef} lon={marked.lon} lat={marked.lat} />}
     </BaseMap>
   );
 }

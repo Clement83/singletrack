@@ -6,6 +6,7 @@ import { Maximize2, X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import type { MapRef } from 'react-map-gl/maplibre';
 import { ElevationProfile } from '@/components/elevation-profile';
+import { useFlyoverLink } from '@/components/map/flyover';
 import { SlopeLegend } from '@/components/map/slope-legend';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMapColors } from '@/components/tracks/use-map-colors';
@@ -38,6 +39,7 @@ export function OutingRoute({ name, geometry, bbox, start, end, distanceM, eleva
   const colors = useMapColors();
   const [cursor, setCursor] = useState<number | null>(null);
   const [open, setOpen] = useState(false);
+  const flyover = useFlyoverLink();
   const box = useRef<HTMLDivElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const previewRef = useRef<MapRef>(null);
@@ -86,7 +88,7 @@ export function OutingRoute({ name, geometry, bbox, start, end, distanceM, eleva
       >
         {open && colors && (
           <div className="relative size-full">
-            <TrackDetailMap geometry={geometry} bbox={bbox} start={start} end={end} profile={profile} data={data} colors={colors} mapRef={fullRef} marked={marked} setHover={(i) => setCursor(i)} embedded={false} />
+            <TrackDetailMap geometry={geometry} bbox={bbox} start={start} end={end} profile={profile} data={data} colors={colors} mapRef={fullRef} marked={marked} setHover={(i) => setCursor(i)} embedded={false} flyover={flyover} />
             {hasSlopes && <SlopeLegend className="left-2 top-16" />}
             <button
               type="button"
@@ -99,6 +101,11 @@ export function OutingRoute({ name, geometry, bbox, start, end, distanceM, eleva
             <div className="absolute inset-x-0 bottom-0 z-10 bg-card/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
               <p className="truncate text-heading">{name}</p>
               <p className="text-small tabular-nums text-muted-foreground">{stats}</p>
+              {flyover.active && profile.length > 1 && (
+                <div className="mt-2 hidden lg:block" {...flyover.seekProps}>
+                  <ElevationProfile points={profile} slopes legend={false} compact cursor={flyover.cursor} onScrub={(p) => flyover.trackHover(p ? p.index : null)} />
+                </div>
+              )}
             </div>
           </div>
         )}
