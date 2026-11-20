@@ -795,6 +795,9 @@
     "source": "Source : {source}"
   },
   "explorer": {
+    "clusterLabel": "{n, plural, one {# trace} other {# traces}}",
+    "startLabel": "Départ de trace, {difficulty}",
+    "unrated": "non classée",
     "search": "Chercher une trace",
     "filters": "Filtres",
     "mine": "Mes traces",

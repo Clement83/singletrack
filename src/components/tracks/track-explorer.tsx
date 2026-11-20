@@ -28,6 +28,8 @@ import { cn } from '@/lib/utils';
 import { FiltersForm } from './filters-form';
 import { useMapColors } from './use-map-colors';
 import { TrackTip, useTrackTip } from '@/components/map/track-tip';
+import { StartMarkers, useStartItems, type StartItem } from '@/components/map/start-markers';
+import { CLUSTER_PROPERTIES } from '@/lib/tracks/cluster-ring';
 import { OutingsLayer, useMapOutings } from './outings-layer';
 import { useOutingsPref } from './outings-pref';
 import { SingleTip, SinglesLayer, SinglesStatus, useSingleTip, useSingles, useSinglesPref } from './singles-layer';
@@ -191,6 +193,9 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
     [tracks],
   );
 
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const startItems = useStartItems(mapRef, `${mapLoaded}`, starts);
+
   const visible = useMemo(() => {
     const list = (tracks ?? []).filter((t) => !view || inView(t.start, view));
     const d = (t: TrackStart) => haversine([home.lon, home.lat], t.start);
@@ -302,46 +307,36 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
   const onClick = (e: MapLayerMouseEvent) => {
     lineTip.onTap(e);
     singleTip.onTap(e);
-    const f = e.features?.[0];
-    if (!f) return;
-    const src = mapRef.current?.getSource('starts') as GeoJSONSource | undefined;
-    if (f.layer.id === 'clusters') {
-      const id = f.properties?.cluster_id;
-      src?.getClusterExpansionZoom(id).then(async (z) => {
-        // The cluster no longer splits when zooming (same car park): its tracks are listed.
-        if (z > CLUSTER_MAX_ZOOM) {
-          const leaves = await src.getClusterLeaves(id, 50, 0);
-          setPanel({ kind: 'group', slugs: leaves.map((l) => l.properties?.slug as string) });
-          return;
-        }
-        mapRef.current?.easeTo({ center: e.lngLat, zoom: z });
-      });
+  };
+  const startsSource = () => mapRef.current?.getSource('starts') as GeoJSONSource | undefined;
+  // Cluster marker (#1688): expansion zoom, or the list when the group no longer splits (same car park).
+  const onClusterTap = async (c: Extract<StartItem, { kind: 'cluster' }>) => {
+    const src = startsSource();
+    if (!src) return;
+    const z = await src.getClusterExpansionZoom(c.id);
+    if (z > CLUSTER_MAX_ZOOM) {
+      const leaves = await src.getClusterLeaves(c.id, 50, 0);
+      setPanel({ kind: 'group', slugs: leaves.map((l) => l.properties?.slug as string) });
       return;
     }
-    if (f.layer.id !== 'start-hit') return;
-    // Start marker: every track starting here; a single one → its sheet in the panel, several → the list.
-    const at = (f.geometry as GeoJSON.Point).coordinates as [number, number];
-    const here = tracksAtStart(tracks ?? [], at);
+    mapRef.current?.easeTo({ center: [c.lng, c.lat], zoom: z });
+  };
+  // Start marker: every track starting here; a single one → its sheet in the panel, several → the list.
+  const onStartTap = (st: Extract<StartItem, { kind: 'start' }>) => {
+    const here = tracksAtStart(tracks ?? [], [st.lng, st.lat]);
     if (here.length > 1) setPanel({ kind: 'group', slugs: here.map((t) => t.slug) });
-    else if (f.properties?.slug) openTrack(f.properties.slug as string);
+    else openTrack(st.slug);
   };
   const onMouseMove = (e: MapLayerMouseEvent) => {
     lineTip.onMove(e);
     singleTip.onMove(e);
     const onLine = openLine && lineKey && e.features?.some((x) => x.layer.id === 'open-casing');
     setLineOver(onLine ? { slug: lineKey, i: nearestProfileIndex(openLine.profile, e.lngLat.lng, e.lngLat.lat) } : null);
-    setHover(e.features?.some((x) => x.layer.id === 'start-hit' || x.layer.id === 'clusters' || (singlesTipOn && x.layer.id === 'singles-hit')) ? 'pointer' : null);
-    const over = e.features?.find((x) => x.layer.id === 'start-hit')?.properties?.slug as string | undefined;
-    setOverSlug((o) => (o === (over ?? null) ? o : (over ?? null)));
+    setHover(singlesTipOn && e.features?.some((x) => x.layer.id === 'singles-hit') ? 'pointer' : null);
   };
 
   const nFilters = activeFilterCount(filters);
   if (!colors) return null;
-  const diffColor: unknown = [
-    'match', ['get', 'difficulty'],
-    'green', colors.green, 'blue', colors.blue, 'red', colors.red, 'black', colors.black,
-    colors.primary,
-  ];
 
   const panelTitle = panel?.kind === 'filters' ? t('filters') : panel?.kind === 'group' ? t('panelGroup', { n: groupTracks.length }) : panel?.kind === 'outing' ? tOut('panelTitle') : panel?.kind === 'track' ? (sheet ? sheet.name || tTrack('untitled') : selected ? selected.name || tTrack('untitled') : t('panelTrack')) : t('panelList');
   const sheetOpen = panel !== null;
@@ -355,21 +350,20 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
         zoom={initialView?.z ?? 10}
         terrain
         mapRef={mapRef}
-        onLoad={() => { syncView(); onMapLoad(); }}
+        onLoad={() => { syncView(); onMapLoad(); setMapLoaded(true); }}
         onMoveEnd={syncView}
         onClick={onClick}
         onMouseMove={onMouseMove}
-        onMouseLeave={() => { setHover(null); setOverSlug(null); setLineOver(null); lineTip.clear(); singleTip.onLeave(); }}
-        interactiveLayerIds={singlesTipOn ? ['clusters', 'start-hit', 'open-casing', 'singles-hit'] : ['clusters', 'start-hit', 'open-casing']}
+        onMouseLeave={() => { setHover(null); setLineOver(null); lineTip.clear(); singleTip.onLeave(); }}
+        interactiveLayerIds={singlesTipOn ? ['open-casing', 'singles-hit'] : ['open-casing']}
         cursor={hover === 'pointer' ? 'pointer' : undefined}
       >
         {/* Declared first: the layers below have beforeId="clusters", which must exist when they are added (#1607). */}
-        <Source id="starts" type="geojson" data={starts} cluster clusterRadius={50} clusterMaxZoom={CLUSTER_MAX_ZOOM}>
-          <Layer id="clusters" type="circle" filter={['has', 'point_count']} paint={{ 'circle-color': colors.primary, 'circle-opacity': 0.85, 'circle-stroke-color': colors.card, 'circle-stroke-width': 3, 'circle-radius': ['step', ['get', 'point_count'], 16, 10, 22, 50, 28] }} />
-          <Layer id="start-points" type="circle" filter={['!', ['has', 'point_count']]} paint={{ 'circle-color': diffColor as string, 'circle-stroke-color': colors.card, 'circle-stroke-width': 2.5, 'circle-radius': ['case', ['==', ['get', 'slug'], hl], 12, 9] }} />
-          {/* Zone tactile ≥ 44 px (rayon 22), invisible. */}
-          <Layer id="start-hit" type="circle" filter={['!', ['has', 'point_count']]} paint={{ 'circle-color': colors.foreground, 'circle-opacity': 0, 'circle-radius': 22 }} />
+        <Source id="starts" type="geojson" data={starts} cluster clusterRadius={50} clusterMaxZoom={CLUSTER_MAX_ZOOM} clusterProperties={CLUSTER_PROPERTIES as never}>
+          {/* Anchor layer for the beforeId="clusters" of the others (#1607); markers are HTML (#1688). */}
+          <Layer id="clusters" type="circle" filter={['has', 'point_count']} paint={{ 'circle-radius': 0, 'circle-opacity': 0 }} />
         </Source>
+        <StartMarkers items={startItems} highlighted={hl} onCluster={onClusterTap} onStart={onStartTap} onHover={setOverSlug} />
         <TrackTip tip={lineTip.tip} />
         <SinglesLayer state={singles} colors={colors} beforeId="clusters" dimmed={!!openLine} highlightId={singleTip.tip?.info.id ?? null} />
         <SingleTip tip={singleTip.tip} onClose={singleTip.clear} />

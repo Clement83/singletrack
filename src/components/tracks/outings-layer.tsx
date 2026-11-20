@@ -60,7 +60,7 @@ function OutingPin({ cluster: c, onSelect, onCluster }: { cluster: OutingCluster
     : t('clusterLabel', { n: c.items.length });
 
   return (
-    <Marker longitude={c.lon} latitude={c.lat} anchor="bottom" style={{ zIndex: open ? 6 : 5 }}>
+    <Marker longitude={c.lon} latitude={c.lat} anchor="center" style={{ zIndex: open ? 6 : 5 }}>
       <div className="relative">
         <button
           type="button"
@@ -76,20 +76,22 @@ function OutingPin({ cluster: c, onSelect, onCluster }: { cluster: OutingCluster
           }}
           className="relative flex min-h-touch min-w-touch items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
+          {/* Same pin family as the start points (#1688), apricot with a calendar: tip on the position. */}
           <span
             aria-hidden
-            className="flex size-7 items-center justify-center rounded-full border-2 border-primary bg-accent text-accent-foreground shadow-md transition-transform duration-150 active:scale-95"
+            className="absolute top-1/2 left-1/2 flex size-7 items-center justify-center rounded-full border-2 border-primary bg-accent text-accent-foreground shadow-md transition-transform duration-150 active:scale-95 motion-reduce:transition-none"
+            style={{ transform: 'translate(-50%, calc(-50% - 20px)) rotate(45deg)', borderBottomRightRadius: 0 }}
           >
-            <CalendarDays className="size-3.5" />
+            <CalendarDays className="size-3.5 -rotate-45" />
           </span>
           {!single && (
-            <span aria-hidden className="absolute top-1 right-1 flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[0.625rem] leading-4 font-semibold text-primary-foreground tabular-nums">
+            <span aria-hidden className="absolute top-0 right-0 flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[0.625rem] leading-4 font-semibold text-primary-foreground tabular-nums">
               {c.items.length}
             </span>
           )}
         </button>
         {open && (
-          <div role="tooltip" className="pointer-events-none absolute bottom-full left-1/2 mb-1 w-max max-w-[16rem] -translate-x-1/2 rounded-xl bg-popover px-3 py-2 text-small text-popover-foreground shadow-md">
+          <div role="tooltip" className="pointer-events-none absolute bottom-full left-1/2 mb-8 w-max max-w-[16rem] -translate-x-1/2 rounded-xl bg-popover px-3 py-2 text-small text-popover-foreground shadow-md">
             {single ? (
               <>
                 <p className="truncate font-semibold">{single.title}</p>

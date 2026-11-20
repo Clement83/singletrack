@@ -38,6 +38,7 @@ test('panneau : un départ commun liste ses traces, une ligne ouvre la fiche san
   await page.route(/\/api\/tracks\?.*starts=1/, (r) => r.fulfill({ json: { tracks: starts, total: 3 } }));
   await page.route(/\/api\/tracks\/e2e-[a-z]$/, (r) => r.fulfill({ json: sheetOf(starts.find((x) => r.request().url().endsWith(x.slug))!) }));
   await load(page, '/?q=e2e');
+  await page.locator('.maplibregl-marker button').first().waitFor(); // HTML start/cluster markers (#1688)
   const box = (await page.locator('.maplibregl-canvas').boundingBox())!;
   const tap = async (slug: string) => {
     const s = starts.find((x) => x.slug === slug)!;
@@ -86,6 +87,7 @@ test('survol : une ligne de liste montre sa trace en aperçu sur la carte', asyn
     return r.fulfill({ json: { tracks: slugs.map((slug) => ({ slug, geometry: { type: 'LineString', coordinates: [[c.lng, c.lat], [c.lng + 0.01, c.lat + 0.01]] } })) } });
   });
   await load(page, '/?q=e2e');
+  await page.locator('.maplibregl-marker button').first().waitFor(); // HTML start/cluster markers (#1688)
   const box = (await page.locator('.maplibregl-canvas').boundingBox())!;
   const p = await page.evaluate((ll) => (window as unknown as Win).__explorerMap!.project(ll), starts[0].start);
   await page.mouse.click(box.x + p.x, box.y + p.y);
@@ -137,6 +139,7 @@ test('carte : pas d’erreur « non-existing layer » et départs au-dessus de l
   await page.route(/\/api\/tracks\?.*starts=1/, (r) => r.fulfill({ json: { tracks: starts, total: 1 } }));
   await page.route(/\/api\/tracks\/e2e-a$/, (r) => r.fulfill({ json: sheetOf(starts[0]) }));
   await load(page, '/?q=e2e');
+  await page.locator('.maplibregl-marker button').first().waitFor(); // HTML start/cluster markers (#1688)
   const box = (await page.locator('.maplibregl-canvas').boundingBox())!;
   const p = await page.evaluate((ll) => (window as unknown as Win).__explorerMap!.project(ll), starts[0].start);
   await expect(page.getByRole('button', { name: /traces?$/ }).first()).toBeVisible();

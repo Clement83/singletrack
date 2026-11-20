@@ -795,6 +795,9 @@
     "source": "Source: {source}"
   },
   "explorer": {
+    "clusterLabel": "{n, plural, one {# route} other {# routes}}",
+    "startLabel": "Route start, {difficulty}",
+    "unrated": "unrated",
     "search": "Search a route",
     "filters": "Filters",
     "mine": "My routes",

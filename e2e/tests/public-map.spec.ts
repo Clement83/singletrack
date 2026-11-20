@@ -30,6 +30,7 @@ test('visiteur : carte sans compte, fiche + GPX, « Préparer une sortie » mèn
     rights: { edit: false, copy: false, delete: false }, outings: [],
   } }));
   await load(page, '/?q=e2e');
+  await page.locator('.maplibregl-marker button').first().waitFor(); // HTML start/cluster markers (#1688)
 
   // Visitor mode: no "My tracks", no import, no creation; "Sign in" instead of the menu.
   await expect(page.getByRole('button', { name: 'Mes traces' })).toHaveCount(0);
