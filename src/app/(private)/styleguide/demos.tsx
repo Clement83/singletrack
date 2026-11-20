@@ -1,5 +1,6 @@
 'use client';
 
+import { OutingSummary } from '@/components/outings/outing-summary/outing-summary';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { CalendarPlus, Link2, Plus, Share2, Trash2, Zap, Mountain, MoreHorizontal } from 'lucide-react';
@@ -193,6 +194,13 @@ export function ComponentDemos() {
         <div className="flex flex-col gap-3 rounded-2xl border border-border p-4">
           <p className="text-small font-semibold text-muted-foreground">panel (sans carte, conditions, roulées, commentaires)</p>
           <OutingView role="visitor" presentation="panel" outing={DEMO_OUTING} track={DEMO_TRACK} primaryAction={<Button>{ROLE_ACTION.visitor}</Button>} participants={<OutingParticipants participants={people(4)} />} />
+        </div>
+      </Demo>
+
+      <Demo id="resume" title="Résumé de sortie (OutingSummary)">
+        {/* The e2e scenario mocks these URLs (recap, photos, videos); without a mock the player shows its error message. */}
+        <div className="max-w-sm">
+          <OutingSummary recapUrl="/api/styleguide/recap" photoBase="/api/styleguide/photos" videoBase="/api/styleguide/videos" />
         </div>
       </Demo>
 

@@ -18,9 +18,9 @@ import {
 import type { TrackGeometry } from '@/lib/geo/types';
 import { cn } from '@/lib/utils';
 
-const PITCH = Math.max(TERRAIN_PITCH, 65);
-const BASE_ZOOM = 14.6;
-const TILE_WAIT_MS = 6000;
+export const PITCH = Math.max(TERRAIN_PITCH, 65);
+export const BASE_ZOOM = 14.6;
+export const TILE_WAIT_MS = 6000;
 
 /**
  * Link between the flyover (inside the map) and the elevation profile (outside): the flyover publishes its

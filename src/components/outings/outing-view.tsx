@@ -60,6 +60,8 @@ type Props = {
   secondaryActions?: React.ReactNode;
   /** Rides and photos. */
   activity?: React.ReactNode;
+  /** "Watch the summary" button (#1694, page only), under the main action. */
+  summary?: React.ReactNode;
   /** Fixed bottom bar (#1622, page only): main action + discussion bubble. */
   bar?: React.ReactNode;
 };
@@ -70,13 +72,13 @@ type Props = {
  * Order (`panel`): header → main action → meeting point + directions → description → route → who's coming. The `page`
  * presentation (#1619) is in `PageView`.
  */
-export function OutingView({ role, presentation, outing: o, track: snap, topLink, headerAction, headerMenu, organizerName, conditionsLine, notices, nextStep, primaryAction, trackNote, conditions, conditionsSummary, participants, secondaryActions, activity, bar }: Props) {
+export function OutingView({ role, presentation, outing: o, track: snap, topLink, headerAction, headerMenu, organizerName, conditionsLine, notices, nextStep, primaryAction, trackNote, conditions, conditionsSummary, participants, secondaryActions, activity, summary, bar }: Props) {
   const locale = useLocale();
   const t = useTranslations('share');
   const tg = useTranslations('guest');
   const panel = presentation === 'panel';
   const end = snap && (snap.geometry.type === 'LineString' ? snap.geometry.coordinates : snap.geometry.coordinates.flat()).at(-1);
-  if (!panel) return <PageView {...{ role, outing: o, snap, end, topLink, headerAction, headerMenu, organizerName, conditionsLine, notices, nextStep, primaryAction, trackNote, conditions, conditionsSummary, participants, secondaryActions, activity, bar }} />;
+  if (!panel) return <PageView {...{ role, outing: o, snap, end, topLink, headerAction, headerMenu, organizerName, conditionsLine, notices, nextStep, primaryAction, trackNote, conditions, conditionsSummary, participants, secondaryActions, activity, summary, bar }} />;
   return (
     <div data-outing-view={presentation} data-role={role} className={cn('flex flex-col gap-5', bar && 'pb-[calc(6rem+env(safe-area-inset-bottom))]')}>
       {topLink}
@@ -122,7 +124,7 @@ export function OutingView({ role, presentation, outing: o, track: snap, topLink
   );
 }
 
-type PageProps = Pick<Props, 'role' | 'topLink' | 'headerAction' | 'headerMenu' | 'organizerName' | 'conditionsLine' | 'notices' | 'nextStep' | 'primaryAction' | 'trackNote' | 'conditions' | 'conditionsSummary' | 'participants' | 'secondaryActions' | 'activity' | 'bar'> & {
+type PageProps = Pick<Props, 'role' | 'topLink' | 'headerAction' | 'headerMenu' | 'organizerName' | 'conditionsLine' | 'notices' | 'nextStep' | 'primaryAction' | 'trackNote' | 'conditions' | 'conditionsSummary' | 'participants' | 'secondaryActions' | 'activity' | 'summary' | 'bar'> & {
   outing: OutingViewOuting;
   snap: OutingViewTrack | null;
   end: number[] | null | undefined | false;
@@ -132,7 +134,7 @@ type PageProps = Pick<Props, 'role' | 'topLink' | 'headerAction' | 'headerMenu' 
  * Page presentation (#1619): header → identity card → main action ("Next step" slot, P2) →
  * route (P3) → collapsed sections (Conditions, Rides and photos) → guest actions → fixed bottom bar (#1622: main action + bubble; comments are in the sheet).
  */
-function PageView({ role, outing: o, snap, end, topLink, headerAction, headerMenu, organizerName, conditionsLine, notices, nextStep, primaryAction, trackNote, conditions, conditionsSummary, participants, secondaryActions, activity, bar }: PageProps) {
+function PageView({ role, outing: o, snap, end, topLink, headerAction, headerMenu, organizerName, conditionsLine, notices, nextStep, primaryAction, trackNote, conditions, conditionsSummary, participants, secondaryActions, activity, summary, bar }: PageProps) {
   const locale = useLocale();
   const t = useTranslations('share');
   const tg = useTranslations('guest');
@@ -176,6 +178,7 @@ function PageView({ role, outing: o, snap, end, topLink, headerAction, headerMen
 
       {nextStep}
       {primaryAction}
+      {summary}
 
       {snap && end && <section aria-label={tg('trackRegion')} className="flex flex-col gap-3">
         <h2 className="text-heading">{snap.name}</h2>

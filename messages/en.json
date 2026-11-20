@@ -1373,6 +1373,24 @@
     "discussionUnread": "Discussion, {n, plural, one {# unread message} other {# unread messages}}",
     "restricted": "Participants only"
   },
+  "summary": {
+    "title": "Outing summary",
+    "open": "Watch the summary",
+    "close": "Close the summary",
+    "loading": "Loading…",
+    "error": "The summary can’t be loaded.",
+    "play": "Play",
+    "pause": "Pause",
+    "prev": "Previous",
+    "next": "Next",
+    "speed": "Speed ×{speed}",
+    "soundOn": "Turn sound on",
+    "soundOff": "Mute",
+    "progress": "Progress",
+    "replay": "Replay",
+    "by": "by {name}",
+    "point": "Position on the ride"
+  },
   "outingView": {
     "menu": "Outing menu",
     "invite": "Invite",

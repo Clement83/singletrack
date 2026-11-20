@@ -11,6 +11,7 @@ import { canViewTrack } from '@/lib/tracks/query';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { ConditionsBlock, ConditionsLine, ConditionsSummary } from '@/components/conditions-block';
 import { PhotoSection } from '@/components/outings/photo-section';
+import { OutingSummary } from '@/components/outings/outing-summary/outing-summary';
 import { RideSection } from '@/components/outings/ride-section';
 import { BarAction, OutingBar } from '@/components/outings/outing-bar';
 import { OutingParticipants } from '@/components/outings/outing-participants';
@@ -25,7 +26,7 @@ import { utcToParisInputs } from '@/lib/outings/time';
 import { directionsUrl } from '@/lib/outings/labels';
 import { formatKm } from '@/lib/format';
 import { fireInfo, massifsForGeometry, parisDate } from '@/lib/fire';
-import { transferCandidates, isFrozen, outingPermissions, canUploadRide, getManagedOuting, isClosed, listInvitableFriends, isDone, listContacts, listPhotos, listVideos, listRides, listRideChoices, listInvitations, listParticipants, reinviteCandidates } from '@/lib/outings';
+import { transferCandidates, isFrozen, outingPermissions, canUploadRide, getManagedOuting, isClosed, listInvitableFriends, isDone, listContacts, listPhotos, listVideos, listRides, listRideChoices, referenceRide, listInvitations, listParticipants, reinviteCandidates } from '@/lib/outings';
 import { formatShareDate } from '@/lib/outings/export';
 import { estimateDurationMin } from '@/lib/tracks/duration';
 import { outingWeather } from '@/lib/weather';
@@ -149,6 +150,9 @@ export default async function Page({ params, searchParams }: { params: Promise<{
         participants={
       <OutingParticipants inline participants={listParticipants(db, o.id, { userId: user.id })} max={o.maxParticipants} organizer />
         }
+        summary={isClosed(o) && o.status !== 'cancelled' && referenceRide(db, o) ? (
+          <OutingSummary recapUrl={`/api/outings/${o.slug}/recap`} photoBase={`/api/outings/${o.slug}/photos`} videoBase={`/api/outings/${o.slug}/videos`} />
+        ) : undefined}
         activity={
           <>
         <RideSection

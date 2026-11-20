@@ -12,6 +12,7 @@ import { InviteFriends } from '@/components/outings/invite-friends';
 import { GuestAnswerBar, GuestProfile } from '@/components/outings/guest-response';
 import { BarAction, OutingBar } from '@/components/outings/outing-bar';
 import { PhotoSection } from '@/components/outings/photo-section';
+import { OutingSummary } from '@/components/outings/outing-summary/outing-summary';
 import { RideSection } from '@/components/outings/ride-section';
 import { OutingParticipants } from '@/components/outings/outing-participants';
 import { HeaderShareButton, OutingShare } from '@/components/outings/outing-share';
@@ -21,7 +22,7 @@ import { nextStep } from '@/lib/outings/next-step';
 import { directionsUrl } from '@/lib/outings/labels';
 import { getCurrentUser } from '@/lib/current-user';
 import { fireInfo, massifsForGeometry, parisDate } from '@/lib/fire';
-import { canUploadRide, getInvitationByToken, isClosed, listInvitableFriends, outingPermissions, listPhotos, listVideos, listRides, listParticipants } from '@/lib/outings';
+import { canUploadRide, getInvitationByToken, isClosed, listInvitableFriends, outingPermissions, listPhotos, listVideos, listRides, listParticipants, referenceRide } from '@/lib/outings';
 import { formatShareDate, pageOrigin } from '@/lib/outings/export';
 import { estimateDurationMin } from '@/lib/tracks/duration';
 import { outingWeather } from '@/lib/weather';
@@ -116,6 +117,9 @@ export default async function Page({ params }: { params: Promise<{ token: string
             {claimState && <GuestClaim token={token} state={claimState} />}
           </>
         }
+        summary={closed && o.status !== 'cancelled' && referenceRide(db, o) ? (
+          <OutingSummary recapUrl={`/api/i/${token}/recap`} photoBase={`/api/i/${token}/photos`} videoBase={`/api/i/${token}/videos`} />
+        ) : undefined}
         activity={
           inv.status === 'yes' || (closed && photos.length + videos.length > 0) ? (
             <>

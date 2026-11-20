@@ -1373,6 +1373,24 @@
     "discussionUnread": "Discussion, {n, plural, one {# message non lu} other {# messages non lus}}",
     "restricted": "Réservée aux participants"
   },
+  "summary": {
+    "title": "Résumé de la sortie",
+    "open": "Voir le résumé",
+    "close": "Fermer le résumé",
+    "loading": "Chargement…",
+    "error": "Le résumé n’a pas pu être chargé.",
+    "play": "Lecture",
+    "pause": "Pause",
+    "prev": "Précédent",
+    "next": "Suivant",
+    "speed": "Vitesse ×{speed}",
+    "soundOn": "Activer le son",
+    "soundOff": "Couper le son",
+    "progress": "Progression",
+    "replay": "Revoir",
+    "by": "par {name}",
+    "point": "Position sur la balade"
+  },
   "outingView": {
     "menu": "Menu de la sortie",
     "invite": "Inviter",

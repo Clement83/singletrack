@@ -60,6 +60,8 @@
   --map-base: #ece6d0;
   --route-halo: #ffffff;
   --scrim: rgba(15, 17, 21, 0.28);
+  --media-surface: #000000;
+  --media-foreground: #ffffff;
   --surface-glass: #ffffff;
   --surface-glass-foreground: #17181c;
   --elevation-sm: 0 1px 1px rgba(16, 18, 24, 0.03), 0 1px 2px rgba(16, 18, 24, 0.06);
@@ -132,6 +134,8 @@
   --map-base: #ece6d0;
   --route-halo: #0b0e15;
   --scrim: rgba(0, 0, 0, 0.6);
+  --media-surface: #000000;
+  --media-foreground: #ffffff;
   --surface-glass: #18191d;
   --surface-glass-foreground: #ececee;
   --elevation-sm: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 1px 2px rgba(0, 0, 0, 0.5);
@@ -205,6 +209,8 @@
     --map-base: #ece6d0;
     --route-halo: #0b0e15;
     --scrim: rgba(0, 0, 0, 0.6);
+    --media-surface: #000000;
+    --media-foreground: #ffffff;
     --surface-glass: #18191d;
     --surface-glass-foreground: #ececee;
     --elevation-sm: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 1px 2px rgba(0, 0, 0, 0.5);
@@ -289,6 +295,8 @@
   --color-map-base: var(--map-base);
   --color-route-halo: var(--route-halo);
   --color-scrim: var(--scrim);
+  --color-media-surface: var(--media-surface);
+  --color-media-foreground: var(--media-foreground);
   --color-surface-glass: var(--surface-glass);
   --color-surface-glass-foreground: var(--surface-glass-foreground);
   --shadow-*: initial;
