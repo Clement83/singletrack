@@ -179,6 +179,10 @@ export const trailSegment = sqliteTable(
     /** Valeur brute `mtb:scale` (ex. « 2+ »). */
     mtbScale: text('mtb_scale').notNull(),
     difficulty: text('difficulty', { enum: DIFFICULTIES }),
+    /** Raw OSM `surface` tag (#1687), null if not tagged. */
+    surface: text('surface'),
+    /** Raw OSM `mtb:scale:uphill` tag (#1687), null if not tagged. */
+    mtbScaleUphill: text('mtb_scale_uphill'),
     /** GeoJSON LineString [lon, lat], simplified to 2 m at import. */
     geometry: text('geometry', { mode: 'json' }).$type<import('@/lib/geo').TrackGeometry>().notNull(),
     bboxMinLon: real('bbox_min_lon').notNull(),

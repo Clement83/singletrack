@@ -21,6 +21,8 @@ export function replaceSegments(db: Db, segments: TrailSegment[], now = new Date
         name: s.name,
         highway: s.highway,
         mtbScale: s.mtbScale,
+        surface: s.surface,
+        mtbScaleUphill: s.mtbScaleUphill,
         difficulty: s.difficulty,
         geometry: s.geometry,
         bboxMinLon: s.bbox.minLon,
@@ -35,7 +37,7 @@ export function replaceSegments(db: Db, segments: TrailSegment[], now = new Date
         tx.insert(trailSegment).values(batch).onConflictDoUpdate({
           target: trailSegment.osmId,
           set: {
-            name: sql`excluded.name`, highway: sql`excluded.highway`, mtbScale: sql`excluded.mtb_scale`, difficulty: sql`excluded.difficulty`,
+            name: sql`excluded.name`, highway: sql`excluded.highway`, mtbScale: sql`excluded.mtb_scale`, surface: sql`excluded.surface`, mtbScaleUphill: sql`excluded.mtb_scale_uphill`, difficulty: sql`excluded.difficulty`,
             geometry: sql`excluded.geometry`, bboxMinLon: sql`excluded.bbox_min_lon`, bboxMinLat: sql`excluded.bbox_min_lat`,
             bboxMaxLon: sql`excluded.bbox_max_lon`, bboxMaxLat: sql`excluded.bbox_max_lat`, lengthM: sql`excluded.length_m`,
             syncedAt: sql`excluded.synced_at`, zone: sql`excluded.zone`,
@@ -48,7 +50,7 @@ export function replaceSegments(db: Db, segments: TrailSegment[], now = new Date
 
 export type SegmentFeature = {
   type: 'Feature';
-  properties: { id: string; difficulty: Difficulty | 'none'; scale: string; name: string | null };
+  properties: { id: string; difficulty: Difficulty | 'none'; scale: string; name: string | null; surface: string | null; uphill: string | null; lengthM: number };
   geometry: TrackGeometry;
 };
 
@@ -78,7 +80,7 @@ export function querySegments(db: Db, bbox: [number, number, number, number], zo
     truncated: rows.length > SINGLES_MAX_FEATURES,
     features: rows.slice(0, SINGLES_MAX_FEATURES).map((r) => ({
       type: 'Feature',
-      properties: { id: r.osmId, difficulty: r.difficulty ?? 'none', scale: r.mtbScale, name: r.name },
+      properties: { id: r.osmId, difficulty: r.difficulty ?? 'none', scale: r.mtbScale, name: r.name, surface: r.surface, uphill: r.mtbScaleUphill, lengthM: r.lengthM },
       geometry: tol > 0 ? simplifyGeometry(r.geometry, tol) : r.geometry,
     })),
   };

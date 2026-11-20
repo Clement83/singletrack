@@ -32,6 +32,9 @@ export type TrailSegment = {
   name: string | null;
   highway: string;
   mtbScale: string;
+  /** Raw `surface` and `mtb:scale:uphill` tags (#1687). */
+  surface: string | null;
+  mtbScaleUphill: string | null;
   difficulty: Difficulty | null;
   geometry: TrackGeometry;
   bbox: Bbox;
@@ -54,6 +57,8 @@ export function wayToSegment(way: OverpassWay): TrailSegment | null {
     name: tags.name?.trim() || null,
     highway,
     mtbScale: scale,
+    surface: tags.surface?.trim() || null,
+    mtbScaleUphill: tags['mtb:scale:uphill']?.trim() || null,
     difficulty: difficultyFromMtbScale(scale),
     geometry,
     bbox,

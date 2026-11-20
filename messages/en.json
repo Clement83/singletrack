@@ -328,6 +328,50 @@
       "red": "Difficult",
       "black": "Very difficult",
       "none": "Unrated"
+    },
+    "scale": {
+      "0": "Smooth, compact, no obstacles",
+      "1": "Small obstacles, roots, stones, ruts",
+      "2": "Frequent obstacles, roots, steps, loose stones",
+      "3": "Large obstacles, steep parts, tight hairpins",
+      "4": "Very steep, big drops, rock fields",
+      "5": "Extreme, very steep, scree, jumps"
+    },
+    "uphill": {
+      "0": "very easy",
+      "1": "easy",
+      "2": "moderate",
+      "3": "hard",
+      "4": "very hard",
+      "5": "extreme"
+    },
+    "tip": {
+      "close": "Close",
+      "unnamed": "Unnamed single",
+      "length": "Length",
+      "surface": "Surface",
+      "uphill": "Uphill",
+      "osm": "View on OpenStreetMap",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    "surface": {
+      "asphalt": "Asphalt",
+      "paved": "Paved",
+      "concrete": "Concrete",
+      "paving_stones": "Paving stones",
+      "compacted": "Compacted",
+      "fine_gravel": "Fine gravel",
+      "gravel": "Gravel",
+      "ground": "Ground",
+      "dirt": "Dirt",
+      "earth": "Earth",
+      "grass": "Grass",
+      "sand": "Sand",
+      "mud": "Mud",
+      "rock": "Rock",
+      "pebblestone": "Pebbles",
+      "wood": "Wood",
+      "unpaved": "Unpaved"
     }
   },
   "share": {

@@ -1,8 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
-import { useTranslations } from 'next-intl';
-import { Layer, Source } from 'react-map-gl/maplibre';
+import { useLocale, useTranslations } from 'next-intl';
+import { Layer, Source, type MapLayerMouseEvent } from 'react-map-gl/maplibre';
+import { X } from 'lucide-react';
+import { formatKm } from '@/lib/format';
+import { singleInfo, surfaceKey, type SingleInfo } from '@/lib/osm/single-info';
 import { cn } from '@/lib/utils';
 import { OSM_ATTRIBUTION } from '@/lib/osm/relation';
 import { SINGLES_MIN_ZOOM } from '@/lib/osm/singles';
@@ -110,7 +113,7 @@ const RATED = ['has', 'difficulty'];
  * coloured by slope) fades the singles so the two palettes do not mix. Always under start points and tracks
  * (`beforeId`). Colours come from the `map-*` tokens: the topo map stays light in dark mode.
  */
-export function SinglesLayer({ state, colors, beforeId, dimmed = false }: { state: SinglesState | null; colors: MapColors; beforeId?: string; dimmed?: boolean }) {
+export function SinglesLayer({ state, colors, beforeId, dimmed = false, highlightId = null }: { state: SinglesState | null; colors: MapColors; beforeId?: string; dimmed?: boolean; highlightId?: string | null }) {
   if (state?.status !== 'ok') return null;
   const color: unknown = [
     'match', ['get', 'difficulty'],
@@ -124,6 +127,10 @@ export function SinglesLayer({ state, colors, beforeId, dimmed = false }: { stat
     <Source id="singles" type="geojson" data={{ type: 'FeatureCollection', features: state.features } as never} attribution={OSM_ATTRIBUTION}>
       <Layer id="singles-casing" type="line" minzoom={SINGLES_MIN_ZOOM} beforeId={beforeId} layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': colors.casing, 'line-width': casingWidth as number, 'line-opacity': dimmed ? 0.3 : 0.85 }} />
       <Layer id="singles-line" type="line" minzoom={SINGLES_MIN_ZOOM} beforeId={beforeId} layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': color as string, 'line-width': width as number, 'line-opacity': opacity as number }} />
+      {/* Highlight of the hovered / tapped single (#1687) */}
+      <Layer id="singles-highlight" type="line" minzoom={SINGLES_MIN_ZOOM} beforeId={beforeId} filter={['==', ['get', 'id'], highlightId ?? '']} layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': colors.primary, 'line-width': 7, 'line-opacity': 0.55 }} />
+      {/* Wide invisible hit zone (≥ 22 px): finger-friendly, queried by the explorer. */}
+      <Layer id="singles-hit" type="line" minzoom={SINGLES_MIN_ZOOM} beforeId={beforeId} layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': colors.foreground, 'line-width': 22, 'line-opacity': 0 }} />
     </Source>
   );
 }
@@ -161,6 +168,93 @@ export function SinglesStatus({ state, className }: { state: SinglesState | null
   return (
     <div className={cn('rounded-2xl bg-card/95 px-3 py-2 text-small shadow-md', className)} aria-live="polite">
       {state.status === 'error' ? <p className="text-destructive">{t('error')}</p> : <p className="text-muted-foreground">{t('truncated')}</p>}
+    </div>
+  );
+}
+
+export type SingleTipState = { x: number; y: number; info: SingleInfo; pinned: boolean; touch: boolean } | null;
+/** Layers that win over a single when they overlap (start points, clusters, open track). */
+const PRIORITY_LAYERS = ['clusters', 'start-hit', 'open-casing'];
+
+/**
+ * Singles tooltip state (#1687). Mouse: hover shows it near the cursor, a click pins it (link usable, close button);
+ * touch: a tap opens it, a tap elsewhere or the cross closes it. Nothing when `enabled` is false (a track or an
+ * outing is open). Start points, clusters and tracks keep priority over a single.
+ */
+export function useSingleTip(enabled: boolean) {
+  const [tip, setTip] = useState<SingleTipState>(null);
+  const resolve = (e: MapLayerMouseEvent) => {
+    const fs = e.features ?? [];
+    if (fs.some((f) => PRIORITY_LAYERS.includes(f.layer.id))) return null;
+    const f = fs.find((f) => f.layer.id === 'singles-hit');
+    return f ? singleInfo(f.properties as Parameters<typeof singleInfo>[0]) : null;
+  };
+  const finePointer = () => typeof window !== 'undefined' && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  const clear = useCallback(() => setTip(null), []);
+  return {
+    tip: enabled ? tip : null,
+    clear,
+    /** `onMouseMove`: hover (mouse only). */
+    onMove: (e: MapLayerMouseEvent) => {
+      if (!enabled || !finePointer()) return;
+      const info = resolve(e);
+      setTip((cur) => (cur?.pinned ? cur : info ? { x: e.point.x, y: e.point.y, info, pinned: false, touch: false } : null));
+    },
+    /** `onClick`: pins on a single, closes elsewhere. */
+    onTap: (e: MapLayerMouseEvent) => {
+      const info = enabled ? resolve(e) : null;
+      setTip(info ? { x: e.point.x, y: e.point.y, info, pinned: true, touch: !finePointer() } : null);
+    },
+    /** `onMouseLeave`: a pinned tooltip stays. */
+    onLeave: () => setTip((cur) => (cur?.pinned ? cur : null)),
+  };
+}
+
+/** Tooltip of a single: name, difficulty explained, length, surface, uphill, OSM link and attribution. */
+export function SingleTip({ tip, onClose }: { tip: SingleTipState; onClose: () => void }) {
+  const t = useTranslations('singles');
+  const locale = useLocale();
+  if (!tip) return null;
+  const { info } = tip;
+  const surf = info.surface ? (surfaceKey(info.surface) ? t(`surface.${surfaceKey(info.surface)!}`) : info.surface) : null;
+  const dot = info.difficulty === 'none' ? 'bg-map-unrated' : MAP_DOT[info.difficulty];
+  const level = info.level !== null ? `S${info.level}` : null;
+  const up = info.uphillLevel;
+  const style = tip.touch ? undefined : { left: `min(${tip.x + 14}px, calc(100% - 304px))`, top: `min(${tip.y + 14}px, calc(100% - 280px))` };
+  return (
+    <div
+      role="status"
+      className={cn(
+        'absolute z-20 w-72 max-w-[calc(100%-1.5rem)] rounded-2xl border border-border glass p-3 text-small text-popover-foreground shadow-md',
+        tip.touch ? 'inset-x-3 bottom-20 mx-auto' : tip.pinned ? '' : 'pointer-events-none',
+      )}
+      style={style}
+    >
+      {tip.pinned && (
+        <button type="button" onClick={onClose} aria-label={t('tip.close')} className="press absolute top-0 right-0 flex size-11 items-center justify-center rounded-md text-muted-foreground">
+          <X size={18} strokeWidth={1.75} aria-hidden />
+        </button>
+      )}
+      <p className={cn('font-semibold', tip.pinned && 'pr-10')}>{info.name ?? t('tip.unnamed')}</p>
+      <p className="mt-1 flex items-start gap-2">
+        <span aria-hidden className={cn('mt-1.5 h-1 w-4 shrink-0 rounded-full ring-1 ring-map-casing', dot)} />
+        <span>
+          <span className="font-medium">{t(`levels.${info.difficulty}`)}{level ? ` · ${level}` : ''}</span>
+          {info.level !== null && <span className="block text-muted-foreground">{t(`scale.${info.level as 0}`)}</span>}
+        </span>
+      </p>
+      <dl className="mt-1.5 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 tabular-nums">
+        <dt className="text-muted-foreground">{t('tip.length')}</dt>
+        <dd>{formatKm(info.lengthKm, locale)}</dd>
+        {surf && (<><dt className="text-muted-foreground">{t('tip.surface')}</dt><dd>{surf}</dd></>)}
+        {up !== null && (<><dt className="text-muted-foreground">{t('tip.uphill')}</dt><dd>{`S${up} · ${t(`uphill.${up as 0}`)}`}</dd></>)}
+      </dl>
+      {tip.pinned && info.url && (
+        <a href={info.url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex min-h-11 items-center font-medium text-primary underline-offset-2 hover:underline">
+          {t('tip.osm')}
+        </a>
+      )}
+      <p className="mt-1 text-muted-foreground">{t('tip.attribution')}</p>
     </div>
   );
 }

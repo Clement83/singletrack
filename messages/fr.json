@@ -328,6 +328,50 @@
       "red": "Difficile",
       "black": "Très difficile",
       "none": "Non classé"
+    },
+    "scale": {
+      "0": "Chemin lisse et compact, sans obstacle",
+      "1": "Petits obstacles, racines, pierres, ornières",
+      "2": "Obstacles fréquents, racines, marches, pierres instables",
+      "3": "Gros obstacles, passages raides, virages serrés",
+      "4": "Très raide, gros ressauts, pierriers",
+      "5": "Extrême, très raide, éboulis, sauts"
+    },
+    "uphill": {
+      "0": "très facile",
+      "1": "facile",
+      "2": "moyenne",
+      "3": "difficile",
+      "4": "très difficile",
+      "5": "extrême"
+    },
+    "tip": {
+      "close": "Fermer",
+      "unnamed": "Single sans nom",
+      "length": "Longueur",
+      "surface": "Revêtement",
+      "uphill": "Montée",
+      "osm": "Voir sur OpenStreetMap",
+      "attribution": "© contributeurs OpenStreetMap"
+    },
+    "surface": {
+      "asphalt": "Asphalte",
+      "paved": "Revêtu",
+      "concrete": "Béton",
+      "paving_stones": "Pavés",
+      "compacted": "Terre compactée",
+      "fine_gravel": "Gravier fin",
+      "gravel": "Gravier",
+      "ground": "Terre",
+      "dirt": "Terre",
+      "earth": "Terre",
+      "grass": "Herbe",
+      "sand": "Sable",
+      "mud": "Boue",
+      "rock": "Roche",
+      "pebblestone": "Cailloux",
+      "wood": "Bois",
+      "unpaved": "Non revêtu"
     }
   },
   "share": {

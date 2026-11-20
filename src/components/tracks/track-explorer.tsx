@@ -30,7 +30,7 @@ import { useMapColors } from './use-map-colors';
 import { TrackTip, useTrackTip } from '@/components/map/track-tip';
 import { OutingsLayer, useMapOutings } from './outings-layer';
 import { useOutingsPref } from './outings-pref';
-import { SinglesLayer, SinglesStatus, useSingles, useSinglesPref } from './singles-layer';
+import { SingleTip, SinglesLayer, SinglesStatus, useSingleTip, useSingles, useSinglesPref } from './singles-layer';
 import { SlopeLegend } from '@/components/map/slope-legend';
 import { OpenTrackLayers, TrackPanelBody, TrackPanelFooter, useOutingTrack, useTrackSheet } from './track-panel';
 import { nearestProfileIndex } from '@/lib/elevation';
@@ -296,8 +296,12 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
     if (f?.layer.id !== 'open-casing' || !openLine) return null;
     return { geometry: openLine.geometry, ele: (lon, lat) => openLine.profile[nearestProfileIndex(openLine.profile, lon, lat)]?.ele ?? null };
   });
+  // Singles tooltip (#1687): off while a track or an outing is open (singles dimmed).
+  const singlesTipOn = singles?.status === 'ok' && !openLine && panel?.kind !== 'track' && panel?.kind !== 'outing';
+  const singleTip = useSingleTip(singlesTipOn);
   const onClick = (e: MapLayerMouseEvent) => {
     lineTip.onTap(e);
+    singleTip.onTap(e);
     const f = e.features?.[0];
     if (!f) return;
     const src = mapRef.current?.getSource('starts') as GeoJSONSource | undefined;
@@ -323,9 +327,10 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
   };
   const onMouseMove = (e: MapLayerMouseEvent) => {
     lineTip.onMove(e);
+    singleTip.onMove(e);
     const onLine = openLine && lineKey && e.features?.some((x) => x.layer.id === 'open-casing');
     setLineOver(onLine ? { slug: lineKey, i: nearestProfileIndex(openLine.profile, e.lngLat.lng, e.lngLat.lat) } : null);
-    setHover(e.features?.some((x) => x.layer.id === 'start-hit' || x.layer.id === 'clusters') ? 'pointer' : null);
+    setHover(e.features?.some((x) => x.layer.id === 'start-hit' || x.layer.id === 'clusters' || (singlesTipOn && x.layer.id === 'singles-hit')) ? 'pointer' : null);
     const over = e.features?.find((x) => x.layer.id === 'start-hit')?.properties?.slug as string | undefined;
     setOverSlug((o) => (o === (over ?? null) ? o : (over ?? null)));
   };
@@ -354,8 +359,8 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
         onMoveEnd={syncView}
         onClick={onClick}
         onMouseMove={onMouseMove}
-        onMouseLeave={() => { setHover(null); setOverSlug(null); setLineOver(null); lineTip.clear(); }}
-        interactiveLayerIds={['clusters', 'start-hit', 'open-casing']}
+        onMouseLeave={() => { setHover(null); setOverSlug(null); setLineOver(null); lineTip.clear(); singleTip.onLeave(); }}
+        interactiveLayerIds={singlesTipOn ? ['clusters', 'start-hit', 'open-casing', 'singles-hit'] : ['clusters', 'start-hit', 'open-casing']}
         cursor={hover === 'pointer' ? 'pointer' : undefined}
       >
         {/* Declared first: the layers below have beforeId="clusters", which must exist when they are added (#1607). */}
@@ -366,7 +371,8 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
           <Layer id="start-hit" type="circle" filter={['!', ['has', 'point_count']]} paint={{ 'circle-color': colors.foreground, 'circle-opacity': 0, 'circle-radius': 22 }} />
         </Source>
         <TrackTip tip={lineTip.tip} />
-        <SinglesLayer state={singles} colors={colors} beforeId="clusters" dimmed={!!openLine} />
+        <SinglesLayer state={singles} colors={colors} beforeId="clusters" dimmed={!!openLine} highlightId={singleTip.tip?.info.id ?? null} />
+        <SingleTip tip={singleTip.tip} onClose={singleTip.clear} />
         {outingsOn && (
           <OutingsLayer
             outings={mapOutings}
