@@ -20,7 +20,7 @@ import { useMapColors } from '@/components/tracks/use-map-colors';
 import { SinglesLayer, useSingles, useSinglesPref } from '@/components/tracks/singles-layer';
 import { cn } from '@/lib/utils';
 import { DESKTOP, useMediaQuery } from '@/lib/use-media-query';
-import { docGeometry, pendingSegments, segmentLine, type EditorDoc, type LonLat } from '@/lib/editor/doc';
+import { docGeometry, docToStored, pendingSegments, segmentLine, type EditorDoc, type LonLat } from '@/lib/editor/doc';
 import { editorReducer, initialState, type EditorAction, type EditorState } from '@/lib/editor/state';
 import { liveStats, type LiveStats } from '@/lib/editor/stats';
 import type { Position } from '@/lib/geo';
@@ -389,7 +389,7 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
       type: 'FeatureCollection' as const,
       features: doc.segments.map((s, i) => ({
         type: 'Feature' as const,
-        properties: { seg: i, mode: s.mode },
+        properties: { seg: i, mode: s.mode, failed: !!s.failed },
         geometry: { type: 'LineString' as const, coordinates: segmentLine(doc, i) },
       })),
     }),
@@ -478,11 +478,12 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
         return { r: 'fail' };
       }
       if (asPublished && !c.name.trim()) return { r: 'skip' }; // a published track keeps its name
+      if (publish && c.doc.segments.some((x) => x.failed)) toast.warning(t('routeFailedOnSave')); // #1686: uncomputed sections are saved as straight lines
       running.current = true;
       setAutosave('saving');
       const g = docGeometry(c.doc, { densifyM: 50 })!; // straight lines densified: the IGN elevation follows the terrain
       const body = JSON.stringify({
-        name: c.name, description: c.description, visibility: c.visibility, geometry: g, waypoints: c.doc.waypoints, modes: c.doc.segments.map((s) => s.mode),
+        name: c.name, description: c.description, visibility: c.visibility, geometry: g, waypoints: c.doc.waypoints, modes: docToStored(c.doc).modes, frozen: docToStored(c.doc).frozen,
         status: asPublished ? 'published' : 'draft',
         ...(!c.liveSlug && mode === 'copy' ? { parentSlug: slug } : {}),
       });
@@ -690,7 +691,8 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
             <Source id="edit" type="geojson" data={segFeatures}>
               <Layer id="edit-hit" type="line" layout={{ 'line-cap': 'round' }} paint={{ 'line-color': colors.primary, 'line-width': hitPx, 'line-opacity': 0.01 }} />
               <Layer id="edit-casing" type="line" layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': colors.card, 'line-width': 9 }} />
-              <Layer id="edit-line" type="line" filter={['==', ['get', 'mode'], 'line']} layout={{ 'line-join': 'round' }} paint={{ 'line-color': colors.foreground, 'line-width': 4, 'line-dasharray': [1.5, 1.5] }} />
+              <Layer id="edit-line" type="line" filter={['all', ['==', ['get', 'mode'], 'line'], ['!', ['get', 'failed']]]} layout={{ 'line-join': 'round' }} paint={{ 'line-color': colors.foreground, 'line-width': 4, 'line-dasharray': [1.5, 1.5] }} />
+              <Layer id="edit-failed" type="line" filter={['get', 'failed']} layout={{ 'line-join': 'round' }} paint={{ 'line-color': colors.red, 'line-width': 4, 'line-dasharray': [0.5, 2] }} />
             </Source>
             <Source id="alts" type="geojson" data={altFeatures}>
               <Layer id="alt-hit" type="line" layout={{ 'line-cap': 'round' }} paint={{ 'line-color': colors.muted, 'line-width': hitPx, 'line-opacity': 0.01 }} />

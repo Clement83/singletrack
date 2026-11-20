@@ -16,6 +16,8 @@ export type EditorInput = {
   geometry: TrackGeometry;
   waypoints: unknown;
   modes: unknown;
+  /** Frozen segments (#1686), optional: documents saved before that lack it. */
+  frozen?: unknown;
   /** Slug of the original track: a modified copy is saved instead. */
   parentSlug?: string | null;
   /** `draft` (#1450): automatic save, name and minimum length not required. Absent = published. */
@@ -46,7 +48,7 @@ export function validateEditorInput(i: EditorInput, draft = i?.status === 'draft
   if (!coords || coords.length < 2 || coords.length > MAX_EDITOR_POINTS || !coords.every(validPos)) {
     errors.geometry = 'geometryInvalid';
   }
-  const stored = parseStored({ waypoints: i?.waypoints, modes: i?.modes });
+  const stored = parseStored({ waypoints: i?.waypoints, modes: i?.modes, frozen: i?.frozen });
   if (!stored) errors.waypoints = 'waypointsInvalid';
   // #1590: absent = account default / unchanged; present but unknown = 422.
   if (i?.visibility !== undefined && i.visibility !== null && !isTrackVisibility(i.visibility)) errors.visibility = 'visibilityInvalid';

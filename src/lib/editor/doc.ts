@@ -8,12 +8,14 @@ import { simplifyLine } from '@/lib/geo/simplify';
  */
 export type LonLat = [number, number];
 export type SegmentMode = 'route' | 'line';
-export type Segment = { mode: SegmentMode; coords: Position[] | null };
+/** `failed`: BRouter found no path (#1686); the segment is a placeholder straight line, flagged "not computed". */
+export type Segment = { mode: SegmentMode; coords: Position[] | null; failed?: true };
 export type EditorDoc = { waypoints: LonLat[]; segments: Segment[] };
 
 export const emptyDoc = (): EditorDoc => ({ waypoints: [], segments: [] });
 
 const same = (a: LonLat, b: LonLat) => a[0] === b[0] && a[1] === b[1];
+const frozen = (s: Segment | undefined) => !!s && s.mode === 'line' && !!s.coords;
 const seg = (mode: SegmentMode, coords: Position[] | null = null): Segment => ({ mode, coords });
 
 export function addWaypoint(doc: EditorDoc, p: LonLat, mode: SegmentMode): EditorDoc {
@@ -57,7 +59,9 @@ export function insertWaypoint(doc: EditorDoc, i: number, p: LonLat): EditorDoc 
 export function moveWaypoint(doc: EditorDoc, i: number, p: LonLat): EditorDoc {
   if (!doc.waypoints[i]) return doc;
   const waypoints = doc.waypoints.map((w, k) => (k === i ? p : w));
-  const segments = doc.segments.map((s, k) => (k === i - 1 || k === i ? seg(s.mode) : s));
+  // A frozen segment (line carrying its original route) must be recomputed by BRouter, not become a straight line (#1686);
+  // a deliberate straight line (no original route) stays one.
+  const segments = doc.segments.map((s, k) => (k === i - 1 || k === i ? seg(frozen(s) ? 'route' : s.mode) : s));
   return { waypoints, segments };
 }
 
@@ -169,13 +173,27 @@ export function docGeometry(doc: EditorDoc, opts: DocGeometryOptions = {}): Line
   return { type: 'LineString', coordinates: out };
 }
 
-export type StoredDoc = { waypoints: LonLat[]; modes: SegmentMode[] };
+/** `frozen[i]`: segment `i` is a line carrying its original route (import/copy), not a deliberate straight line (#1686). Optional: older documents lack it. */
+export type StoredDoc = { waypoints: LonLat[]; modes: SegmentMode[]; frozen?: boolean[] };
 
-export const docToStored = (doc: EditorDoc): StoredDoc => ({ waypoints: doc.waypoints, modes: doc.segments.map((s) => s.mode) });
+export const docToStored = (doc: EditorDoc): StoredDoc => ({
+  waypoints: doc.waypoints,
+  modes: doc.segments.map((s) => s.mode),
+  frozen: doc.segments.map((s) => frozen(s)),
+});
 
 /** Reads a saved document back: "paths" segments have to be recomputed. */
 export function docFromStored(s: StoredDoc): EditorDoc {
   return { waypoints: s.waypoints, segments: s.modes.map((m) => seg(m)) };
+}
+
+/** Legacy heuristic: a line whose vertices all lie within 3 m of the chord is a deliberate straight line. */
+function isStraight(c: Position[]): boolean {
+  const a = c[0];
+  const b = c[c.length - 1];
+  const len = haversine(a, b);
+  if (len === 0) return false;
+  return c.every((p) => haversine(a, p) + haversine(p, b) - len < 3);
 }
 
 /**
@@ -203,7 +221,10 @@ export function docFromStoredWithGeometry(s: StoredDoc, g: TrackGeometry, tolM =
   doc.segments.forEach((sg, k) => {
     const a = at[k];
     const b = at[k + 1];
-    if (sg.mode === 'route' && a != null && b != null && b > a) sg.coords = all.slice(a, b + 1);
+    if (a == null || b == null || b <= a) return;
+    const slice = all.slice(a, b + 1);
+    if (sg.mode === 'route') sg.coords = slice;
+    else if (s.frozen ? s.frozen[k] : !isStraight(slice)) sg.coords = slice; // legacy documents: a bent line was frozen
   });
   return doc;
 }
@@ -215,7 +236,10 @@ export function parseStored(v: unknown, maxPoints = 500): StoredDoc | null {
   if (!Array.isArray(waypoints) || !Array.isArray(modes) || waypoints.length > maxPoints) return null;
   if (!waypoints.every((w) => Array.isArray(w) && w.length >= 2 && Number.isFinite(w[0]) && Number.isFinite(w[1]))) return null;
   if (modes.length !== Math.max(0, waypoints.length - 1) || !modes.every((m) => m === 'route' || m === 'line')) return null;
-  return { waypoints: waypoints.map((w) => [w[0], w[1]] as LonLat), modes: modes as SegmentMode[] };
+  const out: StoredDoc = { waypoints: waypoints.map((w) => [w[0], w[1]] as LonLat), modes: modes as SegmentMode[] };
+  const fz = (v as Record<string, unknown>).frozen;
+  if (Array.isArray(fz) && fz.length === modes.length && fz.every((f) => typeof f === 'boolean')) out.frozen = fz as boolean[];
+  return out;
 }
 
 /**
@@ -285,8 +309,8 @@ export function deviateWaypoint(
   const waypoints = [...doc.waypoints.slice(0, hasL ? la + 1 : 0), p, ...doc.waypoints.slice(hasR ? rb : n)];
   const segments = [
     ...doc.segments.slice(0, la),
-    ...(hasL ? [seg(la === i - 1 ? doc.segments[i - 1].mode : 'route')] : []),
-    ...(hasR ? [seg(rb === i + 1 ? doc.segments[i].mode : 'route')] : []),
+    ...(hasL ? [seg(la === i - 1 && !frozen(doc.segments[i - 1]) ? doc.segments[i - 1].mode : 'route')] : []),
+    ...(hasR ? [seg(rb === i + 1 && !frozen(doc.segments[i]) ? doc.segments[i].mode : 'route')] : []),
     ...doc.segments.slice(rb),
   ];
   const origSegs = doc.segments.slice(start, hasR ? rb : i);

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import type { LngLat } from './helpers';
 import { altCount, altLines, clickAt, dragMouse, mapCenter, onSegment, openEditor, screenOf, segments, twoPoints, waitRouted, waypointButtons, waypointCenters } from './helpers';
 
 test('éditeur : la carte se charge et le premier clic pose le départ', async ({ page }) => {
@@ -125,4 +126,29 @@ test('éditeur : deux chemins après un glisser, clic sur l’autre, « Garder c
   await keep.click();
   await expect(keep).toHaveCount(0);
   expect(await halos()).toHaveLength(0);
+});
+
+// #1686: a track opened from an existing geometry (frozen segments, > 400 m): moving a point never leaves a straight
+// line, BRouter recomputes the touched segments and the others keep their original route.
+test('#1686 : déplacer un point d’une trace à longs tronçons ne laisse aucune ligne droite', async ({ page, request }) => {
+  const lon = 6.2, lat = 43.3;
+  const coords = Array.from({ length: 41 }, (_, k) => [lon + k * 0.0006, lat + (k % 2) * 0.0002, 100]);
+  const wp = [0, 10, 20, 30, 40].map((k) => [coords[k][0], coords[k][1]]);
+  const res = await request.post('/api/tracks', {
+    data: { name: 'e2e 1686', geometry: { type: 'LineString', coordinates: coords }, waypoints: wp, modes: ['line', 'line', 'line', 'line'], frozen: [true, true, true, true], status: 'draft' },
+  });
+  expect(res.ok()).toBe(true);
+  const { slug } = (await res.json()) as { slug: string };
+  await openEditor(page, `/t/${slug}/edit`);
+  const before = await segments(page);
+  expect(before.every((s) => s.mode === 'line' && s.coords.length > 2)).toBe(true);
+  const mid = await screenOf(page, wp[2] as LngLat);
+  await dragMouse(page, mid, { x: mid.x, y: mid.y + 40 });
+  await waitRouted(page);
+  const after = await segments(page);
+  expect(after.some((s) => s.mode === 'route')).toBe(true);
+  expect(after.filter((s) => s.mode === 'line').every((s) => s.coords.length > 2)).toBe(true);
+  await page.waitForTimeout(3000); // autosave of the draft
+  await openEditor(page, `/t/${slug}/edit`);
+  expect((await segments(page)).every((s) => s.coords.length > 2)).toBe(true);
 });

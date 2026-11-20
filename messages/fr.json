@@ -178,7 +178,8 @@
     "notYours": "Cette trace n’est pas à toi : fais-en une copie.",
     "saveFailed": "Impossible d’enregistrer, réessaie.",
     "saved": "Trace enregistrée",
-    "noPath": "Pas de chemin trouvé ici : ce tronçon passe en ligne droite.",
+    "noPath": "Pas de chemin trouvé ici\u00a0: tronçon non calculé (pointillés rouges). Clic droit sur le tronçon pour relancer le calcul.",
+    "routeFailedOnSave": "Certains tronçons n’ont pas pu être calculés\u00a0: ils sont enregistrés en ligne droite.",
     "startLetter": "D",
     "endLetter": "A",
     "toolbox": "Boîte à outils",
@@ -521,7 +522,7 @@
     "metaTitle": "Ma sortie — singletrack",
     "back": "Mes sorties",
     "track": "Trace : <link>{name}</link> · {km} (figée le {date})",
-    "trackFrozen": "Trace : {name} · {km} (figée le {date})",
+    "trackFrozen": "Trace\u00a0: {name} · {km} (figée le {date})",
     "backToOuting": "La sortie",
     "proposedBy": "Proposée par {name}",
     "publicNotice": "Sortie publique\u00a0: la date, le lieu et la trace ne changent plus. Pour discuter, utilise les commentaires."
@@ -1215,7 +1216,7 @@
       "friendsHint": "Tes copains la voient et peuvent la rejoindre sans invitation. Toi seul la modifies.",
       "inviteHint": "Seules les personnes invitées la voient. Toi seul la modifies.",
       "publicHint": "Tout compte connecté la voit et peut la rejoindre. Attention : une sortie publique est figée et n’a pas d’organisateur. Date, lieu, trace et places ne pourront plus changer, ni la sortie être annulée.",
-      "trackStaysPrivate": "Le parcours sera visible de tous ceux qui voient la sortie ; la trace reste privée.",
+      "trackStaysPrivate": "Le parcours sera visible de tous ceux qui voient la sortie\u00a0; la trace reste privée.",
       "federationNote": "Sortie visible par d’autres serveurs : une suppression ou une annulation leur est envoyée, mais ne peut pas être garantie.",
       "participantsCanInvite": "Les participants inscrits peuvent inviter leurs copains"
     }

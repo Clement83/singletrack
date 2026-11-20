@@ -164,9 +164,10 @@ function reduce(s: EditorState, a: EditorAction): EditorState {
       return w && w[0] === a.from[0] && w[1] === a.from[1] ? { ...s, present: snapWaypoint(d, a.i, a.p) } : s;
     }
     case 'routeFailed': {
-      // No path between these two points: this segment switches to a straight line.
+      // No path between these two points: the segment becomes a placeholder flagged `failed` (#1686), not a silent straight line.
       const same = d.waypoints[a.seg]?.join() === a.from.join() && d.waypoints[a.seg + 1]?.join() === a.to.join();
-      return same ? { ...s, present: setSegmentMode(d, a.seg, 'line') } : s;
+      if (!same) return s;
+      return { ...s, present: { ...d, segments: d.segments.map((x, k) => (k === a.seg ? { mode: 'line' as const, coords: null, failed: true as const } : x)) } };
     }
   }
 }

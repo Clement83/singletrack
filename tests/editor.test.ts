@@ -145,7 +145,9 @@ describe('historique annuler / rétablir', () => {
     s = editorReducer(s, { type: 'add', p: A });
     s = editorReducer(s, { type: 'add', p: B });
     s = editorReducer(s, { type: 'routeFailed', seg: 0, from: A, to: B });
-    expect(s.present.segments[0].mode).toBe('line');
+    expect(s.present.segments[0]).toEqual({ mode: 'line', coords: null, failed: true });
+    s = editorReducer(s, { type: 'segmentMode', seg: 0, mode: 'route' });
+    expect(pendingSegments(s.present)).toEqual([0]);
   });
 
   it('mode des nouveaux segments, tout recaler', () => {
