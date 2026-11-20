@@ -149,6 +149,25 @@
   animation: fade-in var(--duration-base, 200ms) var(--ease-out) both;
 }
 
+/* Floating surface (ticket 1689): everything that floats over the map (desktop panel, map buttons, search, legends, menus,
+   tooltips) = near-opaque `surface-glass` (94 %) + light blur + hairline + two-layer shadow. `glass` is now reserved
+   for the mobile bottom sheet and the fixed bars. Opaque fallback without backdrop-filter / with reduced transparency. */
+@utility floating {
+  background-color: var(--surface-glass);
+  border: var(--border-width, 1px) solid var(--border);
+  box-shadow: var(--elevation-floating);
+  @supports (backdrop-filter: blur(1px)) {
+    background-color: color-mix(in srgb, var(--surface-glass) var(--floating-opacity), transparent);
+    -webkit-backdrop-filter: var(--floating-blur);
+    backdrop-filter: var(--floating-blur);
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    background-color: var(--surface-glass);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
 /* Glass (ticket 1624): floating layers (nav, sheet, map buttons, toasts). `surface-glass` background at
    `--glass-opacity` + `--glass-blur` (`none` or `blur(…)`) according to the charter. Singletrack charter (ticket 1645):
    72 % (dark 70 %) + saturate(180%) blur(20px); never on content cards. Opaque fallback without backdrop-filter or when the user
@@ -166,18 +185,47 @@
     backdrop-filter: none;
   }
 }
-.map-touch .maplibregl-ctrl-group {
+/* Map buttons (ticket 1689): a single pill in one right-hand column; the MapLibre groups (zoom, compass, locate, 3D)
+   are stacked and joined with hairline separators. */
+.map-touch .maplibregl-ctrl-top-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.map-touch .maplibregl-ctrl-top-right .maplibregl-ctrl {
+  float: none;
+  margin: 0;
+}
+.map-touch .maplibregl-ctrl-top-right .maplibregl-ctrl-group {
   background-color: var(--surface-glass);
+  border: var(--border-width, 1px) solid var(--border);
+  box-shadow: var(--elevation-floating);
+  border-radius: 0;
+}
+.map-touch .maplibregl-ctrl-top-right .maplibregl-ctrl-group:first-child {
+  border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+}
+.map-touch .maplibregl-ctrl-top-right .maplibregl-ctrl-group:last-child {
+  border-radius: 0 0 var(--radius-2xl) var(--radius-2xl);
+}
+.map-touch .maplibregl-ctrl-top-right .maplibregl-ctrl-group:first-child:last-child {
+  border-radius: var(--radius-2xl);
+}
+.map-touch .maplibregl-ctrl-top-right .maplibregl-ctrl-group + .maplibregl-ctrl-group {
+  border-top-width: 0;
+}
+.map-touch .maplibregl-ctrl-group button + button {
+  border-top: var(--border-width, 1px) solid var(--border);
 }
 @supports (backdrop-filter: blur(1px)) {
-  .map-touch .maplibregl-ctrl-group {
-    background-color: color-mix(in srgb, var(--surface-glass) var(--glass-opacity), transparent);
-    -webkit-backdrop-filter: var(--glass-blur);
-    backdrop-filter: var(--glass-blur);
+  .map-touch .maplibregl-ctrl-top-right .maplibregl-ctrl-group {
+    background-color: color-mix(in srgb, var(--surface-glass) var(--floating-opacity), transparent);
+    -webkit-backdrop-filter: var(--floating-blur);
+    backdrop-filter: var(--floating-blur);
   }
 }
 @media (prefers-reduced-transparency: reduce) {
-  .map-touch .maplibregl-ctrl-group {
+  .map-touch .maplibregl-ctrl-top-right .maplibregl-ctrl-group {
     background-color: var(--surface-glass);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;

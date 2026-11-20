@@ -88,7 +88,7 @@ function SourceInfo({ sheet }: { sheet: PanelSheet }) {
         <HelpCircle aria-hidden />
       </Button>
       {open && (
-        <div id={id} role="note" className="absolute top-full right-0 z-10 w-72 max-w-[calc(100vw-2rem)] rounded-xl border border-border glass p-4 text-small text-card-foreground shadow-md">
+        <div id={id} role="note" className="absolute top-full right-0 z-10 w-72 max-w-[calc(100vw-2rem)] rounded-xl floating p-4 text-small text-card-foreground">
           <p className="font-semibold">{t('source', { source: t(`sources.${sheet.source}`) })}</p>
           {(sheet.author || sheet.license) && (
             <p className="mt-1 text-muted-foreground">

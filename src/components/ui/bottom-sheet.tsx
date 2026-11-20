@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Drawer } from 'vaul';
 import { useTranslations } from 'next-intl';
 import { ChevronsUp, ChevronsDown, X } from 'lucide-react';
@@ -26,6 +26,8 @@ type Props = {
   tallFooter?: boolean;
   /** Modal (#1622): scrim behind the sheet, a tap on it closes it; the page behind is no longer usable. */
   modal?: boolean;
+  /** Mobile: current detent (also on opening), to keep the map centred on the visible part (#1689). */
+  onSnapChange?: (snap: Snap | string | number | null) => void;
 };
 
 /**
@@ -33,10 +35,13 @@ type Props = {
  * on desktop. Non-modal: the map stays usable behind. Keyboard: Escape closes, the
  * "Expand / Shrink" button moves from one detent to the next.
  */
-export function BottomSheet({ open, onOpenChange, title, description, children, footer, initialSnap = 0.5, tallFooter = false, modal = false }: Props) {
+export function BottomSheet({ open, onOpenChange, title, description, children, footer, initialSnap = 0.5, tallFooter = false, modal = false, onSnapChange }: Props) {
   const tSheet = useTranslations('sheet');
   const desktop = useMediaQuery(DESKTOP);
   const [snap, setSnap] = useState<Snap | string | number | null>(initialSnap);
+  useEffect(() => {
+    if (open) onSnapChange?.(snap);
+  }, [open, snap, onSnapChange]);
 
   if (desktop) {
     if (!open) return null;
@@ -44,7 +49,7 @@ export function BottomSheet({ open, onOpenChange, title, description, children, 
       <aside
         aria-label={title}
         onKeyDown={(e) => e.key === 'Escape' && onOpenChange(false)}
-        className="panel-in fixed inset-y-3 left-[calc(var(--spacing-rail)+12px)] z-40 flex w-panel flex-col overflow-hidden rounded-2xl border border-border glass text-card-foreground shadow-md"
+        className="panel-in fixed inset-y-3 left-[calc(var(--spacing-rail)+12px)] z-40 flex w-panel flex-col overflow-hidden rounded-2xl floating text-card-foreground"
       >
         <header className="flex items-start gap-2 p-4 pb-2">
           <div className="min-w-0 flex-1 pt-2">

@@ -230,7 +230,7 @@ export function UserMenu({ user, className, sourceUrl, version }: { user: User; 
             id={panelId}
             role="dialog"
             aria-label={t('title')}
-            className="fixed bottom-4 left-[calc(var(--spacing-rail)+12px)] z-50 flex max-h-[calc(100dvh-2rem)] w-panel flex-col gap-4 overflow-y-auto overscroll-contain rounded-2xl border border-border glass p-4 text-popover-foreground shadow-md"
+            className="fixed bottom-4 left-[calc(var(--spacing-rail)+12px)] z-50 flex max-h-[calc(100dvh-2rem)] w-panel flex-col gap-4 overflow-y-auto overscroll-contain rounded-2xl floating p-4 text-popover-foreground"
           >
             <div className="flex items-start justify-between gap-2">
               <Identity user={user} />

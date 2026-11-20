@@ -44,3 +44,31 @@ export function viewQuery(v: MapView | null, openSlug?: string | null): string {
   if (openSlug) p.set('t', openSlug);
   return p.toString();
 }
+
+/** MapLibre padding (px) = the part of the map hidden by a floating panel (#1689). */
+export type MapPadding = { top: number; right: number; bottom: number; left: number };
+
+export const NO_PADDING: MapPadding = { top: 0, right: 0, bottom: 0, left: 0 };
+
+/** Desktop side panel: left offset (rail + margin), width (`--spacing-rail` 80, `--spacing-panel` 400) and gap to the visible area. */
+export const DESKTOP_PANEL = { left: 92, width: 400, gap: 12 } as const;
+/** A sheet at the top detent would leave no map: the padding never exceeds this share of the height. */
+export const MAX_SHEET_SHARE = 0.6;
+
+/**
+ * Padding to give the map (`setPadding` / `easeTo({ padding })`) so that its centre, and every fit, falls in the
+ * VISIBLE area: desktop = panel width + margins on the left, mobile = sheet height at the current detent
+ * (`'148px'` or a share of the viewport, as in `SNAP_POINTS`) at the bottom. Without an open panel: none.
+ * A single mechanism: `fitBounds`/`easeTo`/`panTo` calls add only their own small margins on top.
+ */
+export function floatingPadding(o: { desktop: boolean; panelOpen: boolean; viewportHeight: number; snap?: string | number | null }): MapPadding {
+  if (!o.panelOpen) return NO_PADDING;
+  if (o.desktop) return { ...NO_PADDING, left: DESKTOP_PANEL.left + DESKTOP_PANEL.width + DESKTOP_PANEL.gap };
+  const snap = o.snap ?? 0.5;
+  const px = typeof snap === 'number' ? snap * o.viewportHeight : Number.parseFloat(snap) || 0;
+  return { ...NO_PADDING, bottom: Math.round(Math.min(Math.max(px, 0), o.viewportHeight * MAX_SHEET_SHARE)) };
+}
+
+export function samePadding(a: Partial<MapPadding>, b: MapPadding): boolean {
+  return (a.top ?? 0) === b.top && (a.right ?? 0) === b.right && (a.bottom ?? 0) === b.bottom && (a.left ?? 0) === b.left;
+}

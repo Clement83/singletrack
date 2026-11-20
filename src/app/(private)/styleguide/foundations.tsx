@@ -14,20 +14,20 @@ const HOME = { lat: 43.2, lon: 6.25 };
 
 function MapButton({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <button type="button" aria-label={label} className="press flex size-touch items-center justify-center rounded-xl border border-border glass shadow-md hover:bg-muted/60">
+    <button type="button" aria-label={label} className="press flex size-touch items-center justify-center rounded-xl floating hover:bg-muted/60">
       {children}
     </button>
   );
 }
 
-/** Real map + floating glass layers: map buttons, menu, toast, sheet. */
+/** Real map + floating surfaces (`floating`; the sheet stays `glass`): map buttons, menu, toast, sheet. */
 export function MaterialsDemo() {
   return (
     <div className="relative h-[560px] overflow-hidden rounded-2xl border border-border">
       <LazyMap lat={HOME.lat} lon={HOME.lon} zoom={12} interactive={false} className="size-full" />
 
       <div className="absolute top-3 right-3 flex flex-col gap-2">
-        <div className="flex flex-col overflow-hidden rounded-xl border border-border glass shadow-md">
+        <div className="flex flex-col overflow-hidden rounded-xl floating">
           <button type="button" aria-label="Zoomer" className="press flex size-touch items-center justify-center hover:bg-muted/60">
             <Plus aria-hidden className="size-5" />
           </button>
@@ -44,7 +44,7 @@ export function MaterialsDemo() {
         </MapButton>
       </div>
 
-      <div className="absolute top-3 left-3 w-60 rounded-2xl border border-border glass p-1 shadow-md" role="menu" aria-label="Menu de démonstration">
+      <div className="absolute top-3 left-3 w-60 rounded-2xl floating p-1" role="menu" aria-label="Menu de démonstration">
         {[
           { icon: Pencil, label: 'Modifier une copie' },
           { icon: Copy, label: 'Copier le lien' },
@@ -63,7 +63,7 @@ export function MaterialsDemo() {
       </div>
 
       <div className="absolute inset-x-3 bottom-[212px] flex justify-center">
-        <div role="status" className="flex items-center gap-3 rounded-2xl border border-border glass px-4 py-3 text-small text-popover-foreground shadow-md">
+        <div role="status" className="flex items-center gap-3 rounded-2xl floating px-4 py-3 text-small text-popover-foreground">
           <Check aria-hidden className="size-4 text-success" />
           Lien copié
         </div>

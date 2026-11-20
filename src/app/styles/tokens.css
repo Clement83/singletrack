@@ -64,9 +64,12 @@
   --surface-glass-foreground: #17181c;
   --elevation-sm: 0 1px 1px rgba(16, 18, 24, 0.03), 0 1px 2px rgba(16, 18, 24, 0.06);
   --elevation-md: 0 1px 2px rgba(16, 18, 24, 0.04), 0 4px 8px -2px rgba(16, 18, 24, 0.06), 0 12px 24px -6px rgba(16, 18, 24, 0.10);
+  --elevation-floating: 0 1px 2px rgba(16, 18, 24, 0.08), 0 6px 20px -4px rgba(16, 18, 24, 0.16);
   --elevation-sheet: 0 -1px 2px rgba(16, 18, 24, 0.04), 0 -8px 24px -4px rgba(16, 18, 24, 0.10), 0 -24px 48px -12px rgba(16, 18, 24, 0.08);
   --glass-opacity: 72%;
   --glass-blur: saturate(180%) blur(20px);
+  --floating-opacity: 94%;
+  --floating-blur: blur(8px);
   --border-width: 1px;
 }
 
@@ -133,9 +136,12 @@
   --surface-glass-foreground: #ececee;
   --elevation-sm: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 1px 2px rgba(0, 0, 0, 0.5);
   --elevation-md: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 4px 8px -2px rgba(0, 0, 0, 0.5), 0 16px 32px -8px rgba(0, 0, 0, 0.6);
+  --elevation-floating: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 24px -4px rgba(0, 0, 0, 0.6);
   --elevation-sheet: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 -8px 24px -4px rgba(0, 0, 0, 0.6), 0 -24px 48px -12px rgba(0, 0, 0, 0.5);
   --glass-opacity: 70%;
   --glass-blur: saturate(180%) blur(20px);
+  --floating-opacity: 94%;
+  --floating-blur: blur(8px);
   --border-width: 1px;
 }
 
@@ -203,9 +209,12 @@
     --surface-glass-foreground: #ececee;
     --elevation-sm: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 1px 2px rgba(0, 0, 0, 0.5);
     --elevation-md: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 4px 8px -2px rgba(0, 0, 0, 0.5), 0 16px 32px -8px rgba(0, 0, 0, 0.6);
+    --elevation-floating: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 24px -4px rgba(0, 0, 0, 0.6);
     --elevation-sheet: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 -8px 24px -4px rgba(0, 0, 0, 0.6), 0 -24px 48px -12px rgba(0, 0, 0, 0.5);
     --glass-opacity: 70%;
     --glass-blur: saturate(180%) blur(20px);
+    --floating-opacity: 94%;
+    --floating-blur: blur(8px);
     --border-width: 1px;
   }
 }
@@ -285,6 +294,7 @@
   --shadow-*: initial;
   --shadow-sm: var(--elevation-sm);
   --shadow-md: var(--elevation-md);
+  --shadow-floating: var(--elevation-floating);
   --shadow-sheet: var(--elevation-sheet);
 }
 

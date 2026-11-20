@@ -19,7 +19,7 @@ import { OutingParticipants } from '@/components/outings/outing-participants';
 import { activeFilterCount, parseFilters, serializeFilters, type TrackFilters } from '@/lib/tracks/filters';
 import type { TrackStart, TrackSummary } from '@/lib/tracks/query';
 import { tracksAtStart } from '@/lib/tracks/same-start';
-import { VIEW_PARAMS, parseMapView, parseOpenTrack, viewChanged, viewQuery, writeMapView, type MapView } from '@/lib/tracks/map-view';
+import { VIEW_PARAMS, parseMapView, parseOpenTrack, floatingPadding, samePadding, viewChanged, viewQuery, writeMapView, type MapView } from '@/lib/tracks/map-view';
 import { LAST_EXPLORER_KEY } from '@/components/tracks/back-to-map';
 import { LoginLink } from '@/components/login-link';
 import { haversine } from '@/lib/geo/distance';
@@ -47,6 +47,8 @@ type View = [number, number, number, number];
 const inView = (p: [number, number], v: View) => p[0] >= v[0] && p[0] <= v[2] && p[1] >= v[1] && p[1] <= v[3];
 /** Beyond it, start points no longer cluster (#1531): each start is a marker, those of the same car park stack. */
 const CLUSTER_MAX_ZOOM = 16;
+/** Margins of a fit around the track, on top of the global panel padding (#1689). */
+const FIT_MARGIN = { top: 90, bottom: 60, left: 40, right: 40 };
 const openSlugOf = (p: Panel) => (p?.kind === 'track' ? p.slug : null);
 
 /** `signedIn=false`: visitor mode (#1591), without "My tracks", import or creation; restricted actions lead to sign-in. */
@@ -116,7 +118,7 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
           (a, t) => [Math.min(a[0], t.bbox[0]), Math.min(a[1], t.bbox[1]), Math.max(a[2], t.bbox[2]), Math.max(a[3], t.bbox[3])],
           [180, 90, -180, -90],
         );
-        mapRef.current?.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: { top: 90, bottom: 120, left: 40, right: 40 }, maxZoom: 14, duration: 600 });
+        mapRef.current?.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: FIT_MARGIN, maxZoom: 14, duration: 600 });
       })
       .catch(() => {});
     return () => ctl.abort();
@@ -147,7 +149,28 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
   }, [filterKey]);
 
   // End-to-end tests (#1532): `window.__E2E__` set before loading exposes the map to project/inspect.
+  // Visible area (#1689): the map's global padding follows the open panel (desktop) or the sheet detent
+  // (mobile); every recentring (fit, cluster, locate, profile cursor) then targets the VISIBLE part, and
+  // `getCenter()` (URL view, #1577) is the visible centre: a padding change moves neither the URL nor the zoom.
+  const [mapReady, setMapReady] = useState(false);
+  const [sheetSnap, setSheetSnap] = useState<string | number | null>(null);
+  const sheetOpenNow = panel !== null;
+  const paddingKey = JSON.stringify(floatingPadding({ desktop, panelOpen: sheetOpenNow, viewportHeight: typeof window === 'undefined' ? 800 : window.innerHeight, snap: sheetSnap }));
+  const paddingRef = useRef(floatingPadding({ desktop: false, panelOpen: false, viewportHeight: 800 }));
+  const paddingApplied = useRef(false);
+  useEffect(() => {
+    const map = mapRef.current;
+    const next = JSON.parse(paddingKey) as ReturnType<typeof floatingPadding>;
+    paddingRef.current = next;
+    if (!map || !mapReady) return;
+    if (samePadding(map.getPadding(), next)) return;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // First application (arrival on a shared URL): no animation.
+    map.easeTo({ padding: next, duration: paddingApplied.current && !reduce ? 250 : 0 });
+    paddingApplied.current = true;
+  }, [paddingKey, mapReady]);
   const onMapLoad = useCallback(() => {
+    setMapReady(true);
     const w = window as unknown as { __E2E__?: boolean; __explorerMap?: unknown };
     if (w.__E2E__) w.__explorerMap = mapRef.current?.getMap();
   }, []);
@@ -261,9 +284,10 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
     const b = map.getBounds();
     const [w, s, e, n] = openLine.bbox;
     if (b.contains([w, s]) && b.contains([e, n])) return;
-    const panelW = desktop ? 420 : 0;
-    map.fitBounds([[w, s], [e, n]], { padding: { top: 90, bottom: desktop ? 60 : window.innerHeight * 0.5, left: 40 + panelW, right: 40 }, maxZoom: 15, duration: 600 });
-  }, [openLine, lineKey, desktop]);
+    // Panel padding applied at once (the fit animates right after); the fit only adds its own margins.
+    map.setPadding(paddingRef.current);
+    map.fitBounds([[w, s], [e, n]], { padding: FIT_MARGIN, maxZoom: 15, duration: 600 });
+  }, [openLine, lineKey]);
 
   // Geometries on demand (#1531), for the hover preview: only those not loaded yet.
   const [geoms, setGeoms] = useState<Record<string, NonNullable<TrackSummary['geometry']>>>({});
@@ -384,7 +408,7 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
 
       {/* Floating bar: search + filters. Shifted right of the panel on desktop. */}
       <div className={cn('absolute top-3 right-16 left-16 z-10 flex gap-2 lg:left-3', desktop && sheetOpen && 'left-[calc(var(--spacing-panel)+36px)]')}>
-        <div className="relative flex-1 rounded-full border border-border glass shadow-md">
+        <div className="relative flex-1 rounded-full floating">
           <Search aria-hidden className="pointer-events-none absolute top-1/2 left-3.5 size-5 -translate-y-1/2 text-muted-foreground" />
           <Input type="search" aria-label={t('search')} placeholder={t('search')} value={q} onChange={(e) => setDraft(e.target.value)} className="rounded-full border-transparent bg-transparent pl-11" />
         </div>
@@ -435,6 +459,7 @@ export function TrackExplorer({ home, signedIn = true }: { home: { lat: number; 
         onOpenChange={(o) => !o && setPanel(null)}
         title={panelTitle}
         description={panel?.kind === 'list' ? t('listDesc', { visible: visible.length, total }) : undefined}
+        onSnapChange={setSheetSnap}
         initialSnap={panel?.kind === 'track' || panel?.kind === 'outing' ? 0.5 : 0.92}
         tallFooter={(panel?.kind === 'track' && !!sheet) || (panel?.kind === 'outing' && !!outingTrack && outingTrack.profile.length > 1)}
         footer={

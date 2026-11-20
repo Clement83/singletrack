@@ -24,7 +24,7 @@ export function SlopeLegend({ className }: { className?: string }) {
   const [open, setOpen] = useState(false);
   const t = useTranslations();
   return (
-    <div className={cn('absolute z-10 rounded-xl border border-border glass shadow-md', className)}>
+    <div className={cn('absolute z-10 rounded-xl floating', className)}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}

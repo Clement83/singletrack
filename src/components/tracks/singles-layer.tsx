@@ -225,7 +225,7 @@ export function SingleTip({ tip, onClose }: { tip: SingleTipState; onClose: () =
     <div
       role="status"
       className={cn(
-        'absolute z-20 w-72 max-w-[calc(100%-1.5rem)] rounded-2xl border border-border glass p-3 text-small text-popover-foreground shadow-md',
+        'absolute z-20 w-72 max-w-[calc(100%-1.5rem)] rounded-2xl floating p-3 text-small text-popover-foreground',
         tip.touch ? 'inset-x-3 bottom-20 mx-auto' : tip.pinned ? '' : 'pointer-events-none',
       )}
       style={style}

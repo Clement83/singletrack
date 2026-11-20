@@ -116,7 +116,7 @@ function ClusterMarker({ item, onClick }: { item: Extract<StartItem, { kind: 'cl
         className="group flex min-h-touch min-w-touch items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <span
-          className="relative flex items-center justify-center rounded-full glass shadow-md transition-transform duration-150 ease-out group-hover:scale-110 group-active:scale-95 motion-reduce:transition-none"
+          className="relative flex items-center justify-center rounded-full floating transition-transform duration-150 ease-out group-hover:scale-110 group-active:scale-95 motion-reduce:transition-none"
           style={{ width: size, height: size }}
         >
           <svg aria-hidden width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="absolute inset-0">
