@@ -22,6 +22,12 @@ services:
       - "${APP_PORT:-3700}:3000"
     volumes:
       - ./data:/app/data
+    # Short videos (#1693): Intel iGPU (QSV) for the conversion, shared with other services of the host; the
+    # container user joins the host's `render` group (RENDER_GID). Without /dev/dri the app falls back to libx264.
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - "${RENDER_GID:-109}"
     # Default bridge network (no DNS): `links` makes `brouter` resolvable from `app`.
     links:
       - brouter
@@ -57,6 +63,11 @@ services:
       BROUTER_URL: http://brouter:17777
     ports:
       - "${APP_DEV_PORT:-3701}:3000"
+    # Same iGPU access as `app` (#1693).
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - "${RENDER_GID:-109}"
     volumes:
       - .:/app
       # node_modules and .next cache owned by the container (better-sqlite3 binary from the image, no clash with the host).

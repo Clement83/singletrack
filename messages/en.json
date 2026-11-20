@@ -1162,12 +1162,12 @@
     }
   },
   "photos": {
-    "title": "Outing photos",
+    "title": "Outing photos and videos",
     "empty": "No photos yet — add the ones from the ride.",
-    "add": "Add photos",
+    "add": "Add photos or videos",
     "uploading": "Uploading {done} of {total}…",
-    "saved": "{n, plural, one {Photo added.} other {# photos added.}}",
-    "hint": "Camera or gallery. They are shrunk before upload and camera details are removed: only the location is kept, to place them on the map.",
+    "saved": "{n, plural, one {# upload saved.} other {# uploads saved.}}",
+    "hint": "Camera or gallery. Camera details are removed: only the time and location are kept, to place them on the map. Videos: 30 s and 150 MB max.",
     "organizer": "Organizer",
     "open": "Photo {n} of {total}, by {author}",
     "mapLabel": "Photo map",
@@ -1180,6 +1180,13 @@
     "next": "Next photo",
     "delete": "Delete photo",
     "deleteConfirm": "Delete this photo?",
+    "videoOpen": "Video {n} of {total}, by {author}, {duration}",
+    "videoPending": "Video being prepared",
+    "videoFailed": "Unreadable video",
+    "videoViewer": "Video",
+    "videoAlt": "Outing video, by {author}",
+    "videoDelete": "Delete video",
+    "videoDeleteConfirm": "Delete this video?",
     "errors": {
       "tooLarge": "Photo too large ({mb} MB max).",
       "notImage": "This file isn’t a readable image.",
@@ -1188,7 +1195,11 @@
       "tooMany": "This outing already has lots of photos: the limit is reached.",
       "tooManyRequests": "Easy — try again in a minute.",
       "network": "No network, try again.",
-      "generic": "That didn’t work, try again."
+      "generic": "That didn’t work, try again.",
+      "videoTooLarge": "Video too large (150 MB max).",
+      "tooLong": "Video too long: 30 seconds max.",
+      "notVideo": "This video can’t be read (MP4 or MOV expected).",
+      "videoTooMany": "This outing already has 15 videos: the limit is reached."
     }
   },
   "friends": {

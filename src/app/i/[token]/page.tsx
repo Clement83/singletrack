@@ -21,7 +21,7 @@ import { nextStep } from '@/lib/outings/next-step';
 import { directionsUrl } from '@/lib/outings/labels';
 import { getCurrentUser } from '@/lib/current-user';
 import { fireInfo, massifsForGeometry, parisDate } from '@/lib/fire';
-import { canUploadRide, getInvitationByToken, isClosed, listInvitableFriends, outingPermissions, listPhotos, listRides, listParticipants } from '@/lib/outings';
+import { canUploadRide, getInvitationByToken, isClosed, listInvitableFriends, outingPermissions, listPhotos, listVideos, listRides, listParticipants } from '@/lib/outings';
 import { formatShareDate, pageOrigin } from '@/lib/outings/export';
 import { estimateDurationMin } from '@/lib/tracks/duration';
 import { outingWeather } from '@/lib/weather';
@@ -59,6 +59,7 @@ export default async function Page({ params }: { params: Promise<{ token: string
   const full = o.maxParticipants != null && yes >= o.maxParticipants && inv.status !== 'yes';
   const groupPath = o.openLinkEnabled && o.openLinkToken ? `/s/${o.openLinkToken}/join` : null;
   const photos = listPhotos(db, o.id, { kind: 'guest', invitationId: inv.id });
+  const videos = listVideos(db, o.id, { kind: 'guest', invitationId: inv.id });
   const step = nextStep({ role: 'guest', answer: inv.status, past: closed, organizerName, meetingLabel: o.meetingLabel, startsAt: o.startsAt, now: new Date(), photoCount: photos.length, locale });
   const shareText = t('message', { title: o.title, date: formatShareDate(o.startsAt, locale) });
 
@@ -116,7 +117,7 @@ export default async function Page({ params }: { params: Promise<{ token: string
           </>
         }
         activity={
-          inv.status === 'yes' || (closed && photos.length > 0) ? (
+          inv.status === 'yes' || (closed && photos.length + videos.length > 0) ? (
             <>
               <RideSection
                 base={`/api/i/${token}/ride`}
@@ -127,6 +128,8 @@ export default async function Page({ params }: { params: Promise<{ token: string
               <PhotoSection
                 base={`/api/i/${token}/photos`}
                 photos={photos}
+                videoBase={`/api/i/${token}/videos`}
+                videos={videos}
                 planned={{ geometry: snap.geometry, bbox: snap.bbox }}
                 canUpload={canUploadRide(o)}
               />

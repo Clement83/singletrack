@@ -480,6 +480,34 @@ export const outingPhoto = sqliteTable(
   (t) => [index('outing_photo_outing_idx').on(t.outingId)],
 );
 
+/**
+ * Short participant video (#1693). Uploaded original converted in the background (H.264 720p, AAC, faststart) by the
+ * video queue (`src/lib/media/video-queue.ts`); `status` = `pending` → `ready` | `failed`. Capture time and position
+ * are read by ffprobe before conversion, kept here, and stripped from the published file.
+ */
+export const outingVideo = sqliteTable(
+  'outing_video',
+  {
+    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    outingId: text('outing_id').notNull().references(() => outing.id, { onDelete: 'cascade' }),
+    invitationId: text('invitation_id').references(() => invitation.id, { onDelete: 'cascade' }),
+    authorUserId: text('author_user_id').references(() => user.id, { onDelete: 'set null' }),
+    status: text('status', { enum: ['pending', 'ready', 'failed'] }).notNull().default('pending'),
+    /** Published size (after conversion); source size while pending. */
+    width: integer('width').notNull(),
+    height: integer('height').notNull(),
+    durationMs: integer('duration_ms').notNull(),
+    lat: real('lat'),
+    lon: real('lon'),
+    /** Capture time (epoch ms, QuickTime `creation_time`); NULL if unknown. */
+    takenAt: integer('taken_at'),
+    /** Encoder actually used (`h264_qsv` | `libx264`), for diagnostics. */
+    encoder: text('encoder'),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  },
+  (t) => [index('outing_video_outing_idx').on(t.outingId)],
+);
+
 /** Discussion thread of an outing (#1358). `invitation_id` NULL = organiser's message. Soft delete. */
 export const outingComment = sqliteTable(
   'outing_comment',

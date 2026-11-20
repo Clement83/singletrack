@@ -20,6 +20,8 @@ const nextConfig = {
   // Fedify: a single copy of the packages (otherwise `instanceof CryptographicKey` fails, spike #1471).
   serverExternalPackages: ['better-sqlite3', '@fedify/fedify', '@fedify/vocab', '@fedify/vocab-runtime', '@fedify/webfinger', '@fedify/sqlite', '@fedify/next'],
   // Dev server reached through a reverse proxy or the LAN, origins in ALLOWED_DEV_ORIGINS (#1464): otherwise `next dev` blocks HMR and assets from those origins.
+  // Request bodies through src/proxy.ts are capped at 10 MB by default: short videos go up to 150 MB (#1693).
+  experimental: { proxyClientMaxBodySize: '160mb' },
   allowedDevOrigins: (process.env.ALLOWED_DEV_ORIGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean),
 };
 export default withNextIntl(nextConfig);

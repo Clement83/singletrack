@@ -211,6 +211,13 @@
       "when": 1795168872059,
       "tag": "0029_talented_black_knight",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "6",
+      "when": 1795176473380,
+      "tag": "0030_lean_pixie",
+      "breakpoints": true
     }
   ]
 }

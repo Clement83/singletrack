@@ -1,5 +1,18 @@
 # syntax=docker/dockerfile:1
-FROM node:22-slim AS deps
+# Media base (#1693): jellyfin-ffmpeg = recent ffmpeg build with Intel QSV (oneVPL + iHD driver on amd64), amd64 and
+# arm64. Debian's ffmpeg fails in QSV mode with the iHD driver. Unrelated to the Jellyfin server; installed in
+# /usr/lib/jellyfin-ffmpeg/. The GPU stays optional: without /dev/dri the app falls back to libx264 (same binary).
+FROM node:22-slim AS media
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl gnupg \
+ && mkdir -p /etc/apt/keyrings \
+ && curl -fsSL https://repo.jellyfin.org/jellyfin_team.gpg.key | gpg --dearmor -o /etc/apt/keyrings/jellyfin.gpg \
+ && echo "deb [signed-by=/etc/apt/keyrings/jellyfin.gpg] https://repo.jellyfin.org/debian $(. /etc/os-release && echo "$VERSION_CODENAME") main" > /etc/apt/sources.list.d/jellyfin.list \
+ && apt-get update && apt-get install -y --no-install-recommends jellyfin-ffmpeg7 \
+ && apt-get purge -y --auto-remove curl gnupg && rm -rf /var/lib/apt/lists/* \
+ && /usr/lib/jellyfin-ffmpeg/ffmpeg -hide_banner -version | head -1
+ENV FFMPEG_PATH=/usr/lib/jellyfin-ffmpeg/ffmpeg FFPROBE_PATH=/usr/lib/jellyfin-ffmpeg/ffprobe
+
+FROM media AS deps
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ && rm -rf /var/lib/apt/lists/* \
  && chown node:node /app
@@ -39,7 +52,7 @@ CMD ["node", ".next/standalone/server.js"]
 
 # Image published on GHCR (#1483): no devDependencies, no sources or test tools. Only the standalone build
 # (traced node_modules, including better-sqlite3 and sharp), the assets and the migrations; non-root user.
-FROM node:22-slim AS release
+FROM media AS release
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0 MIGRATIONS_DIR=/app/src/db/migrations
 WORKDIR /app
 COPY --from=builder --chown=node:node /app/.next/standalone ./

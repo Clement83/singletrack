@@ -109,7 +109,7 @@ server {
     server_name mtb.example.org;
     ssl_certificate     /etc/letsencrypt/live/mtb.example.org/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/mtb.example.org/privkey.pem;
-    client_max_body_size 20m;                       # photos and GPX
+    client_max_body_size 160m;                      # photos, GPX and short videos (150 MB max)
 
     location / {
         proxy_pass http://127.0.0.1:3700;           # APP_PORT
@@ -132,12 +132,16 @@ mtb.example.org {
 
 Then `BETTER_AUTH_URL=https://mtb.example.org`, `AUTH_SECURE_COOKIES=true`, and this domain in `AUTH_TRUSTED_ORIGINS` (and `ALLOWED_DEV_ORIGINS` in development mode).
 
+## Short videos and the GPU (optional)
+
+Participants can add short clips (≤ 30 s, ≤ 150 MB, MP4/MOV, H.264/HEVC, 15 per outing) to an outing. The server converts them one at a time, in the background, to MP4 H.264 720p (`ffmpeg` is in the image). With an **Intel iGPU**, the conversion uses Quick Sync (QSV): uncomment `devices` / `group_add` in `compose.yml` and set `RENDER_GID` (host `render` group). Without it, the CPU (libx264) does the same job, slower. The log says which encoder ran (`[Video] encoder=h264_qsv` or `libx264`). Force one with `VIDEO_ENCODER=qsv|x264`.
+
 ## 6. Backup
 
 All the state lives in `./data/` (except `data/brouter/segments`, which can be downloaded again) and in `.env`:
 
 - `data/singletrack.db` (+ `-wal` / `-shm`): tracks, outings, accounts;
-- `data/media/`: outing photos;
+- `data/media/`: outing photos and videos (or `MEDIA_DIR`);
 - `.env`: in particular `INVITE_LINK_KEY` and `BETTER_AUTH_SECRET`.
 
 Consistent hot backup of the database:

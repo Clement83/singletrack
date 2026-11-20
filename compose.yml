@@ -22,6 +22,13 @@ services:
       - "${APP_PORT:-3700}:3000"
     volumes:
       - ./data:/app/data
+    # [OPTIONAL] Intel iGPU for the short-video conversion (#1693, QSV). Without it, videos are converted by the CPU
+    # (libx264): same result, slower. To enable it, uncomment and set RENDER_GID to the host's `render` group
+    # (`getent group render | cut -d: -f3`).
+    # devices:
+    #   - /dev/dri:/dev/dri
+    # group_add:
+    #   - "${RENDER_GID:-109}"
     # No dependency on BROUTER: without tiles, snapping fails cleanly and the editor falls back to straight lines.
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]

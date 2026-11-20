@@ -1,6 +1,6 @@
 import { and, asc, eq } from 'drizzle-orm';
 import type { Db } from '@/db';
-import { invitation, outing, outingPhoto, outingRide, type OutingRow } from '@/db/schema';
+import { invitation, outing, outingPhoto, outingRide, outingVideo, type OutingRow } from '@/db/schema';
 import { bboxOf, lineLength, type Position, type TrackGeometry } from '@/lib/geo';
 import type { Actor } from './comments';
 import { placePhoto, type Placement } from './photo-placement';
@@ -46,13 +46,15 @@ export function listRideChoices(db: Db, o: Pick<OutingRow, 'id' | 'referenceRide
 
 export type RecapMedia = {
   id: string;
-  type: 'photo';
+  type: 'photo' | 'video';
   author: string;
   organizer: boolean;
   width: number;
   height: number;
   /** Capture time (epoch ms) if known. */
   takenAt: number | null;
+  /** Clip length for a video (#1693), `null` for a photo. */
+  durationMs: number | null;
   placement: Placement;
 };
 export type Recap = {
@@ -67,23 +69,30 @@ export type Recap = {
     times: number[] | null;
     profile: { km: number; ele: number }[] | null;
   } | null;
-  /** Photos ordered along the track (placed ones by distance, then the unplaced by capture / upload order). */
+  /** Photos and ready videos ordered along the track (placed ones by distance, then the unplaced by capture / upload order). */
   media: RecapMedia[];
 };
 
 /**
- * Data of the outing recap (#1692): reference track + photos placed on it. Rights are those of the photos:
+ * Data of the outing recap (#1692): reference track + photos and videos (#1693) placed on it. Rights are those of the photos:
  * the caller has resolved an `Actor` (organiser, or guest with a valid link) — otherwise the route answers 404 before this.
  */
 export function buildRecap(db: Db, o: OutingRow, _actor: Actor): Recap {
   void _actor;
   const ref = referenceRide(db, o);
-  const rows = db.select({ p: outingPhoto, name: invitation.name }).from(outingPhoto)
+  const photos = db.select({ p: outingPhoto, name: invitation.name }).from(outingPhoto)
     .leftJoin(invitation, eq(invitation.id, outingPhoto.invitationId))
-    .where(eq(outingPhoto.outingId, o.id)).orderBy(asc(outingPhoto.createdAt), asc(outingPhoto.id)).all();
-  const media: RecapMedia[] = rows.map(({ p, name }, idx) => ({
-    id: p.id, type: 'photo' as const, author: name ?? '', organizer: p.invitationId === null,
-    width: p.width, height: p.height, takenAt: p.takenAt,
+    .where(eq(outingPhoto.outingId, o.id)).orderBy(asc(outingPhoto.createdAt), asc(outingPhoto.id)).all()
+    .map(({ p, name }) => ({ p, name, type: 'photo' as const, durationMs: null }));
+  // Short videos (#1693): only converted ones, placed like photos.
+  const videos = db.select({ p: outingVideo, name: invitation.name }).from(outingVideo)
+    .leftJoin(invitation, eq(invitation.id, outingVideo.invitationId))
+    .where(and(eq(outingVideo.outingId, o.id), eq(outingVideo.status, 'ready'))).orderBy(asc(outingVideo.createdAt), asc(outingVideo.id)).all()
+    .map(({ p, name }) => ({ p, name, type: 'video' as const, durationMs: p.durationMs }));
+  const rows = [...photos, ...videos].sort((a, b) => a.p.createdAt.getTime() - b.p.createdAt.getTime());
+  const media: RecapMedia[] = rows.map(({ p, name, type, durationMs }, idx) => ({
+    id: p.id, type, author: name ?? '', organizer: p.invitationId === null,
+    width: p.width, height: p.height, takenAt: p.takenAt, durationMs,
     placement: ref ? placePhoto({ geometry: ref.geometry, times: ref.times }, { takenAt: p.takenAt, lat: p.lat, lon: p.lon }) : NOT_PLACED,
     _i: idx,
   })).sort((a, b) => {

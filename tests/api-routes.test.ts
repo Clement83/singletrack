@@ -44,6 +44,9 @@ import * as trackKml from '@/app/api/t/[slug]/kml/route';
 import * as guestRespond from '@/app/api/i/[token]/route';
 import * as guestPhotos from '@/app/api/i/[token]/photos/route';
 import * as outingPhotos from '@/app/api/outings/[slug]/photos/route';
+import * as outingVideos from '@/app/api/outings/[slug]/videos/route';
+import * as outingVideoFile from '@/app/api/outings/[slug]/videos/[id]/route';
+import * as guestVideos from '@/app/api/i/[token]/videos/route';
 import * as outingRecap from '@/app/api/outings/[slug]/recap/route';
 import * as outingRideReference from '@/app/api/outings/[slug]/ride/reference/route';
 import * as guestRecap from '@/app/api/i/[token]/recap/route';
@@ -259,6 +262,73 @@ describe('photos et commentaires organisateur', () => {
     const ok = await outingComments.POST(json('POST', { body: 'Salut' }), ctx(outingSlug));
     expect([201, 409]).toContain(ok.status);
   });
+});
+
+describe('vidéos courtes : routes et droits (#1693)', () => {
+  const post = (body: BodyInit, headers: Record<string, string> = {}) =>
+    new Request('http://x/v', { method: 'POST', body, headers: { 'content-type': 'video/quicktime', 'x-forwarded-for': `10.7.0.${Math.floor(Math.random() * 250)}`, ...headers }, duplex: 'half' } as RequestInit);
+  it('404 autre compte et jeton inconnu, 401 sans session, 409 avant la sortie', async () => {
+    st.uid = 'b';
+    expect((await outingVideos.GET(new Request('http://x'), ctx(outingSlug))).status).toBe(404);
+    st.uid = null;
+    expect((await outingVideos.GET(new Request('http://x'), ctx(outingSlug))).status).toBe(401);
+    expect((await guestVideos.GET(new Request('http://x'), ctx('inconnu'))).status).toBe(404);
+    expect((await guestVideos.POST(post('x'), ctx('inconnu'))).status).toBe(404);
+    st.uid = 'a';
+    const early = await outingVideos.POST(post('x'), ctx(outingSlug));
+    expect(early.status).toBe(409);
+    expect(await early.json()).toEqual({ error: 'tooEarly' });
+  });
+  it('sortie passée : 413 taille déclarée, 422 type ou contenu, 201 puis liste « pending » ; fichier pas prêt = 404 ; suppression', async () => {
+    const { mkdtempSync } = await import('node:fs');
+    const { tmpdir } = await import('node:os');
+    const { join } = await import('node:path');
+    const prevDir = process.env.MEDIA_DIR;
+    process.env.MEDIA_DIR = mkdtempSync(join(tmpdir(), 'video-api-'));
+    const { db } = st.h as { db: import('@/db').Db };
+    const o = db.select().from(outingTable).where(eqOp(outingTable.slug, outingSlug)).get()!;
+    db.update(outingTable).set({ startsAt: new Date(Date.now() - 3600_000) }).where(eqOp(outingTable.id, o.id)).run();
+    try {
+      st.uid = 'a';
+      expect((await outingVideos.POST(post('x', { 'content-length': String(200 * 1024 * 1024) }), ctx(outingSlug))).status).toBe(413);
+      expect((await outingVideos.POST(post('x', { 'content-type': 'text/plain' }), ctx(outingSlug))).status).toBe(422);
+      const bad = await outingVideos.POST(post('pas une vidéo'), ctx(outingSlug));
+      expect(bad.status).toBe(422);
+      expect(await bad.json()).toEqual({ error: 'notVideo' });
+      const { hasFfmpeg } = await import('@/lib/media/ffmpeg');
+      if (!(await hasFfmpeg())) return;
+      const { readFileSync } = await import('node:fs');
+      const ok = await outingVideos.POST(post(readFileSync(join(__dirname, 'fixtures/video/clip-hevc.mov'))), ctx(outingSlug));
+      expect(ok.status).toBe(201);
+      const { id } = await ok.json();
+      const list = await (await outingVideos.GET(new Request('http://x'), ctx(outingSlug))).json();
+      expect(list.videos).toEqual([expect.objectContaining({ id, mine: true, canDelete: true })]);
+      const { videoQueueIdle } = await import('@/lib/outings');
+      await videoQueueIdle();
+      const vctx = { params: Promise.resolve({ slug: outingSlug, id }) };
+      const full = await outingVideoFile.GET(new Request('http://x'), vctx);
+      expect(full.status).toBe(200);
+      expect(full.headers.get('content-type')).toBe('video/mp4');
+      expect(full.headers.get('accept-ranges')).toBe('bytes');
+      const size = Number(full.headers.get('content-length'));
+      const part = await outingVideoFile.GET(new Request('http://x', { headers: { range: 'bytes=0-1' } }), vctx);
+      expect(part.status).toBe(206);
+      expect(part.headers.get('content-range')).toBe(`bytes 0-1/${size}`);
+      expect((await part.arrayBuffer()).byteLength).toBe(2);
+      expect((await outingVideoFile.GET(new Request('http://x', { headers: { range: `bytes=${size}-` } }), vctx)).status).toBe(416);
+      const thumb = await outingVideoFile.GET(new Request('http://x?size=thumb'), vctx);
+      expect(thumb.headers.get('content-type')).toBe('image/jpeg');
+      st.uid = 'b';
+      expect((await outingVideoFile.DELETE(new Request('http://x', { method: 'DELETE' }), vctx)).status).toBe(404);
+      st.uid = 'a';
+      expect((await outingVideoFile.DELETE(new Request('http://x', { method: 'DELETE' }), vctx)).status).toBe(200);
+      expect((await outingVideoFile.GET(new Request('http://x'), vctx)).status).toBe(404);
+    } finally {
+      db.update(outingTable).set({ startsAt: o.startsAt }).where(eqOp(outingTable.id, o.id)).run();
+      if (prevDir === undefined) delete process.env.MEDIA_DIR;
+      else process.env.MEDIA_DIR = prevDir;
+    }
+  }, 60_000);
 });
 
 describe('résumé de sortie : trace de référence et droits (#1692)', () => {

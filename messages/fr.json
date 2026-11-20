@@ -1162,12 +1162,12 @@
     }
   },
   "photos": {
-    "title": "Photos de la sortie",
+    "title": "Photos et vidéos de la sortie",
     "empty": "Pas encore de photo — ajoute celles de la sortie.",
-    "add": "Ajouter des photos",
+    "add": "Ajouter des photos ou vidéos",
     "uploading": "Envoi {done} sur {total}…",
-    "saved": "{n, plural, one {Photo ajoutée.} other {# photos ajoutées.}}",
-    "hint": "Appareil photo ou galerie. Elles sont réduites avant l’envoi, et les infos de l’appareil sont retirées : seule la position sert à les placer sur la carte.",
+    "saved": "{n, plural, one {# ajout enregistré.} other {# ajouts enregistrés.}}",
+    "hint": "Appareil photo ou galerie. Les infos de l’appareil sont retirées : seules l’heure et la position servent à les placer sur la carte. Vidéos : 30 s et 150 Mo maximum.",
     "organizer": "Organisateur",
     "open": "Photo {n} sur {total}, de {author}",
     "mapLabel": "Carte des photos",
@@ -1180,6 +1180,13 @@
     "next": "Photo suivante",
     "delete": "Supprimer la photo",
     "deleteConfirm": "Supprimer cette photo ?",
+    "videoOpen": "Vidéo {n} sur {total}, de {author}, {duration}",
+    "videoPending": "Vidéo en préparation",
+    "videoFailed": "Vidéo illisible",
+    "videoViewer": "Vidéo",
+    "videoAlt": "Vidéo de la sortie, de {author}",
+    "videoDelete": "Supprimer la vidéo",
+    "videoDeleteConfirm": "Supprimer cette vidéo ?",
     "errors": {
       "tooLarge": "Photo trop lourde ({mb} Mo maximum).",
       "notImage": "Ce fichier n’est pas une image lisible.",
@@ -1188,7 +1195,11 @@
       "tooMany": "Cette sortie a déjà beaucoup de photos : le maximum est atteint.",
       "tooManyRequests": "Doucement — réessaie dans une minute.",
       "network": "Pas de réseau, réessaie.",
-      "generic": "Ça n’a pas marché, réessaie."
+      "generic": "Ça n’a pas marché, réessaie.",
+      "videoTooLarge": "Vidéo trop lourde (150 Mo maximum).",
+      "tooLong": "Vidéo trop longue : 30 secondes maximum.",
+      "notVideo": "Cette vidéo n’est pas lisible (MP4 ou MOV attendu).",
+      "videoTooMany": "Cette sortie a déjà 15 vidéos : le maximum est atteint."
     }
   },
   "friends": {

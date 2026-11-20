@@ -29,6 +29,8 @@ jobs:
           cache: npm
       # .npmrc (legacy-peer-deps) is read automatically.
       - run: npm ci
+      # Short-video conversion tests (#1693) run the real ffmpeg/ffprobe (libx264, libx265 for HEVC sources).
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
       # Upgrade test (#1485): database from the previous version (last tag) + current migrations; published migrations untouched.
       - run: ./scripts/upgrade-test.sh
       - run: npm run lint
