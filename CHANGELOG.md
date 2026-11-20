@@ -7,6 +7,20 @@ Each release ticket writes the `## [X.Y.Z] - YYYY-MM-DD` section from the conven
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-20
+
+### Added
+- **Singles tooltip**: hover (desktop) or tap a singletrack to see its name, difficulty, length, surface, uphill difficulty and an OpenStreetMap link. Surface and uphill data come from OSM; existing installs need `npm run sync:singles` to fill them.
+- **3D flyover** (desktop): a play button flies a bike over the open track in 3D with a smoothed camera and a synchronised elevation profile (Space = pause, Escape = stop).
+- **Recap data for outings**: ridden tracks keep point times (GPX/KML), photos keep their capture time, and the organiser can pick a reference track; photos are placed along the track by time, then by position.
+
+### Changed
+- **New map markers**: clusters are discs with the count and a difficulty ring, start points are bike pins, and outings share the same pin shape with a calendar.
+- **Consistent floating surfaces**: panel, map buttons, search, legends and menus share one near-opaque style with a single right-hand button pill; the map recentres taking the side panel or bottom sheet into account.
+
+### Fixed
+- **Editor**: copied or imported tracks no longer keep straight lines; frozen segments are recomputed on trails with BRouter when you move a point.
+
 ## [0.2.0] - 2026-11-19
 
 ### Added
