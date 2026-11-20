@@ -19,3 +19,6 @@ export * from './leave';
 export * from './participants';
 export * from './map';
 export * from './map-cluster';
+export * from './recap';
+export * from './photo-placement';
+export * from './photo-time';

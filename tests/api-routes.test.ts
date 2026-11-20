@@ -27,6 +27,9 @@ vi.mock('@/lib/current-user', () => {
 });
 vi.mock('@/lib/geo', async (orig) => ({ ...(await orig<typeof import('@/lib/geo')>()), enrichElevation: async (g: unknown) => g }));
 
+import { eq as eqOp } from 'drizzle-orm';
+import { outing as outingTable } from '@/db/schema';
+import { saveRide as saveRideFn } from '@/lib/outings';
 import * as outingsCollection from '@/app/api/outings/route';
 import * as outingRoute from '@/app/api/outings/[slug]/route';
 import * as outingJoin from '@/app/api/outings/[slug]/join/route';
@@ -41,6 +44,9 @@ import * as trackKml from '@/app/api/t/[slug]/kml/route';
 import * as guestRespond from '@/app/api/i/[token]/route';
 import * as guestPhotos from '@/app/api/i/[token]/photos/route';
 import * as outingPhotos from '@/app/api/outings/[slug]/photos/route';
+import * as outingRecap from '@/app/api/outings/[slug]/recap/route';
+import * as outingRideReference from '@/app/api/outings/[slug]/ride/reference/route';
+import * as guestRecap from '@/app/api/i/[token]/recap/route';
 import * as outingComments from '@/app/api/outings/[slug]/comments/route';
 import * as health from '@/app/api/health/route';
 import * as locale from '@/app/api/locale/route';
@@ -252,6 +258,39 @@ describe('photos et commentaires organisateur', () => {
     expect([422, 409]).toContain(empty.status);
     const ok = await outingComments.POST(json('POST', { body: 'Salut' }), ctx(outingSlug));
     expect([201, 409]).toContain(ok.status);
+  });
+});
+
+describe('résumé de sortie : trace de référence et droits (#1692)', () => {
+  const put = (b: unknown) => new Request('http://x/r', { method: 'PUT', body: JSON.stringify(b), headers: { 'content-type': 'application/json' } });
+  it('lecture : 404 pour un autre compte et un jeton inconnu, 401 sans session', async () => {
+    st.uid = 'b';
+    expect((await outingRecap.GET(new Request('http://x'), ctx(outingSlug))).status).toBe(404);
+    st.uid = null;
+    expect((await outingRecap.GET(new Request('http://x'), ctx(outingSlug))).status).toBe(401);
+    expect((await guestRecap.GET(new Request('http://x'), ctx('inconnu'))).status).toBe(404);
+    st.uid = 'a';
+    const ok = await outingRecap.GET(new Request('http://x'), ctx(outingSlug));
+    expect(ok.status).toBe(200);
+    expect(await ok.json()).toMatchObject({ track: null, media: [], rides: [] });
+  });
+  it('trace de référence : 401 sans session, 404 autre compte, 422 corps invalide, 404 trace inconnue, 200 organisateur', async () => {
+    st.uid = null;
+    expect((await outingRideReference.PUT(put({ rideId: 'x' }), ctx(outingSlug))).status).toBe(401);
+    st.uid = 'b';
+    expect((await outingRideReference.PUT(put({ rideId: 'x' }), ctx(outingSlug))).status).toBe(404);
+    st.uid = 'a';
+    expect((await outingRideReference.PUT(put({}), ctx(outingSlug))).status).toBe(422);
+    expect((await outingRideReference.PUT(put({ rideId: 'inconnu' }), ctx(outingSlug))).status).toBe(404);
+    const { db } = st.h as { db: import('@/db').Db };
+    const o = db.select().from(outingTable).where(eqOp(outingTable.slug, outingSlug)).get()!;
+    const gpx = '<gpx version="1.1" creator="x"><trk><trkseg><trkpt lat="43.2" lon="6.1"><time>2026-11-14T08:00:00Z</time></trkpt><trkpt lat="43.2" lon="6.11"><time>2026-11-14T08:05:00Z</time></trkpt></trkseg></trk></gpx>';
+    const saved = await saveRideFn(db, o, { kind: 'organizer', userId: 'a' }, gpx, new Date('2100-01-01'));
+    if (!saved.ok) throw new Error(saved.error);
+    expect((await outingRideReference.PUT(put({ rideId: saved.id }), ctx(outingSlug))).status).toBe(200);
+    const rc = await (await outingRecap.GET(new Request('http://x'), ctx(outingSlug))).json();
+    expect(rc.track.id).toBe(saved.id);
+    expect(rc.rides).toEqual([expect.objectContaining({ id: saved.id, reference: true, timed: true })]);
   });
 });
 

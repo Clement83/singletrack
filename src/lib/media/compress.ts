@@ -1,4 +1,4 @@
-import { readExifGps, type GpsPos } from './exif';
+import { readExifDate, readExifGps, type ExifDate, type GpsPos } from './exif';
 
 export const COMPRESS_MAX_PX = 2000;
 const EXIF_HEAD = 256 * 1024;
@@ -32,5 +32,14 @@ export async function compressImage(file: File): Promise<Blob> {
     return blob && blob.size < file.size ? blob : file;
   } catch {
     return file;
+  }
+}
+
+/** EXIF capture time read from the original, before compression (#1692). */
+export async function readFileDate(file: File): Promise<ExifDate | null> {
+  try {
+    return readExifDate(new Uint8Array(await file.slice(0, EXIF_HEAD).arrayBuffer()));
+  } catch {
+    return null;
   }
 }

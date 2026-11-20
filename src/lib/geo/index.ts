@@ -8,3 +8,4 @@ export * from './kml';
 export * from './ign-elevation';
 export * from './slopes';
 export * from './along';
+export * from './timed';

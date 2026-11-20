@@ -15,12 +15,19 @@ import { cn } from '@/lib/utils';
 import { RideMap } from './ride-map';
 
 type Planned = { geometry: TrackGeometry; bbox: [number, number, number, number]; distanceM: number; gainM: number | null };
-type Props = { base: string; rides: RideView[]; planned: Planned; canUpload: boolean };
+type Props = {
+  base: string;
+  rides: RideView[];
+  planned: Planned;
+  canUpload: boolean;
+  /** Organiser only (#1692): which ridden track feeds the recap. */
+  reference?: { id: string | null; timed: Record<string, boolean> };
+};
 
 const MAX_MB = 5;
 
 /** After the outing (#1412): "My ridden track" (GPX), planned / actual overlay and real stats. */
-export function RideSection({ base, rides, planned, canUpload }: Props) {
+export function RideSection({ base, rides, planned, canUpload, reference }: Props) {
   const t = useTranslations('ride');
   const tc = useTranslations('common');
   const [confirming, setConfirming] = useState(false);
@@ -51,6 +58,21 @@ export function RideSection({ base, rides, planned, canUpload }: Props) {
     } finally {
       setBusy(false);
       if (input.current) input.current.value = '';
+    }
+  }
+
+  async function pickReference(id: string) {
+    setBusy(true);
+    try {
+      const res = await fetch(`${base}/reference`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rideId: id }) });
+      if (res.ok) {
+        toast.success(t('referenceSet'));
+        router.refresh();
+      } else toast.error(t('referenceError'));
+    } catch {
+      toast.error(t('errors.network'));
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -119,9 +141,30 @@ export function RideSection({ base, rides, planned, canUpload }: Props) {
         })}
       </ul>
 
+      {reference && rides.length > 1 && (
+        <div role="group" aria-label={t('referenceLabel')} className="flex flex-col gap-2">
+          <span className="text-small text-muted-foreground">{t('referenceLabel')}</span>
+          <div className="flex flex-wrap gap-2">
+            {rides.map((r) => (
+              <button
+                key={r.id}
+                type="button"
+                aria-pressed={r.id === reference.id}
+                disabled={busy}
+                onClick={() => void pickReference(r.id)}
+                className={cn('min-h-touch rounded-md border px-3 text-small font-medium press', r.id === reference.id ? 'border-primary bg-card' : 'border-border')}
+              >
+                {r.mine ? t('mine') : r.organizer ? t('organizer') : r.author}
+                {!reference.timed[r.id] && <span className="text-muted-foreground"> · {t('untimed')}</span>}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {canUpload && (
         <div className="flex flex-col gap-2">
-          <input ref={input} type="file" accept=".gpx,application/gpx+xml" className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
+          <input ref={input} type="file" accept=".gpx,.kml,.kmz,application/gpx+xml,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz" className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
           <Button size="lg" disabled={busy} onClick={() => input.current?.click()} className="w-full">
             <Upload aria-hidden /> {busy ? t('uploading') : mine ? t('replace') : t('upload')}
           </Button>

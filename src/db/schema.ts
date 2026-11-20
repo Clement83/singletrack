@@ -232,6 +232,8 @@ export const outing = sqliteTable(
     ownerId: text('owner_id').references(() => user.id, { onDelete: 'set null' }),
     /** Private: registered participants may invite their friends (#1455). Always true for a public outing. */
     participantsCanInvite: integer('participants_can_invite', { mode: 'boolean' }).notNull().default(false),
+    /** Ridden track chosen by the organiser for the outing recap (#1692). No FK: a stale id falls back to the default. */
+    referenceRideId: text('reference_ride_id'),
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
     updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   },
@@ -448,6 +450,8 @@ export const outingRide = sqliteTable(
     /** Moving time (breaks excluded); NULL if the GPX has no timestamps. */
     movingSec: integer('moving_sec'),
     elapsedSec: integer('elapsed_sec'),
+    /** Time of each point of `geometry` (epoch ms, flattened in order); NULL if the file has no timestamps (#1692). */
+    times: text('times', { mode: 'json' }).$type<number[]>(),
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   },
   (t) => [index('outing_ride_outing_idx').on(t.outingId)],
@@ -465,6 +469,8 @@ export const outingPhoto = sqliteTable(
     height: integer('height').notNull(),
     lat: real('lat'),
     lon: real('lon'),
+    /** Capture time (epoch ms, EXIF DateTimeOriginal); NULL if unknown (#1692). */
+    takenAt: integer('taken_at'),
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   },
   (t) => [index('outing_photo_outing_idx').on(t.outingId)],

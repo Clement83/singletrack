@@ -14,9 +14,9 @@ function segDistance(p: Position, a: Position, b: Position): number {
   return Math.hypot(px - t * bx, py - t * by);
 }
 
-/** Iterative Douglas-Peucker (no recursion: tracks have thousands of points). Tolerance in metres. */
-export function simplifyLine(coords: Position[], toleranceM: number): Position[] {
-  if (coords.length <= 2) return coords.slice();
+/** Indexes of the points kept by `simplifyLine` (to carry per-point data such as times along). */
+export function simplifyIndexes(coords: Position[], toleranceM: number): number[] {
+  if (coords.length <= 2) return coords.map((_, i) => i);
   const keep = new Uint8Array(coords.length);
   keep[0] = 1;
   keep[coords.length - 1] = 1;
@@ -37,7 +37,12 @@ export function simplifyLine(coords: Position[], toleranceM: number): Position[]
       stack.push([s, idx], [idx, e]);
     }
   }
-  return coords.filter((_, i) => keep[i]);
+  return coords.map((_, i) => i).filter((i) => keep[i]);
+}
+
+/** Iterative Douglas-Peucker (no recursion: tracks have thousands of points). Tolerance in metres. */
+export function simplifyLine(coords: Position[], toleranceM: number): Position[] {
+  return simplifyIndexes(coords, toleranceM).map((i) => coords[i]);
 }
 
 export function simplifyGeometry(g: TrackGeometry, toleranceM: number): TrackGeometry {

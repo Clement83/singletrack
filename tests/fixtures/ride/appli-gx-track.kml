@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2"><Document><Placemark><name>Sortie</name><gx:Track>
+<when>2026-11-14T08:00:00Z</when>
+<when>2026-11-14T08:01:00Z</when>
+<when>2026-11-14T08:02:00Z</when>
+<when>2026-11-14T08:03:00Z</when>
+<when>2026-11-14T08:04:00Z</when>
+<when>2026-11-14T08:05:00Z</when>
+<when>2026-11-14T08:06:00Z</when>
+<when>2026-11-14T08:07:00Z</when>
+<when>2026-11-14T08:08:00Z</when>
+<when>2026-11-14T08:09:00Z</when>
+<when>2026-11-14T08:10:00Z</when>
+<gx:coord>6.10000 43.2 100</gx:coord>
+<gx:coord>6.10246 43.2 105</gx:coord>
+<gx:coord>6.10492 43.2 110</gx:coord>
+<gx:coord>6.10738 43.2 115</gx:coord>
+<gx:coord>6.10984 43.2 120</gx:coord>
+<gx:coord>6.11230 43.2 125</gx:coord>
+<gx:coord>6.11476 43.2 130</gx:coord>
+<gx:coord>6.11722 43.2 135</gx:coord>
+<gx:coord>6.11968 43.2 140</gx:coord>
+<gx:coord>6.12214 43.2 145</gx:coord>
+<gx:coord>6.12460 43.2 150</gx:coord>
+</gx:Track></Placemark></Document></kml>

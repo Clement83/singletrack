@@ -52,6 +52,7 @@ function outing(over: Partial<OutingRow> = {}): OutingRow {
     createdBy: 'u1',
     ownerId: 'u1',
     participantsCanInvite: false,
+    referenceRideId: null,
     createdAt: new Date('2026-11-12T10:00:00Z'),
     updatedAt: new Date('2026-11-12T10:00:00Z'),
     ...over,

@@ -2,6 +2,7 @@ import { getDb } from '@/db';
 import type { OutingRow } from '@/db/schema';
 import type { Actor } from './comments';
 import { clientIp, rateLimit } from './rate-limit';
+import { resolveTakenAt } from './photo-time';
 import { deletePhoto, listPhotos, PHOTO_MAX_BYTES, readPhoto, savePhoto } from './photos';
 
 type Ctx = { outing: OutingRow; actor: Actor } | undefined;
@@ -9,9 +10,10 @@ type Params = Promise<Record<string, string>>;
 
 const STATUS = { not_found: 404, closed: 409, tooEarly: 409, tooLarge: 413, notImage: 422, tooMany: 409 } as const;
 const NOT_FOUND = () => Response.json({ error: 'not_found' }, { status: 404 });
+const str = (v: FormDataEntryValue | null) => (typeof v === 'string' ? v : null);
 const num = (v: FormDataEntryValue | null) => (typeof v === 'string' && v.trim() !== '' ? Number(v) : NaN);
 
-/** List / upload (multipart `file`, optional `lat`, `lon`) of the photos, and file / deletion of a photo. */
+/** List / upload (multipart `file`, optional `lat`, `lon`, `taken`, `takenOffset`) of the photos, and file / deletion of a photo. */
 export function photoHandlers(resolve: (req: Request, p: Record<string, string>) => Promise<Ctx>, limitKey: (req: Request, p: Record<string, string>) => string) {
   return {
     async list(req: Request, { params }: { params: Params }) {
@@ -36,7 +38,10 @@ export function photoHandlers(resolve: (req: Request, p: Record<string, string>)
       if (file.size > PHOTO_MAX_BYTES) return Response.json({ error: 'tooLarge' }, { status: 413 });
       const lat = num(form!.get('lat'));
       const lon = num(form!.get('lon'));
-      const res = await savePhoto(getDb().db, ctx.outing, ctx.actor, Buffer.from(await file.arrayBuffer()), { pos: Number.isNaN(lat) || Number.isNaN(lon) ? null : { lat, lon } });
+      const res = await savePhoto(getDb().db, ctx.outing, ctx.actor, Buffer.from(await file.arrayBuffer()), {
+        pos: Number.isNaN(lat) || Number.isNaN(lon) ? null : { lat, lon },
+        takenAt: resolveTakenAt(str(form!.get('taken')), str(form!.get('takenOffset'))),
+      });
       return res.ok ? Response.json({ ok: true, id: res.id }, { status: 201 }) : Response.json({ error: res.error }, { status: STATUS[res.error] });
     },
     async file(req: Request, { params }: { params: Params }) {

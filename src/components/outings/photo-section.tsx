@@ -7,7 +7,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Camera, ChevronLeft, ChevronRight, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { compressImage, readFilePosition } from '@/lib/media/compress';
+import { compressImage, readFileDate, readFilePosition } from '@/lib/media/compress';
 import { useErrorText } from '@/lib/use-error-text';
 import type { PhotoView } from '@/lib/outings/photos';
 import type { TrackGeometry } from '@/lib/geo/types';
@@ -34,6 +34,7 @@ export function PhotoSection({ base, photos, planned, canUpload }: Props) {
   async function sendOne(file: File): Promise<string | null> {
     if (file.size > MAX_MB * 1024 * 1024 * 3) return 'tooLarge';
     const pos = await readFilePosition(file);
+    const taken = await readFileDate(file);
     const blob = await compressImage(file);
     if (blob.size > MAX_MB * 1024 * 1024) return 'tooLarge';
     const body = new FormData();
@@ -41,6 +42,10 @@ export function PhotoSection({ base, photos, planned, canUpload }: Props) {
     if (pos) {
       body.append('lat', String(pos.lat));
       body.append('lon', String(pos.lon));
+    }
+    if (taken) {
+      body.append('taken', taken.local);
+      if (taken.offset) body.append('takenOffset', taken.offset);
     }
     const res = await fetch(base, { method: 'POST', body });
     return res.ok ? null : ((await res.json().catch(() => ({}))).error ?? 'generic');

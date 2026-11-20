@@ -25,7 +25,7 @@ import { utcToParisInputs } from '@/lib/outings/time';
 import { directionsUrl } from '@/lib/outings/labels';
 import { formatKm } from '@/lib/format';
 import { fireInfo, massifsForGeometry, parisDate } from '@/lib/fire';
-import { transferCandidates, isFrozen, outingPermissions, canUploadRide, getManagedOuting, isClosed, listInvitableFriends, isDone, listContacts, listPhotos, listRides, listInvitations, listParticipants, reinviteCandidates } from '@/lib/outings';
+import { transferCandidates, isFrozen, outingPermissions, canUploadRide, getManagedOuting, isClosed, listInvitableFriends, isDone, listContacts, listPhotos, listRides, listRideChoices, listInvitations, listParticipants, reinviteCandidates } from '@/lib/outings';
 import { formatShareDate } from '@/lib/outings/export';
 import { estimateDurationMin } from '@/lib/tracks/duration';
 import { outingWeather } from '@/lib/weather';
@@ -156,6 +156,7 @@ export default async function Page({ params, searchParams }: { params: Promise<{
           rides={listRides(db, o.id, { kind: 'organizer', userId: user.id })}
           planned={{ geometry: snap.geometry, bbox: snap.bbox, distanceM: snap.distanceM, gainM: snap.elevationGainM ?? null }}
           canUpload={canUploadRide(o)}
+          reference={{ id: listRideChoices(db, o).find((c) => c.reference)?.id ?? null, timed: Object.fromEntries(listRideChoices(db, o).map((c) => [c.id, c.timed])) }}
         />
         <PhotoSection
           base={`/api/outings/${o.slug}/photos`}

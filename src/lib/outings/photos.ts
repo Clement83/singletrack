@@ -23,6 +23,8 @@ export type PhotoView = {
   canDelete: boolean;
   width: number;
   height: number;
+  /** Capture time (epoch ms) if the browser could read it (#1692). */
+  takenAt: number | null;
   /** Rounded position (~10 m), only if the photo had one. */
   pos: { lat: number; lon: number } | null;
 };
@@ -41,12 +43,12 @@ const isMine = (r: { invitationId: string | null; authorUserId: string | null },
 
 /**
  * Stores a photo. The file is **always re-encoded** (EXIF rotation applied, 2000 px max, JPEG):
- * the original EXIF (camera, date, GPS…) is never published. Only the position is kept, in the database,
+ * the original EXIF (camera, GPS…) is never published. Only the position and the capture time are kept, in the database,
  * to place the photo on the map — provided by the browser (which read it before compression) or read here.
  */
 export async function savePhoto(
   db: Db, o: OutingRow, actor: Actor, data: Buffer,
-  opts: { pos?: { lat: number; lon: number } | null; now?: Date; dir?: string } = {},
+  opts: { pos?: { lat: number; lon: number } | null; takenAt?: number | null; now?: Date; dir?: string } = {},
 ): Promise<PhotoResult<{ id: string }>> {
   if (data.length > PHOTO_MAX_BYTES) return { ok: false, error: 'tooLarge' };
   if (o.status === 'cancelled') return { ok: false, error: 'closed' };
@@ -66,7 +68,7 @@ export async function savePhoto(
   const found = opts.pos && validPos(opts.pos.lat, opts.pos.lon) ? opts.pos : readExifGps(data);
   const pos = found ? { lat: Math.round(found.lat * 1e4) / 1e4, lon: Math.round(found.lon * 1e4) / 1e4 } : null;
   const row = db.insert(outingPhoto).values({
-    outingId: o.id, width: full.info.width, height: full.info.height, lat: pos?.lat ?? null, lon: pos?.lon ?? null,
+    outingId: o.id, width: full.info.width, height: full.info.height, lat: pos?.lat ?? null, lon: pos?.lon ?? null, takenAt: opts.takenAt ?? null,
     createdAt: opts.now,
     invitationId: actor.kind === 'guest' ? actor.invitationId : null,
     authorUserId: actor.kind === 'organizer' ? actor.userId : null,
@@ -87,7 +89,7 @@ export function listPhotos(db: Db, outingId: string, actor: Actor): PhotoView[] 
     const mine = isMine(p, actor);
     return {
       id: p.id, author: name ?? '', organizer: p.invitationId === null, mine, canDelete: mine || actor.kind === 'organizer',
-      width: p.width, height: p.height, pos: p.lat != null && p.lon != null ? { lat: p.lat, lon: p.lon } : null,
+      width: p.width, height: p.height, takenAt: p.takenAt, pos: p.lat != null && p.lon != null ? { lat: p.lat, lon: p.lon } : null,
     };
   });
 }

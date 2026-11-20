@@ -1,7 +1,7 @@
 import { and, eq, isNull } from 'drizzle-orm';
 import type { Db } from '@/db';
 import { invitation, outingRide, type OutingRow } from '@/db/schema';
-import { bboxOf, enrichElevation, type EnrichOptions, gainLoss, haversine, lineLength, parseGpxFile, simplifyGeometry, type Position, type TrackGeometry } from '@/lib/geo';
+import { bboxOf, enrichElevation, type EnrichOptions, gainLoss, gpxTimedSegments, haversine, kmlTimedSegments, lineLength, parseGpxFile, parseKmlFile, simplifyIndexes, type Position, type TrackGeometry } from '@/lib/geo';
 import { type Actor } from './comments';
 
 export const RIDE_MAX_BYTES = 5 * 1024 * 1024;
@@ -15,41 +15,34 @@ export type RideStats = {
   gainM: number | null;
   movingSec: number | null;
   elapsedSec: number | null;
+  /** Epoch ms of each point of `geometry` (flattened); `null` without timestamps (#1692). */
+  times: number[] | null;
 };
 
-/** Points of a GPX with their timestamp (`<time>`), per segment. */
-function timedSegments(xml: string): { p: Position; t: number | null }[][] {
-  const segs: { p: Position; t: number | null }[][] = [];
-  const segRe = /<trkseg\b[^>]*>([\s\S]*?)<\/trkseg>/g;
-  let m: RegExpExecArray | null;
-  while ((m = segRe.exec(xml))) {
-    const seg: { p: Position; t: number | null }[] = [];
-    const ptRe = /<trkpt\b([^>]*?)(?:\/>|>([\s\S]*?)<\/trkpt>)/g;
-    let q: RegExpExecArray | null;
-    while ((q = ptRe.exec(m[1]))) {
-      const lat = /\blat\s*=\s*["']([^"']+)["']/.exec(q[1])?.[1];
-      const lon = /\blon\s*=\s*["']([^"']+)["']/.exec(q[1])?.[1];
-      if (lat === undefined || lon === undefined || Number.isNaN(Number(lat)) || Number.isNaN(Number(lon))) continue;
-      const ele = q[2] ? /<ele>\s*([^<\s]+)\s*<\/ele>/.exec(q[2])?.[1] : undefined;
-      const time = q[2] ? /<time>\s*([^<\s]+)\s*<\/time>/.exec(q[2])?.[1] : undefined;
-      const ms = time ? Date.parse(time) : NaN;
-      seg.push({
-        p: ele !== undefined && !Number.isNaN(Number(ele)) ? [Number(lon), Number(lat), Number(ele)] : [Number(lon), Number(lat)],
-        t: Number.isNaN(ms) ? null : ms / 1000,
-      });
-    }
-    if (seg.length) segs.push(seg);
-  }
-  return segs;
+/** Fills the holes of a per-point time list (linear between known neighbours, flat at the ends); `null` if fewer than 2 known times. */
+export function fillTimes(ts: (number | null)[]): number[] | null {
+  const known = ts.flatMap((t, i) => (t == null ? [] : [i]));
+  if (known.length < 2) return null;
+  return ts.map((t, i) => {
+    if (t != null) return t;
+    const next = known.find((k) => k > i);
+    const prev = [...known].reverse().find((k) => k < i);
+    if (prev === undefined) return ts[next!]!;
+    if (next === undefined) return ts[prev]!;
+    return ts[prev]! + ((ts[next]! - ts[prev]!) * (i - prev)) / (next - prev);
+  });
 }
 
+const isKml = (xml: string) => /<kml\b/.test(xml) && !/<gpx\b/.test(xml);
+
 /**
- * Analyses a ridden GPX: distance, elevation gain (elevations smoothed as everywhere), moving time
+ * Analyses a ridden GPX or KML (#1692): distance, elevation gain (elevations smoothed as everywhere), moving time
  * (stops and GPS pauses do not count) and total duration. Throws `notGpx`, `doctype`, `noTrack`.
  */
 export async function analyzeRide(xml: string, enrich: EnrichOptions = {}): Promise<RideStats> {
-  const file = parseGpxFile(xml); // valid (rejects DOCTYPE/ENTITY, no track); the geometry comes from here if there is no <trkseg> (rte)
-  const segs = timedSegments(xml).filter((s) => s.length >= 2);
+  const kml = isKml(xml);
+  const file = kml ? parseKmlFile(xml) : parseGpxFile(xml); // valid (rejects DOCTYPE/ENTITY, no track); the geometry comes from here if there is no <trkseg> (rte)
+  const segs = (kml ? kmlTimedSegments(xml) : gpxTimedSegments(xml)).filter((s) => s.length >= 2);
   const lines: Position[][] = segs.length ? segs.map((s) => s.map((x) => x.p)) : file.tracks.flatMap((t) => (t.geometry.type === 'LineString' ? [t.geometry.coordinates] : t.geometry.coordinates));
   if (lines.length === 0) throw new Error('noTrack');
   const rawGeom: TrackGeometry = lines.length === 1 ? { type: 'LineString', coordinates: lines[0] } : { type: 'MultiLineString', coordinates: lines };
@@ -78,17 +71,22 @@ export async function analyzeRide(xml: string, enrich: EnrichOptions = {}): Prom
       last = last == null ? t : Math.max(last, t);
       const prev = s[i - 1]?.t;
       if (prev == null) continue;
-      const dt = t - prev;
+      const dt = (t - prev) / 1000;
       if (dt <= 0 || dt > MAX_GAP_S) continue;
       if (haversine(s[i - 1].p, s[i].p) / dt >= STOP_SPEED_MS) moving += dt;
     }
   }
+  // Simplify to 5 m, carrying each kept point's time along (segments and lines are index-aligned).
+  const kept = eleLines.map((l) => simplifyIndexes(l, 5));
+  const simpLines = eleLines.map((l, k) => kept[k].map((i) => l[i]));
+  const times = timed && segs.length === eleLines.length ? fillTimes(segs.flatMap((sg, k) => kept[k].map((i) => sg[i].t))) : null;
   return {
-    geometry: simplifyGeometry(raw, 5),
+    geometry: simpLines.length === 1 ? { type: 'LineString', coordinates: simpLines[0] } : { type: 'MultiLineString', coordinates: simpLines },
+    times,
     distanceM: Math.round(distanceM),
     gainM: gainM == null ? null : Math.round(gainM),
     movingSec: timed ? Math.round(moving) : null,
-    elapsedSec: timed && first != null && last != null ? Math.round(last - first) : null,
+    elapsedSec: timed && first != null && last != null ? Math.round((last - first) / 1000) : null,
   };
 }
 
@@ -130,7 +128,7 @@ export async function saveRide(db: Db, o: OutingRow, actor: Actor, xml: string, 
     const code = e instanceof Error ? e.message : '';
     return { ok: false, error: code === 'doctype' || code === 'noTrack' ? code : 'notGpx' };
   }
-  const values = { geometry: s.geometry, distanceM: s.distanceM, gainM: s.gainM, movingSec: s.movingSec, elapsedSec: s.elapsedSec };
+  const values = { geometry: s.geometry, distanceM: s.distanceM, gainM: s.gainM, movingSec: s.movingSec, elapsedSec: s.elapsedSec, times: s.times };
   return db.transaction((tx) => {
     const existing = tx.select().from(outingRide).where(where(o.id, actor)).get();
     if (existing) {

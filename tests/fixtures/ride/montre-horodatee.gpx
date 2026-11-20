@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Garmin"><trk><name>Sortie</name><trkseg>
+<trkpt lat="43.2" lon="6.10000"><ele>100</ele><time>2026-11-14T08:00:00.250Z</time></trkpt>
+<trkpt lat="43.2" lon="6.10246"><ele>105</ele><time>2026-11-14T08:01:00.250Z</time></trkpt>
+<trkpt lat="43.2" lon="6.10492"><ele>110</ele><time>2026-11-14T08:02:00.250Z</time></trkpt>
+<trkpt lat="43.2" lon="6.10738"><ele>115</ele><time>2026-11-14T08:03:00.250Z</time></trkpt>
+<trkpt lat="43.2" lon="6.10984"><ele>120</ele><time>2026-11-14T08:04:00.250Z</time></trkpt>
+<trkpt lat="43.2" lon="6.11230"><ele>125</ele><time>2026-11-14T08:05:00.250Z</time></trkpt>
+<trkpt lat="43.2" lon="6.11476"><ele>130</ele><time>2026-11-14T08:06:00.250Z</time></trkpt>
+<trkpt lat="43.2" lon="6.11722"><ele>135</ele><time>2026-11-14T08:07:00.250Z</time></trkpt>
+<trkpt lat="43.2" lon="6.11968"><ele>140</ele><time>2026-11-14T08:08:00.250Z</time></trkpt>
+<trkpt lat="43.2" lon="6.12214"><ele>145</ele><time>2026-11-14T08:09:00.250Z</time></trkpt>
+<trkpt lat="43.2" lon="6.12460"><ele>150</ele><time>2026-11-14T08:10:00.250Z</time></trkpt>
+</trkseg></trk></gpx>
