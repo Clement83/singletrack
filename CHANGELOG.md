@@ -7,6 +7,11 @@ Each release ticket writes the `## [X.Y.Z] - YYYY-MM-DD` section from the conven
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-11-21
+
+### Fixed
+- **Ridden tracks counted twice**: a file that writes the same ride twice (for example a KML with both a timed `gx:Track` and a `LineString`) no longer doubles the distance and elevation gain. Existing rides can be corrected with `npm run rides:dedupe`.
+
 ## [0.4.0] - 2026-11-21
 
 ### Added
