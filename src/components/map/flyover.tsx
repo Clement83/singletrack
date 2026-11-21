@@ -128,7 +128,7 @@ function FlyoverInner({ geometry, profile, link, position = 'top-right', barClas
   const frame = useCallback((now: number) => {
     const s = st.current;
     if (!s.playing) return;
-    const dt = Math.min((now - s.last) / 1000, 0.1);
+    const dt = Math.min((now - s.last) / 1000, 0.5);
     s.last = now;
     s.dist += (path.totalM / (flyDurationMs(path.totalM, s.speed) / 1000)) * dt;
     if (s.dist >= path.totalM) {

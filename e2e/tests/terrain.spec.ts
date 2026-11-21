@@ -7,6 +7,7 @@ const BLANK_PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAD
 type Win = { __explorerMap?: { isStyleLoaded(): boolean; getPitch(): number; getTerrain(): { source: string } | null } };
 
 test('3D : à plat à l’ouverture, le bouton active le relief incliné puis revient à plat', async ({ page }) => {
+  test.setTimeout(180_000); // #1698: software WebGL on a loaded host
   await page.route(/tile\.opentopomap\.org/, (r) => r.fulfill({ status: 200, contentType: 'image/png', body: BLANK_PNG }));
   await page.route(/elevation-tiles-prod/, (r) => r.abort());
   await page.addInitScript(() => { (window as unknown as { __E2E__: boolean }).__E2E__ = true; });
@@ -24,9 +25,9 @@ test('3D : à plat à l’ouverture, le bouton active le relief incliné puis re
 
   await button.click();
   await expect(button).toHaveAttribute('aria-pressed', 'true');
-  await expect.poll(state).toEqual({ pitch: 60, terrain: 'dem' });
+  await expect.poll(state, { timeout: 60_000 }).toEqual({ pitch: 60, terrain: 'dem' });
 
   await button.click();
   await expect(button).toHaveAttribute('aria-pressed', 'false');
-  await expect.poll(state).toEqual({ pitch: 0, terrain: null });
+  await expect.poll(state, { timeout: 60_000 }).toEqual({ pitch: 0, terrain: null });
 });

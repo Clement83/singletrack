@@ -8,6 +8,7 @@ type Win = { __explorerMap?: { isStyleLoaded(): boolean; getCenter(): { lng: num
 const SLUG = '0e2e0f1a-aaaa-4bbb-8ccc-000000000001';
 
 test('survol : le vélo parcourt la trace, la caméra bouge, Échap arrête', async ({ page }) => {
+  test.setTimeout(240_000); // #1698: software WebGL on a loaded host renders < 1 frame/s
   await page.route(/tile\.opentopomap\.org/, (r) => r.fulfill({ status: 200, contentType: 'image/png', body: BLANK_PNG }));
   await page.route(/elevation-tiles-prod/, (r) => r.abort());
   await page.addInitScript(() => { (window as unknown as { __E2E__: boolean }).__E2E__ = true; });
@@ -30,16 +31,16 @@ test('survol : le vélo parcourt la trace, la caméra bouge, Échap arrête', as
   await page.waitForFunction(() => !!(window as unknown as Win).__explorerMap?.isStyleLoaded(), undefined, { timeout: 60_000 });
 
   await page.getByTestId('flyover-start').click();
-  await expect(page.getByTestId('flyover-bar')).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByTestId('flyover-bar')).toBeVisible({ timeout: 60_000 });
   await page.getByTestId('flyover-speed').click(); // ×2
   await expect(page.getByTestId('flyover-speed')).toHaveText('×2');
   const view = () => page.evaluate(() => {
     const m = (window as unknown as Win).__explorerMap!;
     return { lng: m.getCenter().lng, pitch: Math.round(m.getPitch()) };
   });
-  await expect.poll(async () => (await view()).pitch, { timeout: 15_000 }).toBeGreaterThanOrEqual(60);
+  await expect.poll(async () => (await view()).pitch, { timeout: 60_000 }).toBeGreaterThanOrEqual(60);
   const a = await view(); // still in the first seconds of the flight
-  await expect.poll(async () => (await view()).lng, { timeout: 15_000 }).not.toBe(a.lng);
+  await expect.poll(async () => (await view()).lng, { timeout: 60_000 }).not.toBe(a.lng);
 
   await page.keyboard.press('Escape');
   await expect(page.getByTestId('flyover-bar')).toHaveCount(0);
