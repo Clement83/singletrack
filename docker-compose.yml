@@ -22,6 +22,8 @@ services:
       - "${APP_PORT:-3700}:3000"
     volumes:
       - ./data:/app/data
+      # Outing media (photos, videos) on the host's media disk (#1695); MEDIA_DIR=/app/media in .env.
+      - /home/clement/media/library/media/singletrack:/app/media
     # Short videos (#1693): Intel iGPU (QSV) for the conversion, shared with other services of the host; the
     # container user joins the host's `render` group (RENDER_GID). Without /dev/dri the app falls back to libx264.
     devices:
