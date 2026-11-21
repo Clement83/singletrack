@@ -110,3 +110,48 @@ describe('saveRide / listRides', () => {
     expect(db.select().from(outingRide).all()).toHaveLength(0);
   });
 });
+
+describe('dédoublonnage des lignes (#1699)', () => {
+  // 31 points every ~100 m, climbing 2 m / point; `jitter` shifts the second copy by ~5 m (denser/noisier export).
+  const track = (n: number, lonStart = 6.1, jitter = 0) => Array.from({ length: n }, (_, i) => ({ lon: lonStart + i * 0.00123, lat: 43.2 + jitter, ele: 100 + i * 2, t: new Date(Date.UTC(2026, 10, 14, 8, 0, i * 20)).toISOString() }));
+  const gxTrack = (ps: ReturnType<typeof track>) => `<gx:Track>${ps.map((p) => `<when>${p.t}</when>`).join('')}${ps.map((p) => `<gx:coord>${p.lon} ${p.lat} ${p.ele}</gx:coord>`).join('')}</gx:Track>`;
+  const lineString = (ps: ReturnType<typeof track>) => `<LineString><coordinates>${ps.map((p) => `${p.lon},${p.lat},${p.ele}`).join(' ')}</coordinates></LineString>`;
+  const kml = (...placemarks: string[]) => `<?xml version="1.0"?><kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2"><Document>${placemarks.map((p) => `<Placemark>${p}</Placemark>`).join('')}</Document></kml>`;
+  const one = track(31);
+  const base = () => analyzeRide(kml(`<name>a</name>${gxTrack(one)}`), fakeIgn(true));
+
+  it('KML : gx:Track + LineString dans le même Placemark = une seule ligne', async () => {
+    const single = await base();
+    const dup = await analyzeRide(kml(`${lineString(track(31, 6.1, 0.00004))}${gxTrack(one)}`), fakeIgn(true));
+    expect(dup.distanceM).toBe(single.distanceM);
+    expect(dup.gainM).toBe(single.gainM);
+    expect(dup.geometry.type).toBe('LineString');
+    // the timed version is kept: times aligned with the geometry
+    const n = (dup.geometry as { coordinates: unknown[] }).coordinates.length;
+    expect(dup.times).toHaveLength(n);
+  });
+
+  it('KML : deux Placemark (LineString puis gx:Track) = une seule ligne, on garde l\'horodatée', async () => {
+    const dup = await analyzeRide(kml(lineString(track(60, 6.1, 0.00003).filter((_, i) => i < 31)), gxTrack(one)), fakeIgn(true));
+    expect(dup.distanceM).toBe((await base()).distanceM);
+    expect(dup.times).not.toBeNull();
+    expect(dup.movingSec).not.toBeNull();
+  });
+
+  it('GPX : deux <trk> identiques ne sont comptés qu\'une fois', async () => {
+    const pts = one.map((p) => `<trkpt lat="${p.lat}" lon="${p.lon}"><ele>${p.ele}</ele><time>${p.t}</time></trkpt>`).join('');
+    const single = await analyzeRide(`<?xml version="1.0"?><gpx version="1.1" creator="t"><trk><trkseg>${pts}</trkseg></trk></gpx>`, fakeIgn(true));
+    const dup = await analyzeRide(`<?xml version="1.0"?><gpx version="1.1" creator="t"><trk><trkseg>${pts}</trkseg></trk><trk><trkseg>${pts}</trkseg></trk></gpx>`, fakeIgn(true));
+    expect(dup.distanceM).toBe(single.distanceM);
+    expect(dup.gainM).toBe(single.gainM);
+  });
+
+  it('deux segments distincts qui se suivent restent additionnés', async () => {
+    const a = track(31);
+    const b = track(31, 6.1 + 31 * 0.00123); // continues right after
+    const both = await analyzeRide(kml(`${gxTrack(a)}${gxTrack(b)}`), fakeIgn(true));
+    const single = await base();
+    expect(both.distanceM).toBeGreaterThan(single.distanceM * 1.9);
+    expect(both.geometry.type).toBe('MultiLineString');
+  });
+});

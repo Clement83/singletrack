@@ -1,7 +1,7 @@
 import { and, eq, isNull } from 'drizzle-orm';
 import type { Db } from '@/db';
 import { invitation, outingRide, type OutingRow } from '@/db/schema';
-import { bboxOf, enrichElevation, type EnrichOptions, gainLoss, gpxTimedSegments, haversine, kmlTimedSegments, lineLength, parseGpxFile, parseKmlFile, simplifyIndexes, type Position, type TrackGeometry } from '@/lib/geo';
+import { bboxOf, dedupeLineIndexes, enrichElevation, type EnrichOptions, gainLoss, gpxTimedSegments, haversine, kmlTimedSegments, lineLength, parseGpxFile, parseKmlFile, simplifyIndexes, type Position, type TrackGeometry } from '@/lib/geo';
 import { type Actor } from './comments';
 
 export const RIDE_MAX_BYTES = 5 * 1024 * 1024;
@@ -42,8 +42,12 @@ const isKml = (xml: string) => /<kml\b/.test(xml) && !/<gpx\b/.test(xml);
 export async function analyzeRide(xml: string, enrich: EnrichOptions = {}): Promise<RideStats> {
   const kml = isKml(xml);
   const file = kml ? parseKmlFile(xml) : parseGpxFile(xml); // valid (rejects DOCTYPE/ENTITY, no track); the geometry comes from here if there is no <trkseg> (rte)
-  const segs = (kml ? kmlTimedSegments(xml) : gpxTimedSegments(xml)).filter((s) => s.length >= 2);
-  const lines: Position[][] = segs.length ? segs.map((s) => s.map((x) => x.p)) : file.tracks.flatMap((t) => (t.geometry.type === 'LineString' ? [t.geometry.coordinates] : t.geometry.coordinates));
+  const allSegs = (kml ? kmlTimedSegments(xml) : gpxTimedSegments(xml)).filter((s) => s.length >= 2);
+  // #1699: the same ride written twice in the file (gx:Track + LineString, two identical <trk>) is counted once.
+  const keep = dedupeLineIndexes(allSegs.map((s) => s.map((x) => x.p)), allSegs.map((s) => s.some((x) => x.t != null)));
+  const segs = keep.map((i) => allSegs[i]);
+  const fileLines: Position[][] = file.tracks.flatMap((t) => (t.geometry.type === 'LineString' ? [t.geometry.coordinates] : t.geometry.coordinates));
+  const lines: Position[][] = segs.length ? segs.map((s) => s.map((x) => x.p)) : dedupeLineIndexes(fileLines).map((i) => fileLines[i]);
   if (lines.length === 0) throw new Error('noTrack');
   const rawGeom: TrackGeometry = lines.length === 1 ? { type: 'LineString', coordinates: lines[0] } : { type: 'MultiLineString', coordinates: lines };
   // IGN elevation (#1515); GPS as a fallback if IGN is unavailable. Times stay those of the file (points unchanged in number/order).

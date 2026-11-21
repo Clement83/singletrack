@@ -16,6 +16,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/db/migrate.ts",
     "elevation:recompute": "tsx scripts/recompute-elevation.ts",
+    "rides:dedupe": "tsx scripts/dedupe-rides.ts",
     "sync:osm": "tsx scripts/sync-osm.ts",
     "sync:singles": "tsx scripts/sync-singles.ts",
     "sync:geotrek": "tsx scripts/sync-geotrek.ts",

@@ -9,3 +9,4 @@ export * from './ign-elevation';
 export * from './slopes';
 export * from './along';
 export * from './timed';
+export * from './dedupe-lines';
