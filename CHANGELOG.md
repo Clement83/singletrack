@@ -7,6 +7,12 @@ Each release ticket writes the `## [X.Y.Z] - YYYY-MM-DD` section from the conven
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-21
+
+### Added
+- **Short videos on outings**: participants can add clips (up to 30 s) to an outing like photos. They are converted to 720p H.264 with a thumbnail, using the Intel iGPU (QSV) when available and falling back to software x264.
+- **Outing summary**: a "Watch the summary" player flies in 3D over the real ridden track and stops on each photo and video placed along it, then ends with a slideshow of the remaining media.
+
 ## [0.3.0] - 2026-11-20
 
 ### Added
