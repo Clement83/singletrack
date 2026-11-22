@@ -1,16 +1,17 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Download, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { MusicTrack } from '@/lib/outings/music';
+import { EXPORT_SPEEDS } from '@/lib/outings/summary-film';
 import { cn } from '@/lib/utils';
 import { exportFilm, ExportUnsupported, type ExportFormat, type ExportInput } from './export-film';
 
 type Props = {
-  /** Everything but the music URL, built lazily (the film is only unrolled when the export starts). */
-  input: () => Omit<ExportInput, 'musicUrl'>;
+  /** Everything but the music URL, for a ride speed (#1711); the film is unrolled on demand. */
+  input: (speed: number) => Omit<ExportInput, 'musicUrl'>;
   music: MusicTrack[];
   musicBase: string;
   fileName: string;
@@ -25,6 +26,10 @@ const NONE = 'none';
 export function SummaryExport({ input, music, musicBase, fileName, onClose }: Props) {
   const t = useTranslations('summary.export');
   const [format, setFormat] = useState<ExportFormat>('landscape');
+  const [speed, setSpeed] = useState<number>(2);
+  // Length of the film at each speed, shown under the choice.
+  const durations = useMemo(() => new Map(EXPORT_SPEEDS.map((v) => [v, input(v).film.durationMs])), [input]);
+  const len = Math.round((durations.get(speed as (typeof EXPORT_SPEEDS)[number]) ?? 0) / 1000);
   const [track, setTrack] = useState<string>(RANDOM);
   const [state, setState] = useState<State>({ step: 'options' });
   const ctl = useRef<AbortController | null>(null);
@@ -43,7 +48,7 @@ export function SummaryExport({ input, music, musicBase, fileName, onClose }: Pr
     const id = track === NONE || music.length === 0 ? null : track === RANDOM ? music[Math.floor(Math.random() * music.length)].id : Number(track);
     try {
       const blob = await exportFilm(
-        { ...input(), musicUrl: id == null ? null : `${musicBase}/${id}` },
+        { ...input(speed), musicUrl: id == null ? null : `${musicBase}/${id}` },
         { format, signal: ac.signal, onProgress: (p) => setState((s) => (s.step === 'running' ? { step: 'running', p } : s)) },
       );
       setState({ step: 'done', blob, url: URL.createObjectURL(blob) });
@@ -72,6 +77,16 @@ export function SummaryExport({ input, music, musicBase, fileName, onClose }: Pr
             <div role="group" aria-label={t('format')} className="flex gap-2">
               <Button ref={first} variant={format === 'landscape' ? 'primary' : 'outline'} aria-pressed={format === 'landscape'} className={chip(format === 'landscape')} onClick={() => setFormat('landscape')}>{t('landscape')}</Button>
               <Button variant={format === 'portrait' ? 'primary' : 'outline'} aria-pressed={format === 'portrait'} className={chip(format === 'portrait')} onClick={() => setFormat('portrait')} data-testid="summary-export-portrait">{t('portrait')}</Button>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <div role="group" aria-label={t('speed')} className="flex gap-2">
+                {EXPORT_SPEEDS.map((v) => (
+                  <Button key={v} variant={speed === v ? 'primary' : 'outline'} aria-pressed={speed === v} className={cn(chip(speed === v), 'tabular-nums')} onClick={() => setSpeed(v)} data-testid={`summary-export-speed-${v}`}>
+                    ×{v}
+                  </Button>
+                ))}
+              </div>
+              <p className="text-caption text-muted-foreground tabular-nums" data-testid="summary-export-duration">{t('duration', { m: Math.floor(len / 60), s: String(len % 60).padStart(2, '0') })}</p>
             </div>
             {music.length > 0 && (
               <label className="flex flex-col gap-1.5 text-body">

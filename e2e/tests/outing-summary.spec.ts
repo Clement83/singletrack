@@ -134,6 +134,12 @@ test('résumé : export MP4 (#1707), rendu court, fichier téléchargé', async 
     await expect(page.getByTestId('summary-export')).toBeVisible();
     await expect(page.getByTestId('summary-playpause')).toHaveAccessibleName(/Lecture|Play/);
     await page.getByTestId('summary-export-portrait').click();
+    // Speed (#1711): ×2 by default, ×6 makes the film shorter.
+    const len = page.getByTestId('summary-export-duration');
+    await expect(page.getByTestId('summary-export-speed-2')).toHaveAttribute('aria-pressed', 'true');
+    const at2 = await len.textContent();
+    await page.getByTestId('summary-export-speed-6').click();
+    await expect(len).not.toHaveText(at2!);
     await page.getByTestId('summary-export-run').click();
     const link = page.getByTestId('summary-export-download');
     await expect(link).toBeVisible({ timeout: 120_000 });

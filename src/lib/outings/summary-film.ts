@@ -7,6 +7,10 @@ import { lookAheadHeading, slopeZoomOffset, smoothHeading, type FlyPath } from '
 import { advanceFly, PHOTO_MS, type Stop, type SummaryMedia } from './summary-script';
 
 export const FILM_FPS = 30;
+/** Speeds offered by the export (#1711). */
+export const EXPORT_SPEEDS = [1, 2, 4, 6] as const;
+/** Shortest time a photo stays on screen at high speed. */
+export const MIN_PHOTO_MS = 1500;
 /** Still frames before the point starts and after the last media. */
 export const INTRO_MS = 1000;
 export const OUTRO_MS = 2000;
@@ -27,15 +31,17 @@ export type FilmInput = {
   grades: number[];
   /** `prefers-reduced-motion`: the camera keeps its heading. */
   reduced?: boolean;
+  /** Ride speed (#1711): the point and the photos go faster, clips keep their real length (their sound). */
+  speed?: number;
 };
 
-/** How long a media stays in the film (ms): photo 3 s, clip its own length (10 s if unknown). */
-export function filmMediaMs(m: Pick<SummaryMedia, 'type' | 'durationMs'>): number {
-  return m.type === 'video' ? (m.durationMs ?? 10_000) : PHOTO_MS;
+/** How long a media stays in the film (ms): photo 3 s ÷ speed (1.5 s at least), clip its own length (10 s if unknown). */
+export function filmMediaMs(m: Pick<SummaryMedia, 'type' | 'durationMs'>, speed = 1): number {
+  return m.type === 'video' ? (m.durationMs ?? 10_000) : Math.max(MIN_PHOTO_MS, PHOTO_MS / Math.max(1, speed));
 }
 
 export function buildFilm(input: FilmInput, fps = FILM_FPS): Film {
-  const { path, stops, slides, profileKm, grades, reduced = false } = input;
+  const { path, stops, slides, profileKm, grades, reduced = false, speed = 1 } = input;
   const total = path.totalM;
   const dt = 1 / fps;
   const frames: FilmFrame[] = [];
@@ -51,9 +57,9 @@ export function buildFilm(input: FilmInput, fps = FILM_FPS): Film {
   };
   /** One step of riding; returns the stop reached, if any. */
   const ride = (): number | null => {
-    const r = advanceFly(dist, dt, total, 1, stops, next);
+    const r = advanceFly(dist, dt, total, speed, stops, next);
     dist = r.distM;
-    if (!reduced) heading = smoothHeading(heading, lookAheadHeading(path, dist), dt, 1.2, 40);
+    if (!reduced) heading = smoothHeading(heading, lookAheadHeading(path, dist), dt, 1.2, 40 * speed);
     if (profileKm) {
       const gi = Math.max(0, profileKm.findIndex((km) => km * 1000 >= dist));
       zoomOff += (slopeZoomOffset(gradeAt(grades, gi) ?? 0) - zoomOff) * (1 - Math.exp(-dt / 1.5));
@@ -62,7 +68,7 @@ export function buildFilm(input: FilmInput, fps = FILM_FPS): Film {
   };
   /** A media on screen; a clip lets the point ride on (#1705) until the next stop, which is then held. */
   const show = (m: SummaryMedia, mayRide: boolean) => {
-    const durMs = filmMediaMs(m);
+    const durMs = filmMediaMs(m, speed);
     const n = Math.max(1, Math.round((durMs * fps) / 1000));
     if (m.type === 'video') clips.push({ id: m.id, startMs: (frames.length * 1000) / fps, durMs });
     for (let i = 0; i < n; i++) {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildFlyPath } from '@/lib/geo/flyover';
-import { buildFilm, filmMediaMs, FILM_FPS, INTRO_MS, musicEnvelope, OUTRO_MS, videoBitrate } from '@/lib/outings/summary-film';
+import { buildFilm, filmMediaMs, FILM_FPS, INTRO_MS, MIN_PHOTO_MS, musicEnvelope, OUTRO_MS, videoBitrate } from '@/lib/outings/summary-film';
 import { buildSlides, buildStops, cruiseMps, PHOTO_MS, type SummaryMedia } from '@/lib/outings/summary-script';
 
 // A straight 2 km line eastwards.
@@ -41,6 +41,24 @@ describe('film de l’export (#1707)', () => {
     expect(filmMediaMs({ type: 'photo', durationMs: null })).toBe(PHOTO_MS);
     expect(filmMediaMs({ type: 'video', durationMs: 4200 })).toBe(4200);
     expect(filmMediaMs({ type: 'video', durationMs: null })).toBe(10_000);
+  });
+});
+
+describe('vitesse de l’export (#1711)', () => {
+  const media = [m('p', 500), m('v', 1500, 'video', 6000)];
+  const at = (speed: number) => buildFilm({ path, stops: buildStops(media), slides: [], profileKm: null, grades: [], speed });
+  it('trajet ÷ vitesse, photo 3 s ÷ vitesse (1,5 s mini), clip à sa durée réelle', () => {
+    const bare = (speed: number) => buildFilm({ path, stops: [], slides: [], profileKm: null, grades: [], speed }).frames.length - ((INTRO_MS + OUTRO_MS) * FILM_FPS) / 1000;
+    expect(bare(1) / bare(4)).toBeCloseTo(4, 1);
+    expect(filmMediaMs({ type: 'photo', durationMs: null }, 2)).toBe(1500);
+    expect(filmMediaMs({ type: 'photo', durationMs: null }, 6)).toBe(MIN_PHOTO_MS);
+    expect(filmMediaMs({ type: 'video', durationMs: 6000 }, 6)).toBe(6000);
+    expect(at(6).clips[0].durMs).toBe(6000);
+    expect(at(6).durationMs).toBeLessThan(at(1).durationMs);
+  });
+  it('le point roule plus vite sous un clip', () => {
+    const under = (f: ReturnType<typeof at>) => { const v = f.frames.filter((x) => x.media?.m.id === 'v'); return v.at(-1)!.dist - v[0].dist; };
+    expect(under(at(2))).toBeGreaterThan(under(at(1)) * 1.5);
   });
 });
 

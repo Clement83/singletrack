@@ -1395,6 +1395,8 @@
       "open": "Export video",
       "title": "Export video",
       "format": "Format",
+      "speed": "Speed",
+      "duration": "Length: {m} min {s}",
       "landscape": "Landscape",
       "portrait": "Portrait",
       "music": "Music",

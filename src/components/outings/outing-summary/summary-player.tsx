@@ -447,8 +447,8 @@ function Stage({ recap, track, photoBase, videoBase, musicBase, onDeleted }: { r
     setExporting(false);
     stageRef.current?.focus({ preventScroll: true });
   }, []);
-  const exportInput = useCallback(() => ({
-    film: buildFilm({ path, stops, slides, profileKm: track.profile?.map((p) => p.km) ?? null, grades, reduced: reduced() }),
+  const exportInput = useCallback((speed: number) => ({
+    film: buildFilm({ path, stops, slides, profileKm: track.profile?.map((p) => p.km) ?? null, grades, reduced: reduced(), speed }),
     path,
     geometry: track.geometry,
     stops,
