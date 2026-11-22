@@ -7,6 +7,12 @@ Each release ticket writes the `## [X.Y.Z] - YYYY-MM-DD` section from the conven
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-22
+
+### Added
+- **Delete media from the outing summary**: while watching the summary, the author of a photo or video (or the organiser) can delete it from the player; the film skips it and carries on.
+- **Videos on the outing photo map**: located videos now show on the map of the rides and photos section next to the photos, and open in the video viewer.
+
 ## [0.4.1] - 2026-11-21
 
 ### Fixed
