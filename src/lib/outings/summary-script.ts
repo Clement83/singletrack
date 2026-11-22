@@ -15,7 +15,7 @@ export type SummaryMedia = {
 /** Media placed within this distance of each other (m) share one stop and play one after the other. */
 export const STOP_MERGE_M = 40;
 /** The point starts slowing down this far (m) before a stop. */
-export const SLOW_ZONE_M = 120;
+export const SLOW_ZONE_M = 80;
 /** Slowest relative speed just before a stop. */
 export const MIN_SLOW = 0.2;
 export const PHOTO_MS = 3000;
@@ -56,9 +56,9 @@ export function speedFactor(distM: number, stopM: number | null): number {
   return MIN_SLOW + (1 - MIN_SLOW) * (left / SLOW_ZONE_M);
 }
 
-/** Cruise speed (m/s at ×1): the track without media lasts 60 to 120 s (3 s per km, clamped). */
+/** Cruise speed (m/s at ×1): the track without media lasts 45 to 90 s (2.25 s per km, clamped; #1705: was 60–120 s). */
 export function cruiseMps(totalM: number): number {
-  const seconds = Math.min(120, Math.max(60, (totalM / 1000) * 3));
+  const seconds = Math.min(90, Math.max(45, (totalM / 1000) * 2.25));
   return totalM / seconds;
 }
 

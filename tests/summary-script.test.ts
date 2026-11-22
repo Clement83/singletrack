@@ -40,12 +40,14 @@ describe('ralenti et arrêt', () => {
   it('vitesse pleine loin, ralentie près de l’arrêt', () => {
     expect(speedFactor(0, 1000)).toBe(1);
     expect(speedFactor(0, null)).toBe(1);
-    expect(speedFactor(940, 1000)).toBeCloseTo(0.6, 5);
+    expect(speedFactor(940, 1000)).toBeCloseTo(0.8, 5);
+    expect(speedFactor(900, 1000)).toBe(1);
     expect(speedFactor(1000, 1000)).toBe(MIN_SLOW);
   });
-  it('film de 60 à 120 s hors médias', () => {
-    expect(cruiseMps(10_000)).toBeCloseTo(10_000 / 60);
-    expect(cruiseMps(100_000)).toBeCloseTo(100_000 / 120);
+  it('film de 45 à 90 s hors médias (#1705)', () => {
+    expect(cruiseMps(10_000)).toBeCloseTo(10_000 / 45);
+    expect(cruiseMps(30_000)).toBeCloseTo(30_000 / 67.5);
+    expect(cruiseMps(100_000)).toBeCloseTo(100_000 / 90);
   });
   it('le point s’arrête exactement sur le média et le signale', () => {
     const stops = buildStops([m('a', 100)]);

@@ -94,6 +94,8 @@ function Stage({ recap, track, photoBase, videoBase, onDeleted }: { recap: Recap
   const st = useRef({
     mode: 'fly' as Mode, dist: 0, heading: 0, zoomOff: 0, last: 0, playing: false, speed: 1 as FlySpeed, raf: 0, run: 0,
     next: 0, showing: null as number | null, mi: 0, slide: 0, timer: 0, timerLeft: 0, timerAt: 0, hud: 0,
+    // #1705: the point keeps riding during a clip (`moving`); a stop reached meanwhile waits for the clip's end (`held`).
+    moving: false, held: null as number | null,
   });
   useEffect(() => { st.current.speed = speed; }, [speed]);
 
@@ -145,6 +147,8 @@ function Stage({ recap, track, photoBase, videoBase, onDeleted }: { recap: Recap
   }, []);
   const endRide = useCallback(() => {
     const s = st.current;
+    s.moving = false;
+    s.held = null;
     s.dist = path.totalM;
     place(false);
     if (slides.length > 0) {
@@ -165,6 +169,8 @@ function Stage({ recap, track, photoBase, videoBase, onDeleted }: { recap: Recap
   const flyOn = useCallback(() => {
     const s = st.current;
     s.mode = 'fly';
+    s.moving = false;
+    s.held = null;
     setShown(null);
     if (s.playing) {
       s.last = performance.now();
@@ -173,8 +179,11 @@ function Stage({ recap, track, photoBase, videoBase, onDeleted }: { recap: Recap
     }
   }, []);
 
-  /** Shows the media `mi` of stop `k` (the point is parked on the stop). */
-  const showStop = useCallback((k: number, mi: number) => {
+  /**
+   * Shows the media `mi` of stop `k`. `park` = the point jumps onto the stop (a new stop, a skip); `false` = the next media
+   * of the same stop, the point stays where the previous clip left it. A clip lets the point ride on meanwhile (#1705).
+   */
+  const showStop = useCallback((k: number, mi: number, park = true) => {
     const s = st.current;
     cancelAnimationFrame(s.raf);
     clearTimer();
@@ -182,14 +191,22 @@ function Stage({ recap, track, photoBase, videoBase, onDeleted }: { recap: Recap
     s.showing = k;
     s.mi = mi;
     s.next = k + 1;
-    s.dist = stops[k].distanceM;
-    place(true);
+    if (park) {
+      s.dist = stops[k].distanceM;
+      s.held = null;
+      place(true);
+    }
     hud();
     const m = stops[k].media[mi];
     setShown({ media: m, slide: false });
     preload(stops[k].media[mi + 1] ?? stops[k + 1]?.media[0] ?? slides[0]);
     armTimer(mediaDurationMs(m, s.speed));
-  }, [stops, slides, place, hud, preload, armTimer]);
+    s.moving = m.type === 'video' && s.held == null && s.dist < path.totalM;
+    if (s.moving && s.playing) {
+      s.last = performance.now();
+      s.raf = requestAnimationFrame((n) => frameRef.current(n));
+    }
+  }, [stops, slides, path.totalM, place, hud, preload, armTimer]);
 
   const advanceMedia = useCallback(() => {
     const s = st.current;
@@ -210,9 +227,14 @@ function Stage({ recap, track, photoBase, videoBase, onDeleted }: { recap: Recap
       hud();
     } else if (s.mode === 'media' && s.showing != null) {
       const k = s.showing;
-      if (s.mi + 1 < stops[k].media.length) showStop(k, s.mi + 1);
-      else {
+      if (s.mi + 1 < stops[k].media.length) showStop(k, s.mi + 1, false);
+      else if (s.held != null) {
+        const h = s.held;
+        s.held = null;
+        showStop(h, 0, false);
+      } else {
         s.showing = null;
+        cancelAnimationFrame(s.raf);
         if (s.next >= stops.length && s.dist >= path.totalM - 1) endRide();
         else flyOn();
       }
@@ -222,7 +244,8 @@ function Stage({ recap, track, photoBase, videoBase, onDeleted }: { recap: Recap
 
   const frame = useCallback((now: number) => {
     const s = st.current;
-    if (!s.playing || s.mode !== 'fly') return;
+    const riding = s.mode === 'media' && s.moving;
+    if (!s.playing || (s.mode !== 'fly' && !riding)) return;
     // Up to 0.5 s per frame: a slow phone (or software WebGL) keeps real time instead of a slow-motion film;
     // a longer gap (tab hidden) is still capped so the point does not jump.
     const dt = Math.min((now - s.last) / 1000, 0.5);
@@ -234,8 +257,14 @@ function Stage({ recap, track, photoBase, videoBase, onDeleted }: { recap: Recap
     s.zoomOff += (slopeZoomOffset(gradeAt(grades, gi) ?? 0) - s.zoomOff) * (1 - Math.exp(-dt / 1.5));
     place(true);
     if (now - s.hud > 250) { s.hud = now; hud(); }
-    if (r.reached != null) { showStop(r.reached, 0); return; }
-    if (s.dist >= path.totalM) { endRide(); return; }
+    if (riding) {
+      // Under a clip: a stop reached waits for the clip's end, the end of the track too.
+      if (r.reached != null) { s.held = r.reached; s.moving = false; hud(); return; }
+      if (s.dist >= path.totalM) { s.moving = false; hud(); return; }
+    } else {
+      if (r.reached != null) { showStop(r.reached, 0); return; }
+      if (s.dist >= path.totalM) { endRide(); return; }
+    }
     s.raf = requestAnimationFrame((n) => frameRef.current(n));
   }, [path, stops, grades, track.profile, place, hud, showStop, endRide]);
   useEffect(() => { frameRef.current = frame; }, [frame]);
@@ -251,6 +280,11 @@ function Stage({ recap, track, photoBase, videoBase, onDeleted }: { recap: Recap
       s.raf = requestAnimationFrame((n) => frameRef.current(n));
     } else {
       void videoRef.current?.play().catch(() => undefined);
+      if (s.moving) {
+        s.last = performance.now();
+        cancelAnimationFrame(s.raf);
+        s.raf = requestAnimationFrame((n) => frameRef.current(n));
+      }
       clearTimer();
       s.timerAt = performance.now();
       s.timer = window.setTimeout(() => advanceMediaRef.current(), s.timerLeft);
@@ -271,6 +305,8 @@ function Stage({ recap, track, photoBase, videoBase, onDeleted }: { recap: Recap
     s.dist = 0;
     s.next = 0;
     s.showing = null;
+    s.moving = false;
+    s.held = null;
     s.heading = lookAheadHeading(path, 0);
     s.zoomOff = 0;
     setEnded(false);
@@ -525,7 +561,12 @@ function Stage({ recap, track, photoBase, videoBase, onDeleted }: { recap: Recap
           </BaseMap>
         )}
         {cur && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-media-surface/85 pb-36 pt-16" data-testid="summary-media" data-media-id={cur.id} data-media-type={cur.type}>
+          <div
+            className={cn('absolute inset-0 z-10 flex justify-center pb-36 pt-16', cur.type === 'photo' ? 'items-center bg-media-surface/85' : 'items-start')}
+            data-testid="summary-media"
+            data-media-id={cur.id}
+            data-media-type={cur.type}
+          >
             {cur.type === 'photo' ? (
               <ZoomPhoto key={cur.id} src={url(cur)} ms={mediaDurationMs(cur, speed)} playing={playing} />
             ) : (
@@ -539,7 +580,8 @@ function Stage({ recap, track, photoBase, videoBase, onDeleted }: { recap: Recap
                 autoPlay={playing}
                 preload="auto"
                 onEnded={() => advanceMedia()}
-                className="max-h-full max-w-full object-contain"
+                // #1705: clip inset over the map, which keeps moving underneath.
+                className="max-h-[55%] max-w-[92%] rounded-2xl object-contain shadow-lg sm:max-w-[60%]"
               />
             )}
             {author && <p className="absolute bottom-40 left-4 rounded-full bg-media-surface/60 px-3 py-1 text-sm">{t('by', { name: author })}</p>}

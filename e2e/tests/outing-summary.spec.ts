@@ -80,3 +80,17 @@ test('résumé : supprimer le média affiché (#1701), seulement s’il est supp
   await expect(page.getByTestId('summary-media')).toHaveAttribute('data-media-id', 'p2');
   await expect(page.getByTestId('summary-delete')).toHaveCount(0);
 });
+
+test('résumé : le point continue d’avancer pendant une vidéo (#1705)', async ({ page }) => {
+  await mockSummary(page);
+  await openSummary(page);
+  await expect(page.getByTestId('summary-media')).toHaveAttribute('data-media-id', 'p1', { timeout: 60_000 });
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowRight');
+  await expect(page.getByTestId('summary-media')).toHaveAttribute('data-media-id', 'v1');
+  const km = page.getByTestId('summary-stats').locator('span').first();
+  const before = await km.textContent();
+  // The clip lasts 4 s (+3 s safety net): the km counter moves meanwhile, the clip is still on screen.
+  await expect.poll(() => km.textContent(), { timeout: 6_000 }).not.toBe(before);
+  await expect(page.getByTestId('summary-media')).toHaveAttribute('data-media-id', 'v1');
+});
