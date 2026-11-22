@@ -160,6 +160,17 @@ describe('trace de référence et résumé', () => {
     expect(rc.media.map((m) => m.placement.method)).toEqual(['time', 'position', 'time', 'none']);
     expect(buildRecap(db, o, orga).media).toHaveLength(4);
   });
+  it('canDelete (#1701) : l’organisateur supprime tout, un invité seulement ses médias', async () => {
+    const { db, o, guest, orga } = await setup();
+    db.insert(invitation).values({ id: 'i2', outingId: o.id, tokenHash: 'h2', name: 'Paul', status: 'yes' }).run();
+    const ins = (id: string, v: Partial<typeof outingPhoto.$inferInsert>) => db.insert(outingPhoto).values({ id, outingId: o.id, width: 10, height: 10, ...v }).run();
+    ins('lea', { invitationId: 'i1' });
+    ins('paul', { invitationId: 'i2' });
+    ins('orga', { authorUserId: 'u1' });
+    const can = (a: Parameters<typeof buildRecap>[2]) => Object.fromEntries(buildRecap(db, o, a).media.map((m) => [m.id, m.canDelete]));
+    expect(can(orga)).toEqual({ lea: true, paul: true, orga: true });
+    expect(can(guest)).toEqual({ lea: true, paul: false, orga: false });
+  });
   it('sans trace : track nul, photos non placées', async () => {
     const { db, o, orga } = await setup();
     db.insert(outingPhoto).values({ outingId: o.id, width: 1, height: 1, takenAt: T0 }).run();

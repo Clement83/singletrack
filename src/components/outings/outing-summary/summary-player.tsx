@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { Pause, Play, RotateCcw, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-react';
+import { Pause, Play, RotateCcw, SkipBack, SkipForward, Trash2, Volume2, VolumeX } from 'lucide-react';
 import { Marker, type MapRef } from 'react-map-gl/maplibre';
 import type { Marker as MaplibreMarker } from 'maplibre-gl';
 import BaseMap from '@/components/BaseMap';
+import { Button } from '@/components/ui/button';
 import { SlopeRouteLayer } from '@/components/map/slope-route-layer';
 import { BASE_ZOOM, PITCH, TILE_WAIT_MS } from '@/components/map/flyover';
 import { useMapColors } from '@/components/tracks/use-map-colors';
@@ -22,7 +23,7 @@ import {
 } from '@/lib/outings/summary-script';
 import { cn } from '@/lib/utils';
 
-type Props = { recapUrl: string; photoBase: string; videoBase: string };
+type Props = { recapUrl: string; photoBase: string; videoBase: string; onDeleted?: () => void };
 type Shown = { media: SummaryMedia; slide: boolean };
 type Mode = 'fly' | 'media' | 'slides' | 'end';
 
@@ -33,7 +34,7 @@ function lightDevice(): boolean {
   return window.matchMedia('(pointer: coarse)').matches && (navigator.hardwareConcurrency ?? 8) <= 4;
 }
 
-export default function SummaryPlayer({ recapUrl, photoBase, videoBase }: Props) {
+export default function SummaryPlayer({ recapUrl, photoBase, videoBase, onDeleted }: Props) {
   const t = useTranslations('summary');
   const [recap, setRecap] = useState<Recap | null>(null);
   const [failed, setFailed] = useState(false);
@@ -47,12 +48,12 @@ export default function SummaryPlayer({ recapUrl, photoBase, videoBase }: Props)
   }, [recapUrl]);
   if (failed) return <p role="alert" className="flex size-full items-center justify-center p-6 text-center">{t('error')}</p>;
   if (!recap || !recap.track) return <div className="flex size-full items-center justify-center text-sm opacity-80">{t('loading')}</div>;
-  return <Stage recap={recap} track={recap.track} photoBase={photoBase} videoBase={videoBase} />;
+  return <Stage recap={recap} track={recap.track} photoBase={photoBase} videoBase={videoBase} onDeleted={onDeleted} />;
 }
 
 type TrackData = NonNullable<Recap['track']>;
 
-function Stage({ recap, track, photoBase, videoBase }: { recap: Recap; track: TrackData; photoBase: string; videoBase: string }) {
+function Stage({ recap, track, photoBase, videoBase, onDeleted }: { recap: Recap; track: TrackData; photoBase: string; videoBase: string; onDeleted?: () => void }) {
   const t = useTranslations('summary');
   const locale = useLocale() as 'fr' | 'en';
   const colors = useMapColors();
@@ -66,7 +67,11 @@ function Stage({ recap, track, photoBase, videoBase }: { recap: Recap; track: Tr
 
   const path = useMemo(() => buildFlyPath(track.geometry), [track.geometry]);
   const data = useMemo(() => slopeFeatures(track.geometry), [track.geometry]);
-  const media = useMemo<SummaryMedia[]>(() => recap.media.map((m) => ({ id: m.id, type: m.type, author: m.author, durationMs: m.durationMs, distanceM: m.placement.distanceM })), [recap.media]);
+  // Media deleted from the player (#1701): taken out of the film without reloading the recap.
+  const [removed, setRemoved] = useState<ReadonlySet<string>>(() => new Set());
+  const live = useMemo(() => recap.media.filter((m) => !removed.has(m.id)), [recap.media, removed]);
+  const deletable = useMemo(() => new Set(recap.media.filter((m) => m.canDelete).map((m) => m.id)), [recap.media]);
+  const media = useMemo<SummaryMedia[]>(() => live.map((m) => ({ id: m.id, type: m.type, author: m.author, durationMs: m.durationMs, distanceM: m.placement.distanceM })), [live]);
   const stops = useMemo(() => buildStops(media), [media]);
   const slides = useMemo(() => buildSlides(media), [media]);
   const authors = useMemo(() => new Map(recap.media.map((m) => [m.id, m.organizer ? '' : m.author])), [recap.media]);
@@ -377,9 +382,88 @@ function Stage({ recap, track, photoBase, videoBase }: { recap: Recap; track: Tr
   // Focus on the stage, not on the dialog's close button: Space must pause the film, not close it.
   useEffect(() => { stageRef.current?.focus({ preventScroll: true }); }, []);
 
+  // Deleting the shown media (#1701): pause, confirm inside the player (a portal would sit under the native dialog's
+  // top layer), DELETE, then the film resumes on the media that followed it.
+  const tp = useTranslations('photos');
+  const tc = useTranslations('common');
+  const [confirm, setConfirm] = useState<SummaryMedia | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteFailed, setDeleteFailed] = useState(false);
+  const confirmOpen = useRef(false);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const wasPlaying = useRef(false);
+  const resume = useRef<{ following: string | null; mode: Mode } | null>(null);
+  useEffect(() => {
+    confirmOpen.current = confirm != null;
+    if (confirm) cancelRef.current?.focus({ preventScroll: true });
+  }, [confirm]);
+
+  const askDelete = useCallback((m: SummaryMedia) => {
+    wasPlaying.current = st.current.playing;
+    pause();
+    setDeleteFailed(false);
+    setConfirm(m);
+  }, [pause]);
+  const cancelDelete = useCallback(() => {
+    setConfirm(null);
+    stageRef.current?.focus({ preventScroll: true });
+    if (wasPlaying.current) play();
+  }, [play]);
+  const doDelete = useCallback(async (m: SummaryMedia) => {
+    setDeleting(true);
+    setDeleteFailed(false);
+    try {
+      const res = await fetch(url(m), { method: 'DELETE' });
+      if (!res.ok) throw new Error(String(res.status));
+      const s = st.current;
+      const following = s.mode === 'slides'
+        ? slides[s.slide + 1]?.id ?? null
+        : s.mode === 'media' && s.showing != null ? stops[s.showing].media[s.mi + 1]?.id ?? null : null;
+      resume.current = { following, mode: s.mode };
+      setRemoved((r) => new Set(r).add(m.id));
+      setConfirm(null);
+      stageRef.current?.focus({ preventScroll: true });
+      onDeleted?.();
+    } catch {
+      setDeleteFailed(true);
+    } finally {
+      setDeleting(false);
+    }
+  }, [url, slides, stops, onDeleted]);
+
+  // Once stops and slides are rebuilt without the deleted media: show the one that followed it, else fly on / end.
+  useEffect(() => {
+    const r = resume.current;
+    if (!r) return;
+    resume.current = null;
+    const s = st.current;
+    const k = r.following ? stops.findIndex((x) => x.media.some((m) => m.id === r.following)) : -1;
+    const si = r.following ? slides.findIndex((m) => m.id === r.following) : -1;
+    if (k >= 0) showStop(k, stops[k].media.findIndex((m) => m.id === r.following));
+    else if (si >= 0) {
+      s.mode = 'slides';
+      s.slide = si;
+      setShown({ media: slides[si], slide: true });
+      preload(slides[si + 1]);
+      armTimer(mediaDurationMs(slides[si], s.speed));
+      hud();
+    } else if (r.mode === 'media') {
+      s.showing = null;
+      s.next = nextStopIndex(stops, s.dist);
+      if (s.next >= stops.length && s.dist >= path.totalM - 1) endRide();
+      else flyOn();
+    } else {
+      s.mode = 'end';
+      setShown(null);
+      setEnded(true);
+    }
+    if (wasPlaying.current) play();
+  }, [stops, slides, path.totalM, showStop, endRide, flyOn, preload, armTimer, hud, play]);
+
   // Keyboard (Escape is the native dialog's).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (confirmOpen.current) return;
       const inControl = e.target instanceof HTMLElement && /^(BUTTON|INPUT|TEXTAREA|SELECT|A)$/.test(e.target.tagName);
       if (e.key === ' ' && !inControl) {
         e.preventDefault();
@@ -503,8 +587,29 @@ function Stage({ recap, track, photoBase, videoBase }: { recap: Recap; track: Tr
               {muted ? <VolumeX aria-hidden className="size-5" /> : <Volume2 aria-hidden className="size-5" />}
             </button>
           )}
+          {cur && deletable.has(cur.id) && (
+            <button type="button" className={barBtn} aria-label={cur.type === 'video' ? tp('videoDelete') : tp('delete')} onClick={() => askDelete(cur)} data-testid="summary-delete">
+              <Trash2 aria-hidden className="size-5" />
+            </button>
+          )}
         </div>
       </div>
+
+      {confirm && (
+        <div className="absolute inset-0 z-40 flex items-end justify-center bg-scrim p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:items-center">
+          <div role="alertdialog" aria-modal="true" aria-labelledby="summary-delete-title" className="flex w-full max-w-sm flex-col gap-4 rounded-2xl bg-card p-4 text-card-foreground shadow-sheet" data-testid="summary-delete-confirm">
+            <h2 id="summary-delete-title" className="text-heading">{confirm.type === 'video' ? tp('videoDelete') : tp('delete')}</h2>
+            <p className="text-body text-pretty">{confirm.type === 'video' ? tp('videoDeleteConfirm') : tp('deleteConfirm')}</p>
+            {deleteFailed && <p role="alert" className="text-body text-destructive">{tp('errors.generic')}</p>}
+            <div className="flex flex-col gap-2">
+              <Button size="lg" variant="destructive" disabled={deleting} onClick={() => void doDelete(confirm)} data-testid="summary-delete-ok">
+                {confirm.type === 'video' ? tp('videoDelete') : tp('delete')}
+              </Button>
+              <Button ref={cancelRef} size="lg" variant="outline" disabled={deleting} onClick={cancelDelete}>{tc('cancel')}</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

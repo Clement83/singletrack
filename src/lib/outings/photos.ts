@@ -38,7 +38,8 @@ export function mediaDir(): string {
 }
 const fileOf = (dir: string, outingId: string, id: string, thumb: boolean) => join(dir, outingId, `${id}${thumb ? '.thumb' : ''}.jpg`);
 
-const isMine = (r: { invitationId: string | null; authorUserId: string | null }, a: Actor) =>
+/** The actor uploaded this media (guest: same invitation; organiser: same account, not through an invitation). */
+export const isMine = (r: { invitationId: string | null; authorUserId: string | null }, a: Actor) =>
   a.kind === 'guest' ? r.invitationId === a.invitationId : r.invitationId === null && r.authorUserId === a.userId;
 
 /**

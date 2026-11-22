@@ -4,6 +4,7 @@ import { invitation, outing, outingPhoto, outingRide, outingVideo, type OutingRo
 import { bboxOf, lineLength, type Position, type TrackGeometry } from '@/lib/geo';
 import type { Actor } from './comments';
 import { placePhoto, type Placement } from './photo-placement';
+import { isMine } from './photos';
 
 const NOT_PLACED: Placement = { method: 'none', distanceM: null, at: null, pos: null };
 
@@ -56,6 +57,8 @@ export type RecapMedia = {
   /** Clip length for a video (#1693), `null` for a photo. */
   durationMs: number | null;
   placement: Placement;
+  /** The viewer may delete it from the player (#1701): its author, or the organiser — same rule as the gallery. */
+  canDelete: boolean;
 };
 export type Recap = {
   /** `null` when nobody uploaded a ridden track. */
@@ -77,8 +80,7 @@ export type Recap = {
  * Data of the outing recap (#1692): reference track + photos and videos (#1693) placed on it. Rights are those of the photos:
  * the caller has resolved an `Actor` (organiser, or guest with a valid link) — otherwise the route answers 404 before this.
  */
-export function buildRecap(db: Db, o: OutingRow, _actor: Actor): Recap {
-  void _actor;
+export function buildRecap(db: Db, o: OutingRow, actor: Actor): Recap {
   const ref = referenceRide(db, o);
   const photos = db.select({ p: outingPhoto, name: invitation.name }).from(outingPhoto)
     .leftJoin(invitation, eq(invitation.id, outingPhoto.invitationId))
@@ -93,6 +95,7 @@ export function buildRecap(db: Db, o: OutingRow, _actor: Actor): Recap {
   const media: RecapMedia[] = rows.map(({ p, name, type, durationMs }, idx) => ({
     id: p.id, type, author: name ?? '', organizer: p.invitationId === null,
     width: p.width, height: p.height, takenAt: p.takenAt, durationMs,
+    canDelete: actor.kind === 'organizer' || isMine(p, actor),
     placement: ref ? placePhoto({ geometry: ref.geometry, times: ref.times }, { takenAt: p.takenAt, lat: p.lat, lon: p.lon }) : NOT_PLACED,
     _i: idx,
   })).sort((a, b) => {

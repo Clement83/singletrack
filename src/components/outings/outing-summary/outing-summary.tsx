@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 import { Clapperboard, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,10 @@ export function OutingSummary({ recapUrl, photoBase, videoBase }: Props) {
   const t = useTranslations('summary');
   const [open, setOpen] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
+  const router = useRouter();
+  // A media deleted from the player (#1701): the gallery behind is refreshed once the dialog is closed, not while
+  // it plays (a refresh during playback could re-render the page under the film).
+  const deleted = useRef(false);
   useEffect(() => {
     const d = dialog.current;
     if (!d) return;
@@ -38,12 +43,18 @@ export function OutingSummary({ recapUrl, photoBase, videoBase }: Props) {
       <dialog
         ref={dialog}
         aria-label={t('title')}
-        onClose={() => setOpen(false)}
+        onClose={() => {
+          setOpen(false);
+          if (deleted.current) {
+            deleted.current = false;
+            router.refresh();
+          }
+        }}
         className="m-0 size-full max-h-none max-w-none overflow-hidden bg-media-surface p-0 text-media-foreground backdrop:bg-scrim"
       >
         {open && (
           <div className="relative size-full" data-testid="summary-player">
-            <SummaryPlayer recapUrl={recapUrl} photoBase={photoBase} videoBase={videoBase} />
+            <SummaryPlayer recapUrl={recapUrl} photoBase={photoBase} videoBase={videoBase} onDeleted={() => { deleted.current = true; }} />
             <button
               type="button"
               onClick={() => setOpen(false)}
