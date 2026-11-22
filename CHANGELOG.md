@@ -7,6 +7,14 @@ Each release ticket writes the `## [X.Y.Z] - YYYY-MM-DD` section from the conven
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-22
+
+### Added
+- **Choose the speed of the exported summary video**: ×1, ×2, ×4 or ×6, with the resulting film length shown before creating it. Clips keep their real length so their sound stays right.
+
+### Fixed
+- **Sharper exported videos**: the bit rate now matches the picture size (about 20 Mb/s in 1080p instead of 6), removing the big moving blocks; long videos are written as they go instead of being held in memory.
+
 ## [0.6.0] - 2026-11-22
 
 ### Added
