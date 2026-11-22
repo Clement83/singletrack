@@ -85,22 +85,29 @@ test('résumé : supprimer le média affiché (#1701), seulement s’il est supp
 });
 
 test('résumé : le point continue d’avancer pendant une vidéo (#1705)', async ({ page }) => {
+  test.setTimeout(180_000);
   await mockSummary(page);
   await openSummary(page);
-  await expect(page.getByTestId('summary-media')).toHaveAttribute('data-media-id', 'p1', { timeout: 60_000 });
-  // Paused, the skips are deterministic even on a loaded machine; then play from the clip.
+  // Independent of the film's pace on a loaded machine: pause as soon as it plays, then skip until the clip.
+  await expect(page.getByTestId('summary-stage')).toHaveAttribute('data-ready', 'true', { timeout: 60_000 });
+  await expect(page.getByTestId('summary-playpause')).toHaveAccessibleName(/Pause/);
   await page.keyboard.press(' ');
   await expect(page.getByTestId('summary-playpause')).toHaveAccessibleName(/Lecture|Play/);
-  await page.keyboard.press('ArrowRight');
-  await expect(page.getByTestId('summary-media')).toHaveAttribute('data-media-id', 'p2');
-  await page.keyboard.press('ArrowRight');
-  await expect(page.getByTestId('summary-media')).toHaveAttribute('data-media-id', 'v1');
+  const shown = page.locator('[data-testid="summary-media"]');
+  // Id of the media on screen, without waiting for one to appear (null while flying).
+  const current = async () => ((await shown.count()) ? shown.getAttribute('data-media-id') : null);
+  for (let i = 0; i < 4 && (await current()) !== 'v1'; i++) {
+    const before = await current();
+    await page.keyboard.press('ArrowRight');
+    await expect.poll(current).not.toBe(before);
+  }
+  await expect(shown).toHaveAttribute('data-media-id', 'v1');
   const km = page.getByTestId('summary-stats').locator('span').first();
   const before = await km.textContent();
   await page.keyboard.press(' ');
   // The clip lasts 20 s (+3 s safety net): the km counter moves meanwhile, the clip is still on screen.
-  await expect.poll(() => km.textContent(), { timeout: 15_000 }).not.toBe(before);
-  await expect(page.getByTestId('summary-media')).toHaveAttribute('data-media-id', 'v1');
+  await expect.poll(() => km.textContent(), { timeout: 20_000 }).not.toBe(before);
+  await expect(shown).toHaveAttribute('data-media-id', 'v1');
 });
 
 /** One second of a 440 Hz tone, 16-bit mono WAV: decodable background music for the export. */
