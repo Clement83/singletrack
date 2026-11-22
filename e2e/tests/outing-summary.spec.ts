@@ -46,6 +46,9 @@ test('résumé : le film s’arrête sur la première photo, Échap ferme', asyn
   await mockSummary(page);
   await openSummary(page);
   await expect(page.getByTestId('summary-mark')).toHaveCount(3);
+  // Stop icons (#1704): p1 and p2 are photos, v1 a video.
+  await expect(page.locator('[data-testid="summary-stop"][data-kind="video"]')).toHaveCount(1);
+  await expect(page.locator('[data-testid="summary-stop"][data-kind="photo"]')).toHaveCount(2);
   // The point stops on the first media (a photo of the first stop) and shows it over the map.
   await expect(page.getByTestId('summary-media')).toHaveAttribute('data-media-id', 'p1', { timeout: 60_000 });
   // Pause then resume from the keyboard.

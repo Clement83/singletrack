@@ -36,6 +36,12 @@ export function buildStops(media: SummaryMedia[]): Stop[] {
   return stops;
 }
 
+/** Icon of a stop (#1704): photos only, videos only, or a mix. */
+export function stopKind(stop: Stop): 'photo' | 'video' | 'mixed' {
+  const v = stop.media.filter((m) => m.type === 'video').length;
+  return v === 0 ? 'photo' : v === stop.media.length ? 'video' : 'mixed';
+}
+
 /** Media that are not on the track: final slideshow, in the order they were given. */
 export function buildSlides(media: SummaryMedia[]): SummaryMedia[] {
   return media.filter((m) => m.distanceM == null);

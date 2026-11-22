@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   advanceFly, buildSlides, buildStops, cruiseMps, distanceOfProgress, mediaDurationMs, MIN_SLOW, nextStopIndex, prevStopIndex,
-  progressOf, speedFactor, type SummaryMedia,
+  progressOf, speedFactor, stopKind, type SummaryMedia,
 } from '@/lib/outings/summary-script';
 
 const m = (id: string, d: number | null, type: 'photo' | 'video' = 'photo'): SummaryMedia => ({ id, type, author: 'A', durationMs: type === 'video' ? 8000 : null, distanceM: d });
@@ -24,6 +24,15 @@ describe('ordonnancement des médias', () => {
     expect(prevStopIndex(stops, 2000, null)).toBe(0);
     expect(prevStopIndex(stops, 300, null)).toBe(-1);
     expect(prevStopIndex(stops, 3000, 1)).toBe(0);
+  });
+});
+
+describe('icône des arrêts (#1704)', () => {
+  it('photo, vidéo ou mélange', () => {
+    const m = (id: string, type: 'photo' | 'video') => ({ id, type, author: '', durationMs: null, distanceM: 0 });
+    expect(stopKind({ distanceM: 0, media: [m('a', 'photo'), m('b', 'photo')] })).toBe('photo');
+    expect(stopKind({ distanceM: 0, media: [m('a', 'video')] })).toBe('video');
+    expect(stopKind({ distanceM: 0, media: [m('a', 'photo'), m('b', 'video')] })).toBe('mixed');
   });
 });
 

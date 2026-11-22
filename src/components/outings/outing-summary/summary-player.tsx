@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { Pause, Play, RotateCcw, SkipBack, SkipForward, Trash2, Volume2, VolumeX } from 'lucide-react';
+import { Camera, Images, Pause, Play, RotateCcw, SkipBack, SkipForward, Trash2, Video, Volume2, VolumeX } from 'lucide-react';
 import { Marker, type MapRef } from 'react-map-gl/maplibre';
 import type { Marker as MaplibreMarker } from 'maplibre-gl';
 import BaseMap from '@/components/BaseMap';
@@ -19,13 +19,14 @@ import { formatDuration, formatElevation, formatKm } from '@/lib/format';
 import { timeAtDistance } from '@/lib/outings/photo-placement';
 import type { Recap } from '@/lib/outings/recap';
 import {
-  advanceFly, buildSlides, buildStops, distanceOfProgress, mediaDurationMs, nextStopIndex, prevStopIndex, progressOf, type SummaryMedia,
+  advanceFly, buildSlides, buildStops, distanceOfProgress, mediaDurationMs, nextStopIndex, prevStopIndex, progressOf, stopKind, type SummaryMedia,
 } from '@/lib/outings/summary-script';
 import { cn } from '@/lib/utils';
 
 type Props = { recapUrl: string; photoBase: string; videoBase: string; onDeleted?: () => void };
 type Shown = { media: SummaryMedia; slide: boolean };
 type Mode = 'fly' | 'media' | 'slides' | 'end';
+const STOP_ICON = { photo: Camera, video: Video, mixed: Images } as const;
 
 const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -509,7 +510,14 @@ function Stage({ recap, track, photoBase, videoBase, onDeleted }: { recap: Recap
             <SlopeRouteLayer id="route" data={data} colors={colors} arrows={false} />
             {stops.map((s) => {
               const p = positionAt(path, s.distanceM);
-              return <Marker key={s.distanceM} longitude={p[0]} latitude={p[1]}><span className="block size-3 rounded-full border-2 border-media-foreground bg-primary shadow" /></Marker>;
+              const Icon = STOP_ICON[stopKind(s)];
+              return (
+                <Marker key={s.distanceM} longitude={p[0]} latitude={p[1]}>
+                  <span className="flex size-7 items-center justify-center rounded-full border-2 border-media-foreground bg-primary text-primary-foreground shadow" data-testid="summary-stop" data-kind={stopKind(s)}>
+                    <Icon aria-hidden className="size-3.5" />
+                  </span>
+                </Marker>
+              );
             })}
             <Marker ref={markerRef} longitude={startPos[0]} latitude={startPos[1]} style={{ pointerEvents: 'none', zIndex: 5 }}>
               <span className="block size-5 rounded-full border-[3px] border-media-foreground bg-primary shadow-lg" role="img" aria-label={t('point')} />
@@ -554,9 +562,14 @@ function Stage({ recap, track, photoBase, videoBase, onDeleted }: { recap: Recap
       <div className="absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-media-surface/80 to-transparent px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-8" data-testid="summary-controls">
         <div className="relative mb-1 h-10">
           {spark && <svg aria-hidden viewBox="0 0 100 20" preserveAspectRatio="none" className="absolute inset-x-0 bottom-3 h-6 w-full text-media-foreground opacity-50"><path d={spark} fill="currentColor" /></svg>}
-          {stops.map((s) => (
-            <span key={s.distanceM} aria-hidden className="absolute bottom-1 size-2 -translate-x-1/2 rounded-full bg-primary ring-2 ring-media-foreground" style={{ left: `${progressOf(s.distanceM, path.totalM, null, slides.length) * 100}%` }} data-testid="summary-mark" />
-          ))}
+          {stops.map((s) => {
+            const Icon = STOP_ICON[stopKind(s)];
+            return (
+              <span key={s.distanceM} aria-hidden className="absolute bottom-3.5 flex size-5 -translate-x-1/2 items-center justify-center rounded-full bg-primary text-primary-foreground ring-2 ring-media-foreground" style={{ left: `${progressOf(s.distanceM, path.totalM, null, slides.length) * 100}%` }} data-testid="summary-mark">
+                <Icon className="size-3" />
+              </span>
+            );
+          })}
           <input
             ref={rangeRef}
             type="range"
