@@ -1172,6 +1172,7 @@
     "open": "Photo {n} of {total}, by {author}",
     "mapLabel": "Photo map",
     "onMap": "View photo",
+    "videoOnMap": "Watch video",
     "viewer": "Full-size photo",
     "counter": "{n} / {total}",
     "alt": "Outing photo, by {author}",

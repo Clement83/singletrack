@@ -1,24 +1,25 @@
 'use client';
 
 import { Layer, Marker, Source } from 'react-map-gl/maplibre';
-import { Camera } from 'lucide-react';
+import { Camera, Video } from 'lucide-react';
 import { TrackTip, useTrackTip } from '@/components/map/track-tip';
 import BaseMap from '@/components/BaseMap';
 import { useMapColors } from '@/components/tracks/use-map-colors';
 import type { TrackGeometry } from '@/lib/geo/types';
+import type { MediaPoint } from '@/lib/outings/media-points';
 
 export type RideMapProps = {
   planned: TrackGeometry;
   ride: TrackGeometry | null;
   bbox: [number, number, number, number];
-  /** Located photos (#1413): one chip ≥ 44 px per photo, a tap opens it. */
-  photos?: { id: string; lat: number; lon: number }[];
-  photoLabel?: string;
-  onPhoto?: (id: string) => void;
+  /** Located photos (#1413) and videos (#1702): one chip ≥ 44 px each (camera / video icon), a tap opens it. */
+  media?: MediaPoint[];
+  labels?: { photo: string; video: string };
+  onMedia?: (m: MediaPoint) => void;
 };
 
 /** Planned (dashed, discreet) under the actual ride (solid line): the gap shows immediately. */
-export default function RideMapInner({ planned, ride, bbox, photos, photoLabel, onPhoto }: RideMapProps) {
+export default function RideMapInner({ planned, ride, bbox, media, labels, onMedia }: RideMapProps) {
   const colors = useMapColors();
   // "km from the start" tooltip (#1535), on the planned route as on the actual one.
   const { tip, onMove, onTap, clear } = useTrackTip((e) => {
@@ -40,11 +41,11 @@ export default function RideMapInner({ planned, ride, bbox, photos, photoLabel, 
           <Layer id="ride-real-line" type="line" layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': colors.primary, 'line-width': 4 }} />
         </Source>
       )}
-      {photos?.map((p) => (
+      {media?.map((p) => (
         <Marker key={p.id} longitude={p.lon} latitude={p.lat} anchor="center">
-          <button type="button" aria-label={photoLabel} onClick={() => onPhoto?.(p.id)} className="flex size-touch items-center justify-center">
+          <button type="button" aria-label={p.type === 'video' ? labels?.video : labels?.photo} onClick={() => onMedia?.(p)} className="flex size-touch items-center justify-center" data-testid={`ride-map-${p.type}`}>
             <span className="flex size-8 items-center justify-center rounded-full border-2 border-card bg-primary text-primary-foreground shadow-md">
-              <Camera aria-hidden className="size-4" />
+              {p.type === 'video' ? <Video aria-hidden className="size-4" /> : <Camera aria-hidden className="size-4" />}
             </span>
           </button>
         </Marker>

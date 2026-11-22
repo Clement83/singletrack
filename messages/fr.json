@@ -1172,6 +1172,7 @@
     "open": "Photo {n} sur {total}, de {author}",
     "mapLabel": "Carte des photos",
     "onMap": "Voir la photo",
+    "videoOnMap": "Voir la vidéo",
     "viewer": "Photo en grand",
     "counter": "{n} / {total}",
     "alt": "Photo de la sortie, de {author}",

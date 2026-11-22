@@ -12,6 +12,7 @@ import { useErrorText } from '@/lib/use-error-text';
 import type { PhotoView } from '@/lib/outings/photos';
 import type { VideoView } from '@/lib/outings/videos';
 import type { TrackGeometry } from '@/lib/geo/types';
+import { mediaPoints, widenBbox } from '@/lib/outings/media-points';
 import { RideMap } from './ride-map';
 
 type Planned = { geometry: TrackGeometry; bbox: [number, number, number, number] };
@@ -40,7 +41,7 @@ export function PhotoSection({ base, photos, planned, canUpload, videoBase, vide
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState<{ done: number; total: number } | null>(null);
   const [open, setOpen] = useState<number | null>(null);
-  const located = photos.filter((p) => p.pos);
+  const located = mediaPoints(photos, videos);
   const url = (id: string, thumb = false) => `${base}/${id}${thumb ? '?size=thumb' : ''}`;
   const videoUrl = (id: string, thumb = false) => `${videoBase}/${id}${thumb ? '?size=thumb' : ''}`;
   const pending = videos.some((v) => v.status === 'pending');
@@ -156,10 +157,10 @@ export function PhotoSection({ base, photos, planned, canUpload, videoBase, vide
           label={t('mapLabel')}
           planned={planned.geometry}
           ride={null}
-          bbox={located.reduce((b, p) => [Math.min(b[0], p.pos!.lon), Math.min(b[1], p.pos!.lat), Math.max(b[2], p.pos!.lon), Math.max(b[3], p.pos!.lat)] as [number, number, number, number], [...planned.bbox] as [number, number, number, number])}
-          photos={located.map((p) => ({ id: p.id, lat: p.pos!.lat, lon: p.pos!.lon }))}
-          photoLabel={t('onMap')}
-          onPhoto={(id) => setOpen(photos.findIndex((p) => p.id === id))}
+          bbox={widenBbox(planned.bbox, located)}
+          media={located}
+          labels={{ photo: t('onMap'), video: t('videoOnMap') }}
+          onMedia={(m) => (m.type === 'video' ? setOpenVideo(m.id) : setOpen(photos.findIndex((p) => p.id === m.id)))}
         />
       )}
 
