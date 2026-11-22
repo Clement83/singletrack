@@ -1396,7 +1396,7 @@
       "title": "Exporter la vidéo",
       "format": "Format",
       "speed": "Vitesse",
-      "duration": "Durée : {m} min {s}",
+      "duration": "Durée : {m} min {s}",
       "landscape": "Paysage",
       "portrait": "Vertical",
       "music": "Musique",
