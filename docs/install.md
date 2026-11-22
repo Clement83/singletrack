@@ -142,6 +142,7 @@ All the state lives in `./data/` (except `data/brouter/segments`, which can be d
 
 - `data/singletrack.db` (+ `-wal` / `-shm`): tracks, outings, accounts;
 - `data/media/`: outing photos and videos (or `MEDIA_DIR`);
+- `data/music/`: optional background music for the outing summary video export (`.mp3`, `.ogg`, `.m4a`, `.wav`, or `SUMMARY_MUSIC_DIR`). Put only tracks whose licence allows use in a video; they are never part of the repository. Empty or missing folder: exports keep only the clips' sound;
 - `.env`: in particular `INVITE_LINK_KEY` and `BETTER_AUTH_SECRET`.
 
 Consistent hot backup of the database:

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import { openDb } from '@/db';
 import { friendship, outing, track, user } from '@/db/schema';
 import { eq } from 'drizzle-orm';
@@ -50,6 +51,8 @@ import * as guestVideos from '@/app/api/i/[token]/videos/route';
 import * as outingRecap from '@/app/api/outings/[slug]/recap/route';
 import * as outingRideReference from '@/app/api/outings/[slug]/ride/reference/route';
 import * as guestRecap from '@/app/api/i/[token]/recap/route';
+import * as outingMusic from '@/app/api/outings/[slug]/music/[n]/route';
+import * as guestMusic from '@/app/api/i/[token]/music/[n]/route';
 import * as outingComments from '@/app/api/outings/[slug]/comments/route';
 import * as health from '@/app/api/health/route';
 import * as locale from '@/app/api/locale/route';
@@ -343,6 +346,29 @@ describe('résumé de sortie : trace de référence et droits (#1692)', () => {
     const ok = await outingRecap.GET(new Request('http://x'), ctx(outingSlug));
     expect(ok.status).toBe(200);
     expect(await ok.json()).toMatchObject({ track: null, media: [], rides: [] });
+  });
+  it('musique (#1706) : liste dans le résumé, fichier mêmes droits que le résumé', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'music-'));
+    fs.writeFileSync(path.join(dir, 'piste-123456.mp3'), 'ID3');
+    process.env.SUMMARY_MUSIC_DIR = dir;
+    try {
+      const mctx = (slug: string, n: string) => ({ params: Promise.resolve({ slug, token: slug, n }) });
+      st.uid = 'a';
+      expect((await (await outingRecap.GET(new Request('http://x'), ctx(outingSlug))).json()).music).toEqual([{ id: 0, title: 'piste' }]);
+      const ok = await outingMusic.GET(new Request('http://x'), mctx(outingSlug, '0'));
+      expect(ok.status).toBe(200);
+      expect(ok.headers.get('content-type')).toBe('audio/mpeg');
+      expect(await ok.text()).toBe('ID3');
+      expect((await outingMusic.GET(new Request('http://x'), mctx(outingSlug, '1'))).status).toBe(404);
+      st.uid = 'b';
+      expect((await outingMusic.GET(new Request('http://x'), mctx(outingSlug, '0'))).status).toBe(404);
+      st.uid = null;
+      expect((await outingMusic.GET(new Request('http://x'), mctx(outingSlug, '0'))).status).toBe(401);
+      expect((await guestMusic.GET(new Request('http://x'), mctx('inconnu', '0'))).status).toBe(404);
+    } finally {
+      delete process.env.SUMMARY_MUSIC_DIR;
+      st.uid = 'a';
+    }
   });
   it('trace de référence : 401 sans session, 404 autre compte, 422 corps invalide, 404 trace inconnue, 200 organisateur', async () => {
     st.uid = null;

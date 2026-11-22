@@ -2,6 +2,7 @@ import { getDb } from '@/db';
 import type { OutingRow } from '@/db/schema';
 import type { Actor } from './comments';
 import { clientIp, rateLimit } from './rate-limit';
+import { listMusic, musicFile, musicStream } from './music';
 import { buildRecap, listRideChoices, setReferenceRide } from './recap';
 
 type Ctx = { outing: OutingRow; actor: Actor } | undefined;
@@ -18,10 +19,24 @@ export function recapHandlers(resolve: (req: Request, p: Record<string, string>)
       if (!ctx) return NOT_FOUND();
       const { db } = getDb();
       return Response.json(
-        { ...buildRecap(db, ctx.outing, ctx.actor), ...(ctx.actor.kind === 'organizer' ? { rides: listRideChoices(db, ctx.outing) } : {}) },
+        { ...buildRecap(db, ctx.outing, ctx.actor), music: listMusic(), ...(ctx.actor.kind === 'organizer' ? { rides: listRideChoices(db, ctx.outing) } : {}) },
         { headers: { 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex' } },
       );
     },
+  };
+}
+
+/** GET of background music track `<n>` for the summary export (#1706): same rights as the recap. */
+export function musicHandler(resolve: (req: Request, p: Record<string, string>) => Promise<Ctx>) {
+  return async (req: Request, { params }: { params: Params }) => {
+    const p = await params;
+    if (!rateLimit(`musicip:${clientIp(req)}`, 60, 60_000)) return Response.json({ error: 'tooManyRequests' }, { status: 429 });
+    if (!(await resolve(req, p))) return NOT_FOUND();
+    const f = musicFile(Number(p.n));
+    if (!f) return NOT_FOUND();
+    return new Response(musicStream(f.path), {
+      headers: { 'Content-Type': f.type, 'Content-Length': String(f.size), 'Cache-Control': 'private, max-age=86400', 'X-Robots-Tag': 'noindex' },
+    });
   };
 }
 
