@@ -1,3 +1,4 @@
+import net from 'node:net';
 import { expect, test, type Page } from '@playwright/test';
 
 // Outing summary player (#1694), desktop: launch, stop on the first media, Escape. Mocked recap, photos and tiles.
@@ -22,6 +23,7 @@ async function mockSummary(page: Page) {
         times: coords.map((_, i) => 1_700_000_000_000 + i * 600_000), profile: coords.map((p, i) => ({ km: i * 0.57, ele: p[2] })),
       },
       media: [m('p1', 'photo', 150, true), m('p2', 'photo', 900), m('v1', 'video', 1200), m('p3', 'photo', null)],
+      music: [{ id: 0, title: 'Piste' }],
     },
   }));
   const media = (r: Parameters<Parameters<Page['route']>[1]>[0]) => {
@@ -33,11 +35,12 @@ async function mockSummary(page: Page) {
   };
   await page.route('**/api/styleguide/photos/**', media);
   await page.route('**/api/styleguide/videos/**', media);
+  await page.route('**/api/styleguide/music/**', (r) => r.fulfill({ status: 200, contentType: 'audio/wav', body: sineWav() }));
   return deleted;
 }
 
-async function openSummary(page: Page) {
-  await page.goto('/styleguide');
+async function openSummary(page: Page, origin = '') {
+  await page.goto(`${origin}/styleguide`);
   await page.getByTestId('summary-open').click();
   await expect(page.getByTestId('summary-stage')).toBeVisible({ timeout: 30_000 });
 }
@@ -93,4 +96,49 @@ test('résumé : le point continue d’avancer pendant une vidéo (#1705)', asyn
   // The clip lasts 4 s (+3 s safety net): the km counter moves meanwhile, the clip is still on screen.
   await expect.poll(() => km.textContent(), { timeout: 6_000 }).not.toBe(before);
   await expect(page.getByTestId('summary-media')).toHaveAttribute('data-media-id', 'v1');
+});
+
+/** One second of a 440 Hz tone, 16-bit mono WAV: decodable background music for the export. */
+function sineWav(): Buffer {
+  const rate = 8000;
+  const n = rate;
+  const b = Buffer.alloc(44 + n * 2);
+  b.write('RIFF', 0); b.writeUInt32LE(36 + n * 2, 4); b.write('WAVE', 8); b.write('fmt ', 12);
+  b.writeUInt32LE(16, 16); b.writeUInt16LE(1, 20); b.writeUInt16LE(1, 22); b.writeUInt32LE(rate, 24); b.writeUInt32LE(rate * 2, 28);
+  b.writeUInt16LE(2, 32); b.writeUInt16LE(16, 34); b.write('data', 36); b.writeUInt32LE(n * 2, 40);
+  for (let i = 0; i < n; i++) b.writeInt16LE(Math.round(Math.sin((2 * Math.PI * 440 * i) / rate) * 8000), 44 + i * 2);
+  return b;
+}
+
+test('résumé : export MP4 (#1707), rendu court, fichier téléchargé', async ({ page }) => {
+  test.setTimeout(240_000);
+  // WebCodecs needs a secure context: the page goes through a localhost relay to the e2e app.
+  const target = new URL(test.info().project.use.baseURL!);
+  const relay = net.createServer((c) => {
+    const u = net.connect(Number(target.port || 80), target.hostname);
+    c.pipe(u); u.pipe(c);
+    u.on('error', () => c.destroy()); c.on('error', () => u.destroy());
+  });
+  await new Promise<void>((r) => relay.listen(0, '127.0.0.1', () => r()));
+  const origin = `http://localhost:${(relay.address() as net.AddressInfo).port}`;
+  try {
+    await mockSummary(page);
+    await page.addInitScript(() => { (window as { __singletrackExport?: object }).__singletrackExport = { maxFrames: 12, scale: 0.25 }; });
+    await openSummary(page, origin);
+    await page.getByTestId('summary-export-open').click();
+    await expect(page.getByTestId('summary-export')).toBeVisible();
+    await expect(page.getByTestId('summary-playpause')).toHaveAccessibleName(/Lecture|Play/);
+    await page.getByTestId('summary-export-portrait').click();
+    await page.getByTestId('summary-export-run').click();
+    const link = page.getByTestId('summary-export-download');
+    await expect(link).toBeVisible({ timeout: 120_000 });
+    const download = await Promise.all([page.waitForEvent('download'), link.click()]).then(([d]) => d);
+    expect(download.suggestedFilename()).toMatch(/^singletrack-\d{4}-\d{2}-\d{2}\.mp4$/);
+    const buf = await (await download.createReadStream()).toArray().then((c) => Buffer.concat(c));
+    expect(buf.length).toBeGreaterThan(1000);
+    expect(buf.subarray(4, 8).toString('ascii')).toBe('ftyp');
+    await download.saveAs(test.info().outputPath('export.mp4'));
+  } finally {
+    relay.close();
+  }
 });

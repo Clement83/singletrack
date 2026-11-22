@@ -1390,7 +1390,26 @@
     "progress": "Progress",
     "replay": "Replay",
     "by": "by {name}",
-    "point": "Position on the ride"
+    "point": "Position on the ride",
+    "export": {
+      "open": "Export video",
+      "title": "Export video",
+      "format": "Format",
+      "landscape": "Landscape",
+      "portrait": "Portrait",
+      "music": "Music",
+      "musicRandom": "Random",
+      "musicNone": "No music",
+      "create": "Create video",
+      "progress": "Creating video… {pct}%",
+      "stop": "Stop",
+      "download": "Download",
+      "share": "Share",
+      "close": "Close",
+      "error": "The video could not be created.",
+      "unsupported": "This browser cannot create videos.",
+      "retry": "Try again"
+    }
   },
   "outingView": {
     "menu": "Outing menu",

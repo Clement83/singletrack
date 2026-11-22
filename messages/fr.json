@@ -1390,7 +1390,26 @@
     "progress": "Progression",
     "replay": "Revoir",
     "by": "par {name}",
-    "point": "Position sur la balade"
+    "point": "Position sur la balade",
+    "export": {
+      "open": "Exporter la vidéo",
+      "title": "Exporter la vidéo",
+      "format": "Format",
+      "landscape": "Paysage",
+      "portrait": "Vertical",
+      "music": "Musique",
+      "musicRandom": "Au hasard",
+      "musicNone": "Sans musique",
+      "create": "Créer la vidéo",
+      "progress": "Création de la vidéo… {pct} %",
+      "stop": "Arrêter",
+      "download": "Télécharger",
+      "share": "Partager",
+      "close": "Fermer",
+      "error": "La vidéo n’a pas pu être créée.",
+      "unsupported": "Ce navigateur ne sait pas créer de vidéo.",
+      "retry": "Réessayer"
+    }
   },
   "outingView": {
     "menu": "Menu de la sortie",

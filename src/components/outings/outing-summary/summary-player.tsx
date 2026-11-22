@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { Camera, Images, Pause, Play, RotateCcw, SkipBack, SkipForward, Trash2, Video, Volume2, VolumeX } from 'lucide-react';
+import { Camera, Download, Images, Pause, Play, RotateCcw, SkipBack, SkipForward, Trash2, Video, Volume2, VolumeX } from 'lucide-react';
 import { Marker, type MapRef } from 'react-map-gl/maplibre';
 import type { Marker as MaplibreMarker } from 'maplibre-gl';
 import BaseMap from '@/components/BaseMap';
@@ -18,6 +18,10 @@ import { gradeAt } from '@/lib/elevation';
 import { formatDuration, formatElevation, formatKm } from '@/lib/format';
 import { timeAtDistance } from '@/lib/outings/photo-placement';
 import type { Recap } from '@/lib/outings/recap';
+import type { MusicTrack } from '@/lib/outings/music';
+import { buildFilm } from '@/lib/outings/summary-film';
+import { canExport } from './export-film';
+import { SummaryExport } from './summary-export';
 import {
   advanceFly, buildSlides, buildStops, distanceOfProgress, mediaDurationMs, nextStopIndex, prevStopIndex, progressOf, stopKind, type SummaryMedia,
 } from '@/lib/outings/summary-script';
@@ -37,24 +41,26 @@ function lightDevice(): boolean {
 
 export default function SummaryPlayer({ recapUrl, photoBase, videoBase, onDeleted }: Props) {
   const t = useTranslations('summary');
-  const [recap, setRecap] = useState<Recap | null>(null);
+  const [recap, setRecap] = useState<RecapData | null>(null);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
     const ctl = new AbortController();
     fetch(recapUrl, { signal: ctl.signal })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((d: Recap) => { if (d.track) setRecap(d); else setFailed(true); })
+      .then((d: RecapData) => { if (d.track) setRecap(d); else setFailed(true); })
       .catch((e) => { if (e?.name !== 'AbortError') setFailed(true); });
     return () => ctl.abort();
   }, [recapUrl]);
   if (failed) return <p role="alert" className="flex size-full items-center justify-center p-6 text-center">{t('error')}</p>;
   if (!recap || !recap.track) return <div className="flex size-full items-center justify-center text-sm opacity-80">{t('loading')}</div>;
-  return <Stage recap={recap} track={recap.track} photoBase={photoBase} videoBase={videoBase} onDeleted={onDeleted} />;
+  return <Stage recap={recap} track={recap.track} photoBase={photoBase} videoBase={videoBase} musicBase={recapUrl.replace(/\/recap$/, '/music')} onDeleted={onDeleted} />;
 }
 
 type TrackData = NonNullable<Recap['track']>;
+/** Recap response: + the instance's background music (#1706). */
+type RecapData = Recap & { music?: MusicTrack[] };
 
-function Stage({ recap, track, photoBase, videoBase, onDeleted }: { recap: Recap; track: TrackData; photoBase: string; videoBase: string; onDeleted?: () => void }) {
+function Stage({ recap, track, photoBase, videoBase, musicBase, onDeleted }: { recap: RecapData; track: TrackData; photoBase: string; videoBase: string; musicBase: string; onDeleted?: () => void }) {
   const t = useTranslations('summary');
   const locale = useLocale() as 'fr' | 'en';
   const colors = useMapColors();
@@ -98,6 +104,9 @@ function Stage({ recap, track, photoBase, videoBase, onDeleted }: { recap: Recap
     moving: false, held: null as number | null,
   });
   useEffect(() => { st.current.speed = speed; }, [speed]);
+  // Panels over the film (delete #1701, export #1707): keys and auto-start stand back; resume afterwards if it was playing.
+  const confirmOpen = useRef(false);
+  const wasPlaying = useRef(false);
 
   const url = useCallback((m: SummaryMedia, thumb = false) => `${m.type === 'video' ? videoBase : photoBase}/${m.id}${thumb ? '?size=thumb' : ''}`, [photoBase, videoBase]);
   const preloaded = useRef<HTMLVideoElement | null>(null);
@@ -386,7 +395,9 @@ function Stage({ recap, track, photoBase, videoBase, onDeleted }: { recap: Recap
       setReady(true);
       place(true);
       hud();
-      play();
+      // A panel opened before the map was ready (export, delete): the film waits for it to close.
+      if (confirmOpen.current) wasPlaying.current = true;
+      else play();
     };
     const begin = (map: NonNullable<ReturnType<MapRef['getMap']>>) => {
       try { if (!light) map.setTerrain(TERRAIN); } catch { /* flat map: the film still plays */ }
@@ -424,16 +435,40 @@ function Stage({ recap, track, photoBase, videoBase, onDeleted }: { recap: Recap
   const tp = useTranslations('photos');
   const tc = useTranslations('common');
   const [confirm, setConfirm] = useState<SummaryMedia | null>(null);
+  // MP4 export (#1707): the live film pauses while the panel is open.
+  const [exporting, setExporting] = useState(false);
+  const exportable = useMemo(() => canExport(), []);
+  const openExport = useCallback(() => {
+    wasPlaying.current = st.current.playing;
+    pause();
+    setExporting(true);
+  }, [pause]);
+  const closeExport = useCallback(() => {
+    setExporting(false);
+    stageRef.current?.focus({ preventScroll: true });
+  }, []);
+  const exportInput = useCallback(() => ({
+    film: buildFilm({ path, stops, slides, profileKm: track.profile?.map((p) => p.km) ?? null, grades, reduced: reduced() }),
+    path,
+    geometry: track.geometry,
+    stops,
+    colors: colors!,
+    url,
+    stats: (d: number) => `${formatKm(d / 1000, locale)} / ${formatKm(track.distanceM / 1000, locale)}${track.gainM != null ? ` · ${formatElevation(track.gainM, locale)}` : ''}`,
+    caption: (m: SummaryMedia) => { const a = authors.get(m.id); return a ? t('by', { name: a }) : ''; },
+  }), [path, stops, slides, track, grades, colors, url, locale, authors, t]);
+  const fileName = useMemo(() => {
+    const day = track.times?.[0] != null ? new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Paris' }).format(track.times[0]) : 'resume';
+    return `singletrack-${day}.mp4`;
+  }, [track.times]);
   const [deleting, setDeleting] = useState(false);
   const [deleteFailed, setDeleteFailed] = useState(false);
-  const confirmOpen = useRef(false);
   const cancelRef = useRef<HTMLButtonElement>(null);
-  const wasPlaying = useRef(false);
   const resume = useRef<{ following: string | null; mode: Mode } | null>(null);
   useEffect(() => {
-    confirmOpen.current = confirm != null;
+    confirmOpen.current = confirm != null || exporting;
     if (confirm) cancelRef.current?.focus({ preventScroll: true });
-  }, [confirm]);
+  }, [confirm, exporting]);
 
   const askDelete = useCallback((m: SummaryMedia) => {
     wasPlaying.current = st.current.playing;
@@ -642,6 +677,11 @@ function Stage({ recap, track, photoBase, videoBase, onDeleted }: { recap: Recap
               {muted ? <VolumeX aria-hidden className="size-5" /> : <Volume2 aria-hidden className="size-5" />}
             </button>
           )}
+          {exportable && colors && (
+            <button type="button" className={barBtn} aria-label={t('export.open')} onClick={openExport} data-testid="summary-export-open">
+              <Download aria-hidden className="size-5" />
+            </button>
+          )}
           {cur && deletable.has(cur.id) && (
             <button type="button" className={barBtn} aria-label={cur.type === 'video' ? tp('videoDelete') : tp('delete')} onClick={() => askDelete(cur)} data-testid="summary-delete">
               <Trash2 aria-hidden className="size-5" />
@@ -649,6 +689,8 @@ function Stage({ recap, track, photoBase, videoBase, onDeleted }: { recap: Recap
           )}
         </div>
       </div>
+
+      {exporting && <SummaryExport input={exportInput} music={recap.music ?? []} musicBase={musicBase} fileName={fileName} onClose={closeExport} />}
 
       {confirm && (
         <div className="absolute inset-0 z-40 flex items-end justify-center bg-scrim p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:items-center">

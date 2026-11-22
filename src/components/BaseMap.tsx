@@ -2,29 +2,12 @@
 
 import Map, { GeolocateControl, NavigationControl, type MapProps, type MapRef } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import type { StyleSpecification } from 'maplibre-gl';
 import { cn } from '@/lib/utils';
-import { DEM_SOURCE, DEM_SOURCE_ID } from '@/lib/map/terrain';
+import { BASE_STYLE, BASE_STYLE_WITH_DEM } from '@/lib/map/base-style';
 import { TerrainToggle } from '@/components/map/terrain-toggle';
 
-// OpenTopoMap topo basemap (free fallback). IGN Géoplateforme is still to be assessed (licence, quotas): see AGENTS.md.
-const style: StyleSpecification = {
-  version: 8,
-  sources: {
-    topo: {
-      type: 'raster',
-      tiles: ['https://a.tile.opentopomap.org/{z}/{x}/{y}.png'],
-      tileSize: 256,
-      maxzoom: 17,
-      attribution:
-        '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, SRTM | style © <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)',
-    },
-  },
-  layers: [{ id: 'topo', type: 'raster', source: 'topo' }],
-};
-
-/** Same basemap + elevation source (#1667): only loaded when 3D is on. */
-const styleWithDem: StyleSpecification = { ...style, sources: { ...style.sources, [DEM_SOURCE_ID]: DEM_SOURCE } };
+const style = BASE_STYLE;
+const styleWithDem = BASE_STYLE_WITH_DEM;
 
 type Props = {
   lat: number;
