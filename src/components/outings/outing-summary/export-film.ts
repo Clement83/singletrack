@@ -4,7 +4,7 @@
  * with `mp4-muxer`. Sound: instance background music (#1706) lowered under the clips + the clips' own sound.
  */
 import maplibregl from 'maplibre-gl';
-import { ArrayBufferTarget, Muxer } from 'mp4-muxer';
+import { Muxer, StreamTarget } from 'mp4-muxer';
 import { slopeColorsOf } from '@/components/map/slope-route-layer';
 import type { MapColors } from '@/components/tracks/use-map-colors';
 import { BASE_ZOOM, PITCH } from '@/components/map/flyover';
@@ -13,7 +13,7 @@ import { TERRAIN } from '@/lib/map/terrain';
 import { positionAt, type FlyPath } from '@/lib/geo/flyover';
 import { slopeFeatures, slopeMatchExpression } from '@/lib/geo/slope-features';
 import type { TrackGeometry } from '@/lib/geo/types';
-import { musicEnvelope, type Film, type FilmFrame } from '@/lib/outings/summary-film';
+import { musicEnvelope, videoBitrate, type Film, type FilmFrame } from '@/lib/outings/summary-film';
 import type { Stop, SummaryMedia } from '@/lib/outings/summary-script';
 
 export type ExportFormat = 'landscape' | 'portrait';
@@ -56,7 +56,9 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 async function pickVideo(w: number, h: number, fps: number) {
   for (const c of VIDEO_CODECS) {
-    const config: VideoEncoderConfig = { codec: c.codec, width: w, height: h, bitrate: 6_000_000, framerate: fps, latencyMode: 'quality' };
+    const config: VideoEncoderConfig = {
+      codec: c.codec, width: w, height: h, bitrate: videoBitrate(w, h, fps), bitrateMode: 'variable', framerate: fps, latencyMode: 'quality',
+    };
     if ((await VideoEncoder.isConfigSupported(config).catch(() => ({ supported: false }))).supported) return { ...c, config };
   }
   return null;
@@ -113,7 +115,7 @@ async function renderAudio(input: ExportInput, signal: AbortSignal): Promise<Aud
   return ctx.startRendering();
 }
 
-async function encodeAudio(buf: AudioBuffer, codec: NonNullable<Awaited<ReturnType<typeof pickAudio>>>, muxer: Muxer<ArrayBufferTarget>) {
+async function encodeAudio(buf: AudioBuffer, codec: NonNullable<Awaited<ReturnType<typeof pickAudio>>>, muxer: Muxer<StreamTarget>) {
   let failed: unknown = null;
   const enc = new AudioEncoder({ output: (chunk, meta) => muxer.addAudioChunk(chunk, meta), error: (e) => { failed = e; } });
   enc.configure(codec.config);
@@ -285,11 +287,21 @@ export async function exportFilm(input: ExportInput, { format, signal, onProgres
   const audio = await pickAudio();
   const frames: FilmFrame[] = hook?.maxFrames ? film.frames.slice(0, hook.maxFrames) : film.frames;
 
+  // Fragmented MP4 written as it goes (#1710): Blob parts instead of one growing buffer (a 20 Mb/s film of 5 min is ~750 MB).
+  const parts: BlobPart[] = [];
+  let written = 0;
+  let inOrder = true;
   const muxer = new Muxer({
-    target: new ArrayBufferTarget(),
+    target: new StreamTarget({
+      onData: (data, position) => {
+        if (position !== written) inOrder = false;
+        parts.push(data.slice());
+        written = Math.max(written, position + data.byteLength);
+      },
+    }),
     video: { codec: video.mux, width: w, height: h, frameRate: film.fps },
     audio: audio ? { codec: audio.mux, numberOfChannels: 2, sampleRate: SAMPLE_RATE } : undefined,
-    fastStart: 'in-memory',
+    fastStart: 'fragmented',
     firstTimestampBehavior: 'offset',
   });
 
@@ -432,7 +444,8 @@ export async function exportFilm(input: ExportInput, { format, signal, onProgres
     if (failed) throw failed;
     muxer.finalize();
     onProgress(1);
-    return new Blob([muxer.target.buffer], { type: 'video/mp4' });
+    if (!inOrder) throw new Error('mp4 written out of order');
+    return new Blob(parts, { type: 'video/mp4' });
   } finally {
     if (encoder.state !== 'closed') encoder.close();
     media.dispose();

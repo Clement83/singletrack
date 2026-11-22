@@ -98,6 +98,14 @@ export function buildFilm(input: FilmInput, fps = FILM_FPS): Film {
   return { fps, frames, clips, durationMs: (frames.length * 1000) / fps };
 }
 
+/**
+ * Target bit rate (#1710): ≈ 0.32 bit per pixel per frame, ~20 Mb/s in 1080p30. 6 Mb/s gave big moving blocks: the camera
+ * moves every frame over a detailed relief. Capped at 24 Mb/s (H.264 level 4.0 High allows 25).
+ */
+export function videoBitrate(w: number, h: number, fps: number): number {
+  return Math.min(24_000_000, Math.max(2_000_000, Math.round(w * h * fps * 0.32)));
+}
+
 export type GainPoint = { t: number; g: number };
 
 /**

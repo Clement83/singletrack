@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildFlyPath } from '@/lib/geo/flyover';
-import { buildFilm, filmMediaMs, FILM_FPS, INTRO_MS, musicEnvelope, OUTRO_MS } from '@/lib/outings/summary-film';
+import { buildFilm, filmMediaMs, FILM_FPS, INTRO_MS, musicEnvelope, OUTRO_MS, videoBitrate } from '@/lib/outings/summary-film';
 import { buildSlides, buildStops, cruiseMps, PHOTO_MS, type SummaryMedia } from '@/lib/outings/summary-script';
 
 // A straight 2 km line eastwards.
@@ -68,5 +68,15 @@ describe('volume de la musique', () => {
     const pts = musicEnvelope([{ startMs: 25_000, durMs: 5000 }], 30_000);
     expect(gainAt(pts, 27.5)).toBeCloseTo(0.2);
     expect(gainAt(pts, 30)).toBe(0);
+  });
+});
+
+describe('débit vidéo de l’export (#1710)', () => {
+  it('≈ 20 Mb/s en 1080p30, plafonné à 24 Mb/s, plancher 2 Mb/s', () => {
+    expect(videoBitrate(1920, 1080, 30)).toBeGreaterThanOrEqual(19_000_000);
+    expect(videoBitrate(1920, 1080, 30)).toBeLessThanOrEqual(24_000_000);
+    expect(videoBitrate(1080, 1920, 30)).toBe(videoBitrate(1920, 1080, 30));
+    expect(videoBitrate(3840, 2160, 60)).toBe(24_000_000);
+    expect(videoBitrate(270, 480, 30)).toBe(2_000_000);
   });
 });
