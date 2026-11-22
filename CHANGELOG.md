@@ -7,6 +7,16 @@ Each release ticket writes the `## [X.Y.Z] - YYYY-MM-DD` section from the conven
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-22
+
+### Added
+- **Export the outing summary as a video**: from the summary player, create an MP4 of the 3D flyover with the photos and clips, in landscape (1920×1080) or portrait (1080×1920), then download or share it. Rendered in the browser, nothing is sent to the server.
+- **Background music for the exported video**: each instance can provide its own free-to-use tracks in `data/music` (or `SUMMARY_MUSIC_DIR`); the music fades under the clips so their sound is heard.
+- **Photo / video icons on the summary stops**, on the map and on the progress bar.
+
+### Changed
+- **Livelier summary**: the ride between media is about 25 % faster, and the point keeps riding along the track while a clip plays (shown as an inset over the map).
+
 ## [0.5.0] - 2026-11-22
 
 ### Added
