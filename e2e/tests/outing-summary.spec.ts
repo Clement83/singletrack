@@ -13,7 +13,7 @@ async function mockSummary(page: Page) {
   const coords = [[x, y, 100], [x + 0.004, y + 0.002, 120], [x + 0.008, y, 110], [x + 0.012, y + 0.004, 150]];
   const placement = (d: number) => ({ method: 'time', distanceM: d, at: null, pos: null });
   const m = (id: string, type: 'photo' | 'video', d: number | null, canDelete = false) => ({
-    id, type, author: 'Alice', organizer: false, width: 1, height: 1, takenAt: null, durationMs: type === 'video' ? 4000 : null, canDelete,
+    id, type, author: 'Alice', organizer: false, width: 1, height: 1, takenAt: null, durationMs: type === 'video' ? 20_000 : null, canDelete,
     placement: d == null ? { method: 'none', distanceM: null, at: null, pos: null } : placement(d),
   });
   await page.route('**/api/styleguide/recap', (r) => r.fulfill({
@@ -88,13 +88,18 @@ test('résumé : le point continue d’avancer pendant une vidéo (#1705)', asyn
   await mockSummary(page);
   await openSummary(page);
   await expect(page.getByTestId('summary-media')).toHaveAttribute('data-media-id', 'p1', { timeout: 60_000 });
+  // Paused, the skips are deterministic even on a loaded machine; then play from the clip.
+  await page.keyboard.press(' ');
+  await expect(page.getByTestId('summary-playpause')).toHaveAccessibleName(/Lecture|Play/);
   await page.keyboard.press('ArrowRight');
+  await expect(page.getByTestId('summary-media')).toHaveAttribute('data-media-id', 'p2');
   await page.keyboard.press('ArrowRight');
   await expect(page.getByTestId('summary-media')).toHaveAttribute('data-media-id', 'v1');
   const km = page.getByTestId('summary-stats').locator('span').first();
   const before = await km.textContent();
-  // The clip lasts 4 s (+3 s safety net): the km counter moves meanwhile, the clip is still on screen.
-  await expect.poll(() => km.textContent(), { timeout: 6_000 }).not.toBe(before);
+  await page.keyboard.press(' ');
+  // The clip lasts 20 s (+3 s safety net): the km counter moves meanwhile, the clip is still on screen.
+  await expect.poll(() => km.textContent(), { timeout: 15_000 }).not.toBe(before);
   await expect(page.getByTestId('summary-media')).toHaveAttribute('data-media-id', 'v1');
 });
 
