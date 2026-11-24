@@ -239,6 +239,13 @@
       "when": 1795518068498,
       "tag": "0033_spicy_yellow_claw",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "6",
+      "when": 1795534391524,
+      "tag": "0034_amusing_junta",
+      "breakpoints": true
     }
   ]
 }

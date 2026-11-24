@@ -38,10 +38,10 @@ export function needsRebuild(current: string | null, next: string): boolean {
  * Atomic replacement: `build(tmp)` writes the new file, which then replaces `target` with a single `rename`.
  * A download already streaming keeps reading the old inode to the end; the temporary file is removed on failure.
  */
-export function replaceAtomically(target: string, build: (tmp: string) => void) {
+export async function replaceAtomically(target: string, build: (tmp: string) => void | Promise<void>) {
   const tmp = `${target}.part`;
   try {
-    build(tmp);
+    await build(tmp);
     fs.renameSync(tmp, target);
   } catch (e) {
     fs.rmSync(tmp, { force: true });
@@ -50,10 +50,10 @@ export function replaceAtomically(target: string, build: (tmp: string) => void) 
 }
 
 /** Rebuilds one region's pack through `build` and records the new version; unchanged when the source is not newer. */
-export function refreshRegion(db: Db, r: RegionRow, target: string, source: string, build: (tmp: string) => void): 'updated' | 'unchanged' {
+export async function refreshRegion(db: Db, r: RegionRow, target: string, source: string, build: (tmp: string) => void | Promise<void>): Promise<'updated' | 'unchanged'> {
   const version = sourceVersion(source);
   if (!needsRebuild(r.version, version)) return 'unchanged';
-  replaceAtomically(target, build);
+  await replaceAtomically(target, build);
   recordBuild(db, r.id, { pmtilesPath: target, sizeBytes: fs.statSync(target).size, version, segments: r.segments });
   return 'updated';
 }

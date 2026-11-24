@@ -776,6 +776,7 @@
     "offlineInvalid": "Invalid region.",
     "offlineExists": "This region already exists.",
     "offlineNotBuilt": "Build the pack first.",
+    "offlineBusy": "Already in progress.",
     "pageError": "Something went wrong",
     "retry": "Try again",
     "pageNotFound": "Page not found",

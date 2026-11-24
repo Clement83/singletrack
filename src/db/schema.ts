@@ -633,3 +633,25 @@ export const offlineUsage = sqliteTable(
   },
   (t) => [index('offline_usage_token_idx').on(t.tokenId, t.createdAt)],
 );
+
+/**
+ * Offline pack jobs (#1749): `/admin/offline` enqueues, the separate `offline-worker` service runs them one at a time.
+ * `kind` = `build` (one region, `region_id`) | `refresh` (every enabled region, `region_id` null);
+ * `status` = `queued` | `running` | `done` | `failed`; `step` = progress (`map`, `segments`); `error` = short code/message.
+ */
+export const offlineJob = sqliteTable(
+  'offline_job',
+  {
+    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    kind: text('kind').notNull(),
+    regionId: text('region_id'),
+    status: text('status').notNull().default('queued'),
+    step: text('step'),
+    error: text('error'),
+    createdBy: text('created_by').references(() => user.id, { onDelete: 'set null' }),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().$defaultFn(() => new Date()),
+    startedAt: integer('started_at', { mode: 'timestamp_ms' }),
+    finishedAt: integer('finished_at', { mode: 'timestamp_ms' }),
+  },
+  (t) => [index('offline_job_status_idx').on(t.status, t.createdAt)],
+);

@@ -64,6 +64,7 @@ describe('store', () => {
     expect(addRegion(db(), { catalog: 'atlantis' })).toEqual({ error: 'invalid' });
   });
   it('master switch needs env AND admin setting', () => {
+    vi.stubEnv('OFFLINE_PACKS_ENABLED', ''); // hermetic: the instance .env may enable packs
     expect(packsEnabled(db())).toBe(false);
     vi.stubEnv('OFFLINE_PACKS_ENABLED', 'true');
     expect(packsEnabled(db())).toBe(true);
@@ -101,11 +102,11 @@ describe('monthly refresh (#1740)', () => {
     const f = path.join(dir, 'x.pmtiles');
     fs.writeFileSync(f, 'old');
     const fd = fs.openSync(f, 'r'); // an in-flight download keeps the old inode
-    replaceAtomically(f, (tmp) => fs.writeFileSync(tmp, 'newer'));
+    await replaceAtomically(f, (tmp) => fs.writeFileSync(tmp, 'newer'));
     expect(fs.readFileSync(f, 'utf8')).toBe('newer');
     expect(fs.readFileSync(fd, 'utf8')).toBe('old');
     fs.closeSync(fd);
-    expect(() => replaceAtomically(f, (tmp) => { fs.writeFileSync(tmp, 'zz'); throw new Error('boom'); })).toThrow('boom');
+    await expect(replaceAtomically(f, (tmp) => { fs.writeFileSync(tmp, 'zz'); throw new Error('boom'); })).rejects.toThrow('boom');
     expect(fs.readFileSync(f, 'utf8')).toBe('newer');
     expect(fs.existsSync(`${f}.part`)).toBe(false);
 
@@ -114,9 +115,9 @@ describe('monthly refresh (#1740)', () => {
     recordBuild(db(), 'paca', { pmtilesPath: f, sizeBytes: 5, version: '20261001', segments: added.region.segments });
     const target = path.join(dir, 'paca.pmtiles');
     const r = getRegion(db(), 'paca')!;
-    expect(refreshRegion(db(), r, target, 'https://x/20261101.pmtiles', (tmp) => fs.writeFileSync(tmp, 'abcdefgh'))).toBe('updated');
+    expect(await refreshRegion(db(), r, target, 'https://x/20261101.pmtiles', (tmp) => fs.writeFileSync(tmp, 'abcdefgh'))).toBe('updated');
     expect(getRegion(db(), 'paca')).toMatchObject({ version: '20261101', sizeBytes: 8 });
-    expect(refreshRegion(db(), getRegion(db(), 'paca')!, target, 'https://x/20261101.pmtiles', () => { throw new Error('no'); })).toBe('unchanged');
+    expect(await refreshRegion(db(), getRegion(db(), 'paca')!, target, 'https://x/20261101.pmtiles', () => { throw new Error('no'); })).toBe('unchanged');
 
     expect(getLastRefresh(db())).toBeNull();
     saveLastRefresh(db(), { at: '2026-11-24T00:00:00Z', ok: true, regions: [], segments: [] });

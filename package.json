@@ -19,6 +19,7 @@
     "rides:dedupe": "tsx scripts/dedupe-rides.ts",
     "offline:build": "tsx scripts/offline-build.ts",
     "offline:refresh": "tsx scripts/offline-refresh.ts",
+    "offline:worker": "tsx scripts/offline-worker.ts",
     "sync:osm": "tsx scripts/sync-osm.ts",
     "sync:singles": "tsx scripts/sync-singles.ts",
     "sync:geotrek": "tsx scripts/sync-geotrek.ts",

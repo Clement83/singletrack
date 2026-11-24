@@ -111,6 +111,20 @@ services:
 
   # One-off tools (#1670: the production image has no sources or devDependencies): syncs, accounts, recomputations.
   #   docker compose -f docker-compose.yml run --rm tools npm run sync:osm -- 83
+  # Offline pack worker (#1749): runs the builds/refreshes queued from /admin/offline, one at a time (tools image: pmtiles CLI).
+  offline-worker:
+    image: ${SINGLETRACK_REGISTRY:-ghcr.io/clement83}/singletrack-tools:${SINGLETRACK_TAG:-latest}
+    command: ["node", "node_modules/.bin/tsx", "scripts/offline-worker.ts"]  # direct: npm run does not forward SIGTERM
+    restart: unless-stopped
+    user: "${APP_UID:-1000}:${APP_GID:-1000}"
+    network_mode: bridge
+    env_file: .env
+    environment:
+      DATABASE_URL: /app/data/singletrack.db
+      HOME: /tmp
+    volumes:
+      - ./data:/app/data
+
   tools:
     profiles: [tools]
     image: ${SINGLETRACK_REGISTRY:-ghcr.io/clement83}/singletrack-tools:${SINGLETRACK_TAG:-latest}

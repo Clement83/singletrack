@@ -776,6 +776,7 @@
     "offlineInvalid": "Région invalide.",
     "offlineExists": "Cette région existe déjà.",
     "offlineNotBuilt": "Construis d’abord le pack.",
+    "offlineBusy": "Déjà en cours.",
     "pageError": "Quelque chose a coincé",
     "retry": "Réessayer",
     "pageNotFound": "Page introuvable",
