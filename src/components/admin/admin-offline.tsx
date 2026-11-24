@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useLocale, useTranslations } from 'next-intl';
@@ -10,9 +10,14 @@ import { Field, Input } from '@/components/ui/field';
 import { useErrorText } from '@/lib/use-error-text';
 
 type Region = { id: string; name: string; bbox: number[]; enabled: boolean; sizeBytes: number | null; version: string | null; builtAt: string | null; segments: string[]; built: boolean };
+type JobState = { status: 'queued' | 'running' | 'done' | 'failed'; step: string | null };
 
-/** Offline packs admin (#1738): master switch, regions list (enable, delete), registration of a region to build. */
-export function AdminOffline({ lastRefresh, envEnabled, switchOn, freeBytes, regions, catalog, usage }: {
+/**
+ * Offline packs admin (#1738): master switch, regions list (enable, delete), registration of a region.
+ * Build / refresh buttons (#1750) enqueue jobs run by the `offline-worker` service; the page refreshes every 5 s while one is active.
+ */
+export function AdminOffline({ lastRefresh, envEnabled, switchOn, freeBytes, regions, catalog, usage, jobs, workerAlive }: {
+  jobs: { builds: Record<string, JobState>; refresh: JobState | null }; workerAlive: boolean;
   lastRefresh: { at: string; ok: boolean; regions: { status: string }[]; segments: { status: string }[] } | null;
   usage: { userId: string; name: string; email: string; bytes: number; requests: number; last: string | null }[];
   envEnabled: boolean; switchOn: boolean; freeBytes: number | null; regions: Region[]; catalog: { id: string; name: string }[];
@@ -41,12 +46,23 @@ export function AdminOffline({ lastRefresh, envEnabled, switchOn, freeBytes, reg
     } catch { toast.error(errText('unknown')); return false; } finally { setBusy(false); }
   }
 
+  const active = (j: JobState | null | undefined) => j?.status === 'queued' || j?.status === 'running';
+  const anyActive = active(jobs.refresh) || Object.values(jobs.builds).some(active);
+  useEffect(() => {
+    if (!anyActive) return;
+    const id = setInterval(() => router.refresh(), 5000);
+    return () => clearInterval(id);
+  }, [anyActive, router]);
+  const jobText = (j: JobState | null | undefined) =>
+    !j ? null : j.status === 'queued' ? t('jobQueued') : j.status === 'running' ? (j.step === 'segments' ? t('jobSegments') : t('jobMap')) : j.status === 'failed' ? t('jobFailed') : null;
+
   const known = new Set(regions.map((r) => r.id));
   return (
     <div className="flex flex-col gap-6">
       <section aria-label={t('switchTitle')} className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
         <h2 className="text-heading">{t('switchTitle')}</h2>
         {!envEnabled && <p className="text-small text-muted-foreground">{t('envOff')}</p>}
+        {!workerAlive && <p className="text-small text-destructive">{t('workerDown')}</p>}
         <div className="flex items-center justify-between gap-3">
           <span>{switchOn ? t('switchOn') : t('switchOff')}</span>
           <Button variant="outline" disabled={busy} onClick={() => call('PATCH', { switch: !switchOn })}>{switchOn ? t('turnOff') : t('turnOn')}</Button>
@@ -61,6 +77,11 @@ export function AdminOffline({ lastRefresh, envEnabled, switchOn, freeBytes, reg
           const v = { date: date.format(new Date(lastRefresh.at)), updated: all.filter((x) => x.status === 'updated').length, failed: all.filter((x) => x.status === 'failed').length };
           return <p className="text-small text-muted-foreground">{lastRefresh.ok ? t('refreshOk', v) : t('refreshKo', v)}</p>;
         })() : <p className="text-small text-muted-foreground">{t('refreshNone')}</p>}
+        {jobText(jobs.refresh) && <p className="text-small" aria-live="polite">{jobText(jobs.refresh)}</p>}
+        <div className="pt-2">
+          <Button variant="outline" disabled={busy || !workerAlive || active(jobs.refresh) || !regions.some((r) => r.built && r.enabled)}
+            onClick={() => call('POST', { refresh: true })}>{t('refreshNow')}</Button>
+        </div>
       </section>
 
       <section aria-label={t('usage')} className="flex flex-col gap-3">
@@ -80,20 +101,26 @@ export function AdminOffline({ lastRefresh, envEnabled, switchOn, freeBytes, reg
         <h2 className="text-heading">{t('regions')}</h2>
         <ul className="flex flex-col gap-3">
           {regions.length === 0 && <li className="text-muted-foreground">{t('none')}</li>}
-          {regions.map((r) => (
+          {regions.map((r) => {
+            const job = jobs.builds[r.id];
+            return (
             <li key={r.id} className="flex flex-col gap-2 rounded-2xl border border-border bg-card p-4">
               <p className="text-heading">{r.name}</p>
               <p className="text-small text-muted-foreground">
                 {r.built ? `${size(r.sizeBytes ?? 0)} · ${r.builtAt ? date.format(new Date(r.builtAt)) : ''} · ${r.version ?? ''}` : t('notBuilt')}
               </p>
               <p className="text-small text-muted-foreground">{t('segments')} {r.segments.join(', ')}</p>
-              {!r.built && <code className="break-all text-small">{`docker compose run --rm tools npm run offline:build -- ${r.id}`}</code>}
+              {jobText(job) && <p className={job?.status === 'failed' ? 'text-small text-destructive' : 'text-small'} aria-live="polite">{jobText(job)}</p>}
               <div className="flex flex-wrap gap-2">
+                <Button variant={r.built ? 'outline' : 'primary'} disabled={busy || !workerAlive || active(job)} onClick={() => call('POST', { build: r.id })}>
+                  {job?.status === 'failed' ? t('retry') : r.built ? t('rebuild') : t('build')}
+                </Button>
                 <Button variant="outline" disabled={busy || (!r.built && !r.enabled)} onClick={() => call('PATCH', { id: r.id, enabled: !r.enabled })}>{r.enabled ? t('disable') : t('enable')}</Button>
-                <Button variant="outline" disabled={busy} onClick={() => setToDelete(r)}>{t('delete')}</Button>
+                <Button variant="outline" disabled={busy || active(job)} onClick={() => setToDelete(r)}>{t('delete')}</Button>
               </div>
             </li>
-          ))}
+            );
+          })}
         </ul>
       </section>
 

@@ -10,6 +10,7 @@ import { requireUser } from '@/lib/current-user';
 import { isAdmin } from '@/lib/admin';
 import { REGION_CATALOG } from '@/lib/offline/regions';
 import { getLastRefresh } from '@/lib/offline/refresh';
+import { latestJobs, workerAlive } from '@/lib/offline/jobs';
 import { usageSummary } from '@/lib/offline/serve';
 import { adminSwitch, envPacksEnabled, listRegions, offlineDir } from '@/lib/offline/store';
 
@@ -27,12 +28,15 @@ export default async function Page() {
   let freeBytes: number | null = null;
   try { fs.mkdirSync(offlineDir(), { recursive: true }); const s = fs.statfsSync(offlineDir()); freeBytes = s.bavail * s.bsize; } catch { /* unknown */ }
   const regions = listRegions(db).map((r) => ({ ...r, builtAt: r.builtAt?.toISOString() ?? null }));
+  const latest = latestJobs(db);
+  const jobState = (j: { status: string; step: string | null } | null) => (j ? { status: j.status as 'queued' | 'running' | 'done' | 'failed', step: j.step } : null);
+  const jobs = { builds: Object.fromEntries(Object.entries(latest.builds).map(([id, j]) => [id, jobState(j)!])), refresh: jobState(latest.refresh) };
   return (
     <>
       <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] lg:pt-16 pb-[calc(var(--spacing-nav)+2rem+env(safe-area-inset-bottom))] lg:pl-[calc(var(--spacing-rail)+1rem)]">
         <PageHeader title={t('title')} />
         <AdminOffline
-          lastRefresh={getLastRefresh(db)}
+          lastRefresh={getLastRefresh(db)} jobs={jobs} workerAlive={workerAlive(db)}
           envEnabled={envPacksEnabled()} switchOn={adminSwitch(db)} freeBytes={freeBytes} regions={regions}
           usage={usageSummary(db).map((u) => ({ ...u, last: u.last ? new Date(u.last).toISOString() : null }))}
           catalog={REGION_CATALOG.map((c) => ({ id: c.id, name: c.name }))}
