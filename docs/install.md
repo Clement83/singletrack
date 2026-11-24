@@ -40,7 +40,7 @@ Edit `.env` (every variable is commented: required or optional). The essentials:
 | `BETTER_AUTH_SECRET` | `openssl rand -base64 32` |
 | `INVITE_LINK_KEY` | `openssl rand -base64 32` — **keep it, never change it** (back it up with `.env`) |
 | `FEDERATION_KEY_ENC` | ActivityPub federation key: `openssl rand -base64 32` (keep it, never change it; `init-env.sh` generates it). **Federation is on by default as soon as this key exists**; `FEDERATION=off` turns it off — see `docs/federation.md` |
-| `ADMIN_EMAILS` | administrator emails (comma-separated): access to `/admin/federation` to block servers, read reports and the rejection log |
+| `ADMIN_EMAILS` | administrator emails (comma-separated): access to `/admin` (instance summary, sections) and `/admin/federation` (block servers, read reports and the rejection log); case-insensitive, "Administration" entry in the user menu |
 | `BETTER_AUTH_URL` | the public URL, e.g. `https://mtb.example.org` (no trailing slash) |
 | `AUTH_TRUSTED_ORIGINS` | that URL, plus any LAN access (`http://<LAN_IP>:3700`) |
 | `APP_PORT` | port published on the host (default `3700`) |

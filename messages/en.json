@@ -50,6 +50,7 @@
     "label": "Style"
   },
   "userMenu": {
+    "admin": "Administration",
     "appDevices": {
       "title": "Android app",
       "pair": "Pair the app",
@@ -668,6 +669,16 @@
     "copy": "This ride lives on its organizer’s server: only they can change it, and your answers are sent to them. If it is removed there, the copy here may linger for a while.",
     "profile": "Organizer’s profile",
     "track": "Track: {dist}{gain}"
+  },
+  "admin": {
+    "metaTitle": "Administration",
+    "title": "Administration",
+    "sections": "Sections",
+    "federation": "Federation",
+    "federationHint": "Blocked servers, reports, rejection log",
+    "instance": "Instance",
+    "version": "Version",
+    "accounts": "Accounts"
   },
   "moderation": {
     "report": "Report",

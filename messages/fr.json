@@ -50,6 +50,7 @@
     "label": "Charte"
   },
   "userMenu": {
+    "admin": "Administration",
     "appDevices": {
       "title": "App Android",
       "pair": "Associer l’app",
@@ -668,6 +669,16 @@
     "copy": "Cette sortie vit sur le serveur de son organisateur : lui seul la modifie, et tes réponses lui sont envoyées. Si elle est retirée là-bas, la copie ici peut rester un moment.",
     "profile": "Profil de l’organisateur",
     "track": "Trace : {dist}{gain}"
+  },
+  "admin": {
+    "metaTitle": "Administration",
+    "title": "Administration",
+    "sections": "Sections",
+    "federation": "Fédération",
+    "federationHint": "Serveurs bloqués, signalements, journal des refus",
+    "instance": "Instance",
+    "version": "Version",
+    "accounts": "Comptes"
   },
   "moderation": {
     "report": "Signaler",

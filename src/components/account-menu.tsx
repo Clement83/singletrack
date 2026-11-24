@@ -5,6 +5,7 @@ import { SignInButton } from '@/components/sign-in-button';
 import { federationEnabled, fedAddress } from '@/lib/federation/config';
 import { getHandle } from '@/lib/federation/handle';
 import { config } from '@/lib/config';
+import { isAdmin } from '@/lib/admin';
 
 /** Shared position (#1397): top left on mobile, at the bottom of the side bar (centred in its 80 px) on desktop. */
 const PLACE = 'fixed top-[calc(0.75rem+env(safe-area-inset-top))] left-3 z-20 lg:top-auto lg:bottom-4 lg:left-[calc((var(--spacing-rail)-var(--spacing-touch))/2)] lg:z-40';
@@ -18,6 +19,7 @@ export function AccountMenu({ user }: { user: { id: string; name: string; email:
   return (
     <UserMenu
       user={{ id: user.id, name: user.name, email: user.email, profileVisibility: getVisibility(db, user.id), outingVisibility: getDefaultOutingVisibility(db, user.id), drawnTrackVisibility: getDefaultTrackVisibility(db, user.id, 'drawn'), importedTrackVisibility: getDefaultTrackVisibility(db, user.id, 'imported'), charte: getCharte(db, user.id), fed }}
+      isAdmin={isAdmin(user)}
       sourceUrl={config.sourceUrl}
       version={config.version}
       className={PLACE}

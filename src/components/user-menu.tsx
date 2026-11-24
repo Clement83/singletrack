@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { Code, LogOut, Pencil, UserRound, X } from 'lucide-react';
+import { Code, LogOut, Shield, Pencil, UserRound, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { DESKTOP, useMediaQuery } from '@/lib/use-media-query';
@@ -43,7 +43,7 @@ function Avatar({ name, className }: { name: string; className?: string }) {
 }
 
 /** Menu content: identity, theme, language, first name, sign-out. Shared by the mobile drawer and the desktop panel. */
-function MenuBody({ user, onDone, sourceUrl, version }: { user: User; onDone: () => void; sourceUrl: string; version: string }) {
+function MenuBody({ user, onDone, sourceUrl, version, isAdmin }: { user: User; onDone: () => void; sourceUrl: string; version: string; isAdmin: boolean }) {
   const t = useTranslations('userMenu');
   const tTheme = useTranslations('theme');
   const tCharte = useTranslations('charte');
@@ -143,6 +143,14 @@ function MenuBody({ user, onDone, sourceUrl, version }: { user: User; onDone: ()
         <LogOut aria-hidden />
         {t('signOut')}
       </Button>
+      {isAdmin && (
+        <Button asChild variant="ghost" className="w-full justify-start">
+          <Link href="/admin" onClick={onDone}>
+            <Shield aria-hidden />
+            {t('admin')}
+          </Link>
+        </Button>
+      )}
       <Button asChild variant="ghost" className="w-full justify-start">
         <a href={sourceUrl} target="_blank" rel="noopener noreferrer">
           <Code aria-hidden />
@@ -174,7 +182,7 @@ function Identity({ user }: { user: User }) {
 // Full-screen screens focused on a single task: no avatar on top (track editor, #1392).
 const HIDDEN_ON = ['/new'];
 
-export function UserMenu({ user, className, sourceUrl, version }: { user: User; className?: string; sourceUrl: string; version: string }) {
+export function UserMenu({ user, className, sourceUrl, version, isAdmin = false }: { user: User; className?: string; sourceUrl: string; version: string; isAdmin?: boolean }) {
   const t = useTranslations('userMenu');
   const pathname = usePathname();
   const desktop = useMediaQuery(DESKTOP);
@@ -240,7 +248,7 @@ export function UserMenu({ user, className, sourceUrl, version }: { user: User; 
                 <X />
               </Button>
             </div>
-            <MenuBody user={user} sourceUrl={sourceUrl} version={version} onDone={() => setOpen(false)} />
+            <MenuBody user={user} sourceUrl={sourceUrl} version={version} isAdmin={isAdmin} onDone={() => setOpen(false)} />
           </div>
         )}
       </>
@@ -248,7 +256,7 @@ export function UserMenu({ user, className, sourceUrl, version }: { user: User; 
 
   return (
     <ActionSheet open={open} onOpenChange={setOpen} title={t('title')} trigger={trigger} header={<Identity user={user} />}>
-      <MenuBody user={user} sourceUrl={sourceUrl} version={version} onDone={() => setOpen(false)} />
+      <MenuBody user={user} sourceUrl={sourceUrl} version={version} isAdmin={isAdmin} onDone={() => setOpen(false)} />
     </ActionSheet>
   );
 }

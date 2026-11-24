@@ -5,6 +5,11 @@ export class ForbiddenError extends Error {
   constructor() { super('Réservé à l’administrateur'); }
 }
 
+/** True when the account's email is in `ADMIN_EMAILS` (#1737). */
+export function isAdmin(user: { email?: string | null } | null | undefined): boolean {
+  return !!user && isAdminEmail(user.email);
+}
+
 /** Admin routes and pages (#1477): session required **and** email in `ADMIN_EMAILS`. */
 export async function assertAdmin() {
   const user = await assertUser();

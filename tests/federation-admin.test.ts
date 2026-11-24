@@ -108,3 +108,27 @@ describe('garde de la boîte d’entrée (#1477)', () => {
     expect(reasons.filter((r: string) => r === 'signature')).toHaveLength(1);
   });
 });
+
+describe('isAdmin / assertAdmin (#1737)', () => {
+  it('isAdmin: email in ADMIN_EMAILS, case-insensitive, never for visitor or empty list', async () => {
+    const { isAdmin } = await import('@/lib/admin');
+    vi.stubEnv('ADMIN_EMAILS', 'Admin@X.fr, b@x.fr');
+    expect(isAdmin({ email: 'admin@x.fr' })).toBe(true);
+    expect(isAdmin({ email: 'B@X.FR' })).toBe(true);
+    expect(isAdmin({ email: 'a@x.fr' })).toBe(false);
+    expect(isAdmin(null)).toBe(false);
+    vi.stubEnv('ADMIN_EMAILS', '');
+    expect(isAdmin({ email: 'admin@x.fr' })).toBe(false);
+  });
+  it('assertAdmin: 401 without session, 403 for a non-admin, user for an admin', async () => {
+    const { assertAdmin, adminDenied } = await import('@/lib/admin');
+    state.uid = null;
+    const e1 = await assertAdmin().catch((e) => e);
+    expect(adminDenied(e1).status).toBe(401);
+    state.uid = 'u1';
+    const e2 = await assertAdmin().catch((e) => e);
+    expect(adminDenied(e2).status).toBe(403);
+    state.email = 'admin@x.fr';
+    expect((await assertAdmin()).id).toBe('u1');
+  });
+});
