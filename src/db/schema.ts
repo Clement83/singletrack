@@ -595,3 +595,26 @@ export const appToken = sqliteTable(
   },
   (t) => [index('app_token_user_idx').on(t.userId)],
 );
+
+/**
+ * Offline packs (#1738): one row per region served to the companion app. The `.pmtiles` extract lives in
+ * `<DATA>/offline/<id>.pmtiles`; `segments` = BRouter `.rd5` tiles covering the bbox (JSON array of names).
+ * `instance_setting`: small key/value store for admin switches (e.g. `offline.enabled`).
+ */
+export const offlineRegion = sqliteTable('offline_region', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  bbox: text('bbox').notNull(),
+  enabled: integer('enabled', { mode: 'boolean' }).notNull().default(false),
+  pmtilesPath: text('pmtiles_path'),
+  sizeBytes: integer('size_bytes'),
+  version: text('version'),
+  builtAt: integer('built_at', { mode: 'timestamp' }),
+  segments: text('segments').notNull().default('[]'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+});
+
+export const instanceSetting = sqliteTable('instance_setting', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+});

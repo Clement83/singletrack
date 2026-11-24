@@ -46,6 +46,13 @@ RUN --mount=type=cache,target=/app/.next/cache,uid=1000,gid=1000 \
 # Full image (`singletrack-tools`): keeps devDependencies and sources for one-off scripts (syncs, accounts)
 # and tests. Server = standalone build, non-root user.
 FROM builder AS runner
+# pmtiles CLI (#1738): `offline:build` extracts a region from the Protomaps build. Tools image only.
+ARG TARGETARCH
+ARG PMTILES_VERSION=1.28.0
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/* \
+ && curl -fsSL "https://github.com/protomaps/go-pmtiles/releases/download/v${PMTILES_VERSION}/go-pmtiles_${PMTILES_VERSION}_Linux_$([ "$TARGETARCH" = arm64 ] && echo arm64 || echo x86_64).tar.gz" | tar -xz -C /usr/local/bin pmtiles
+USER node
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0 MIGRATIONS_DIR=/app/src/db/migrations
 EXPOSE 3000
 CMD ["node", ".next/standalone/server.js"]

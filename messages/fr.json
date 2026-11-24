@@ -685,7 +685,35 @@
     "federationHint": "Serveurs bloqués, signalements, journal des refus",
     "instance": "Instance",
     "version": "Version",
-    "accounts": "Comptes"
+    "accounts": "Comptes",
+    "offlineTitle": "Hors ligne",
+    "offlineHint": "Régions servies à l’app compagnon (carte et segments BRouter)",
+    "offline": {
+      "metaTitle": "Packs hors ligne · Singletrack",
+      "title": "Packs hors ligne",
+      "switchTitle": "Interrupteur général",
+      "envOff": "OFFLINE_PACKS_ENABLED n’est pas à on dans l’environnement : rien n’est servi.",
+      "switchOn": "Les packs sont servis",
+      "switchOff": "Les packs sont coupés",
+      "turnOn": "Activer",
+      "turnOff": "Couper",
+      "free": "Espace disque libre : {size}",
+      "regions": "Régions",
+      "none": "Aucune région.",
+      "notBuilt": "Pas encore construit",
+      "segments": "Segments BRouter :",
+      "enable": "Activer",
+      "disable": "Désactiver",
+      "delete": "Supprimer",
+      "confirmDelete": "Supprimer {name} et son fichier ?",
+      "mb": "{n} Mo",
+      "add": "Ajouter une région",
+      "customName": "Nom de la région personnalisée",
+      "customBbox": "Emprise",
+      "customBboxHint": "ouest,sud,est,nord en degrés (WGS84)",
+      "addCustom": "Ajouter",
+      "attribution": "Données cartographiques © contributeurs OpenStreetMap (ODbL), tuiles Protomaps."
+    }
   },
   "moderation": {
     "report": "Signaler",
@@ -738,6 +766,9 @@
     }
   },
   "errors": {
+    "offlineInvalid": "Région invalide.",
+    "offlineExists": "Cette région existe déjà.",
+    "offlineNotBuilt": "Construis d’abord le pack.",
     "pageError": "Quelque chose a coincé",
     "retry": "Réessayer",
     "pageNotFound": "Page introuvable",

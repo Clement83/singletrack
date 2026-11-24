@@ -19,7 +19,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
 // Instance administration (#1737): restricted to `ADMIN_EMAILS` (404 for everyone else, the page does not exist for them).
 // Sections are listed in SECTIONS; later tickets add theirs.
-const SECTIONS = [{ href: '/admin/federation', label: 'federation', hint: 'federationHint' }] as const;
+const SECTIONS = [
+  { href: '/admin/federation', label: 'federation', hint: 'federationHint' },
+  { href: '/admin/offline', label: 'offlineTitle', hint: 'offlineHint' },
+] as const;
 
 export default async function Page() {
   const me = await requireUser();

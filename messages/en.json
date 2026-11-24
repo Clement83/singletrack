@@ -685,7 +685,35 @@
     "federationHint": "Blocked servers, reports, rejection log",
     "instance": "Instance",
     "version": "Version",
-    "accounts": "Accounts"
+    "accounts": "Accounts",
+    "offlineTitle": "Offline",
+    "offlineHint": "Regions served to the companion app (map and BRouter segments)",
+    "offline": {
+      "metaTitle": "Offline packs · Singletrack",
+      "title": "Offline packs",
+      "switchTitle": "Master switch",
+      "envOff": "OFFLINE_PACKS_ENABLED is not set to on in the environment: nothing is served.",
+      "switchOn": "Packs are served",
+      "switchOff": "Packs are turned off",
+      "turnOn": "Turn on",
+      "turnOff": "Turn off",
+      "free": "Free disk space: {size}",
+      "regions": "Regions",
+      "none": "No region yet.",
+      "notBuilt": "Not built yet",
+      "segments": "BRouter segments:",
+      "enable": "Enable",
+      "disable": "Disable",
+      "delete": "Delete",
+      "confirmDelete": "Delete {name} and its file?",
+      "mb": "{n} MB",
+      "add": "Add a region",
+      "customName": "Custom region name",
+      "customBbox": "Bounding box",
+      "customBboxHint": "west,south,east,north in degrees (WGS84)",
+      "addCustom": "Add",
+      "attribution": "Map data © OpenStreetMap contributors (ODbL), tiles by Protomaps."
+    }
   },
   "moderation": {
     "report": "Report",
@@ -738,6 +766,9 @@
     }
   },
   "errors": {
+    "offlineInvalid": "Invalid region.",
+    "offlineExists": "This region already exists.",
+    "offlineNotBuilt": "Build the pack first.",
     "pageError": "Something went wrong",
     "retry": "Try again",
     "pageNotFound": "Page not found",
