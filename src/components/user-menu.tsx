@@ -19,6 +19,7 @@ import { LocaleSwitcher } from '@/components/locale-switcher';
 import { DefaultOutingVisibility } from '@/components/default-outing-visibility';
 import type { OutingVisibilityValue } from '@/components/outing-visibility-switcher';
 import { FederatedAddress } from '@/components/federated-address';
+import { AppDevices } from '@/components/app-devices';
 import { DefaultTrackVisibility, type TrackVisibilityValue } from '@/components/tracks/track-visibility';
 import { VisibilitySwitcher } from '@/components/visibility-switcher';
 
@@ -104,6 +105,7 @@ function MenuBody({ user, onDone, sourceUrl, version }: { user: User; onDone: ()
         <DefaultTrackVisibility origin="imported" initial={user.importedTrackVisibility} />
       </section>
       {user.fed && <FederatedAddress {...user.fed} />}
+      <AppDevices />
       <section>
         {editing ? (
           <form onSubmit={saveName} className="flex flex-col gap-3">

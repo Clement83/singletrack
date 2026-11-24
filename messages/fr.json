@@ -50,6 +50,17 @@
     "label": "Charte"
   },
   "userMenu": {
+    "appDevices": {
+      "title": "App Android",
+      "pair": "Associer l’app",
+      "qrAlt": "QR code d’association",
+      "code": "Code d’association",
+      "lastUsed": "Utilisée le {date}",
+      "neverUsed": "Jamais utilisée",
+      "revoke": "Dissocier {name}",
+      "revoked": "Appareil dissocié.",
+      "error": "Ça n’a pas marché, réessaie."
+    },
     "signIn": "Se connecter",
     "open": "Mon compte",
     "title": "Mon compte",

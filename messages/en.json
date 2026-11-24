@@ -50,6 +50,17 @@
     "label": "Style"
   },
   "userMenu": {
+    "appDevices": {
+      "title": "Android app",
+      "pair": "Pair the app",
+      "qrAlt": "Pairing QR code",
+      "code": "Pairing code",
+      "lastUsed": "Used on {date}",
+      "neverUsed": "Never used",
+      "revoke": "Unpair {name}",
+      "revoked": "Device unpaired.",
+      "error": "That didn’t work, try again."
+    },
     "signIn": "Sign in",
     "open": "My account",
     "title": "My account",

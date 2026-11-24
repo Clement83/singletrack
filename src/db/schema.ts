@@ -568,3 +568,30 @@ export const massifDay = sqliteTable('massif_day', {
   status: text('status', { enum: ['ok', 'none', 'error'] }).notNull(),
   fetchedAt: integer('fetched_at', { mode: 'timestamp' }).notNull(),
 });
+
+/**
+ * Companion Android app (#1720). `app_pairing`: short single-use code (hash only, 5 min) shown as a QR in the user menu;
+ * `app_token`: long-lived revocable token obtained by exchanging it (hash only, `Authorization: Bearer`, `/api/app/*` only).
+ */
+export const appPairing = sqliteTable('app_pairing', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  codeHash: text('code_hash').notNull().unique(),
+  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+  usedAt: integer('used_at', { mode: 'timestamp' }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+});
+
+export const appToken = sqliteTable(
+  'app_token',
+  {
+    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+    tokenHash: text('token_hash').notNull().unique(),
+    deviceName: text('device_name').notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+    lastUsedAt: integer('last_used_at', { mode: 'timestamp' }),
+    revokedAt: integer('revoked_at', { mode: 'timestamp' }),
+  },
+  (t) => [index('app_token_user_idx').on(t.userId)],
+);

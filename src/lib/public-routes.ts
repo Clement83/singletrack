@@ -3,8 +3,9 @@ import { isFederationPath } from './federation/paths';
 /**
  * Routes reachable without a session. Everything else is private (safe by default).
  * Public data routes go under /api/s/ and /api/t/ (offline cache, see AGENTS.md).
+ * `/api/app` (#1720): companion app, no cookie; each route checks its own Bearer token (401), except `pair` and `i/<token>` (public by design).
  */
-const PUBLIC_BASES = ['/login', '/s', '/t', '/i', '/api/auth', '/api/health', '/api/s', '/api/t', '/api/i', '/cal', '/offline', '/icons'];
+const PUBLIC_BASES = ['/login', '/s', '/t', '/i', '/api/auth', '/api/health', '/api/s', '/api/t', '/api/i', '/api/app', '/cal', '/offline', '/icons'];
 // `/`: track map open to visitors without an account (#1591), who only see public data.
 const PUBLIC_EXACT = ['/', '/api/locale', '/manifest.webmanifest', '/sw.js', '/icon.svg', '/favicon.ico', '/robots.txt'];
 
