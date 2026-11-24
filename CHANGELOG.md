@@ -7,6 +7,14 @@ Each release ticket writes the `## [X.Y.Z] - YYYY-MM-DD` section from the conven
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-24
+
+### Added
+- **Administration area**: instance admins (listed in `ADMIN_EMAILS`) get an "Administration" menu entry and an `/admin` page; other accounts get a 404.
+- **Companion app pairing**: "Pair the app" in the user menu shows a QR code and a short single-use code; each device gets its own revocable token. New JSON API under `/api/app/*` (outings, outing detail, ridden track upload) secured by that token.
+- **QR code of the outing page** in the share block of an outing, to open it in the companion app.
+- **Offline map packs (off by default)**: regional PMTiles and BRouter segment packs for the companion app, built from `/admin/offline`, with a download API, quotas and a monthly refresh. Enabled only with `OFFLINE_PACKS_ENABLED` and the admin switch.
+
 ## [0.7.0] - 2026-11-22
 
 ### Added
