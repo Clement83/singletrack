@@ -232,6 +232,13 @@
       "when": 1795517222755,
       "tag": "0032_redundant_changeling",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "6",
+      "when": 1795518068498,
+      "tag": "0033_spicy_yellow_claw",
+      "breakpoints": true
     }
   ]
 }

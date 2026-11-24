@@ -31,6 +31,12 @@ The code works once (replay ⇒ 401). Only SHA-256 hashes of the code and of the
 | `GET /api/app/outings/<ref>` | Bearer | One outing. `ref` = slug (organiser, same rights as `/s/<slug>`) or outing `id` (also works for a linked guest). Not mine ⇒ `404`. |
 | `GET /api/app/i/<token>` | none | Same data and rights as `/i/<token>` (personal link, no account). Unknown or revoked ⇒ `404`. 60 requests / minute / IP. |
 | `GET` / `POST` / `DELETE /api/app/outings/<ref>/ride` | Bearer | Ridden track, same handler and limits as the web (`multipart` field `file`, GPX / KML / KMZ ≤ 5 MB; `<wpt>` waypoints are accepted and ignored). Errors `tooEarly` / `closed` (409), `tooLarge` (413), `notGpx` / `noTrack` / `doctype` (422). |
+| `GET /api/app/offline` | Bearer | Offline catalogue (#1739): `{ enabled, regions: [{ id, name, bbox, pmtilesSize, version, segments: [{ name, size, sha256 }] }], style, attribution }`. `enabled: false` (and no regions) when the master switch is off. Only enabled, built regions; segments missing on disk are left out. |
+| `GET /api/app/offline/<region>.pmtiles` | Bearer | Region map archive. **`Range` required** (`206`, `Content-Range`, `ETag` = pack version; no `Range` ⇒ `416`). Read it by ranges: a whole region or an outing's corridor. |
+| `GET /api/app/offline/segments/<name>.rd5` | Bearer | BRouter segment (e.g. `E5_N40`) of an active region only. Plain `200` or `Range` to resume an interrupted download (`If-Range` with the `ETag` is honoured; verify the catalogue `sha256`). |
+| `GET /api/app/offline/style.json[?region=<id>]` | Bearer | MapLibre vector style (Protomaps/OSM basemap + Terrarium hillshade, no labels): the source is `pmtiles://<server>/api/app/offline/<id>.pmtiles`. The app must show `attribution`. |
+
+Offline routes: account token only (guest links `/i/<token>` never get packs). Pack not served (switch off, region disabled, segment outside the active regions) ⇒ `404`. Limits per token: 600 requests / minute and 20 GB / rolling 24 h (`OFFLINE_DAILY_QUOTA_MB`) ⇒ `429` + `Retry-After`. Served bytes are logged (`offline_usage`) and summed per account in `/admin/offline`. Segments are read from `BROUTER_SEGMENTS_DIR` (default `data/brouter/segments`).
 
 Anything the account may not see is `404`, never `403`.
 

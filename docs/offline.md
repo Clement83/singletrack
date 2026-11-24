@@ -2,7 +2,7 @@
 
 An instance can serve **offline packs** to the companion app, one per region. A pack = a vector map extract
 (PMTiles, OpenStreetMap data built by [Protomaps](https://protomaps.com/)) plus the list of BRouter segments (`.rd5`)
-the region needs for routing. Downloading packs (API) comes with the app endpoints; this page covers preparing them.
+the region needs for routing. Download API for the app: [`companion-app-api.md`](companion-app-api.md) (#1739); this page covers preparing them.
 
 ## Admin
 

@@ -12,7 +12,8 @@ import { useErrorText } from '@/lib/use-error-text';
 type Region = { id: string; name: string; bbox: number[]; enabled: boolean; sizeBytes: number | null; version: string | null; builtAt: string | null; segments: string[]; built: boolean };
 
 /** Offline packs admin (#1738): master switch, regions list (enable, delete), registration of a region to build. */
-export function AdminOffline({ envEnabled, switchOn, freeBytes, regions, catalog }: {
+export function AdminOffline({ envEnabled, switchOn, freeBytes, regions, catalog, usage }: {
+  usage: { userId: string; name: string; email: string; bytes: number; requests: number; last: string | null }[];
   envEnabled: boolean; switchOn: boolean; freeBytes: number | null; regions: Region[]; catalog: { id: string; name: string }[];
 }) {
   const t = useTranslations('admin.offline');
@@ -50,6 +51,19 @@ export function AdminOffline({ envEnabled, switchOn, freeBytes, regions, catalog
           <Button variant="outline" disabled={busy} onClick={() => call('PATCH', { switch: !switchOn })}>{switchOn ? t('turnOff') : t('turnOn')}</Button>
         </div>
         {freeBytes != null && <p className="text-small text-muted-foreground">{t('free', { size: size(freeBytes) })}</p>}
+      </section>
+
+      <section aria-label={t('usage')} className="flex flex-col gap-3">
+        <h2 className="text-heading">{t('usage')}</h2>
+        <ul className="flex flex-col gap-2">
+          {usage.length === 0 && <li className="text-muted-foreground">{t('usageNone')}</li>}
+          {usage.map((u) => (
+            <li key={u.userId} className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4">
+              <span className="min-w-0 truncate">{u.name || u.email}</span>
+              <span className="shrink-0 text-small text-muted-foreground">{t('usageRow', { size: size(u.bytes), n: u.requests })}</span>
+            </li>
+          ))}
+        </ul>
       </section>
 
       <section aria-label={t('regions')} className="flex flex-col gap-3">

@@ -618,3 +618,18 @@ export const instanceSetting = sqliteTable('instance_setting', {
   key: text('key').primaryKey(),
   value: text('value').notNull(),
 });
+
+/** Offline packs usage (#1739): bytes served to the companion app per token (rate limit + /admin/offline). */
+export const offlineUsage = sqliteTable(
+  'offline_usage',
+  {
+    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    tokenId: text('token_id').notNull().references(() => appToken.id, { onDelete: 'cascade' }),
+    userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+    kind: text('kind').notNull(),
+    name: text('name').notNull(),
+    bytes: integer('bytes').notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  },
+  (t) => [index('offline_usage_token_idx').on(t.tokenId, t.createdAt)],
+);

@@ -9,6 +9,7 @@ import { AdminOffline } from '@/components/admin/admin-offline';
 import { requireUser } from '@/lib/current-user';
 import { isAdmin } from '@/lib/admin';
 import { REGION_CATALOG } from '@/lib/offline/regions';
+import { usageSummary } from '@/lib/offline/serve';
 import { adminSwitch, envPacksEnabled, listRegions, offlineDir } from '@/lib/offline/store';
 
 export const dynamic = 'force-dynamic';
@@ -31,6 +32,7 @@ export default async function Page() {
         <PageHeader title={t('title')} />
         <AdminOffline
           envEnabled={envPacksEnabled()} switchOn={adminSwitch(db)} freeBytes={freeBytes} regions={regions}
+          usage={usageSummary(db).map((u) => ({ ...u, last: u.last ? new Date(u.last).toISOString() : null }))}
           catalog={REGION_CATALOG.map((c) => ({ id: c.id, name: c.name }))}
         />
       </main>
