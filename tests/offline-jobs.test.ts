@@ -135,3 +135,30 @@ describe('/api/admin/offline jobs', () => {
     expect(latestJobs(db()).builds.paca).toMatchObject({ status: 'queued', createdBy: 'u1' });
   });
 });
+
+describe('monthly refresh schedule (#1751)', () => {
+  it('due from the 2nd at 03:00 Paris, once per month', async () => {
+    const { refreshDue } = await import('@/lib/offline/schedule');
+    expect(refreshDue(new Date('2026-12-01T12:00:00Z'), '2026-11')).toBeNull();
+    expect(refreshDue(new Date('2026-12-02T01:30:00Z'), '2026-11')).toBeNull(); // 02:30 Paris
+    expect(refreshDue(new Date('2026-12-02T02:00:00Z'), '2026-11')).toBe('2026-12'); // 03:00 Paris
+    expect(refreshDue(new Date('2026-12-20T02:00:00Z'), '2026-12')).toBeNull();
+    expect(refreshDue(new Date('2026-07-02T01:00:00Z'), null)).toBe('2026-07'); // 03:00 CEST
+    expect(refreshDue(new Date('2026-12-31T23:30:00Z'), '2026-12')).toBeNull(); // already January 1st in Paris
+  });
+  it('the worker queues it once, only with an enabled pack', async () => {
+    const { scheduleMonthlyRefresh } = await import('@/lib/offline/schedule');
+    const now = new Date('2026-12-05T10:00:00Z');
+    expect(scheduleMonthlyRefresh(db(), now)).toBe(false); // no pack: month recorded, nothing queued
+    expect(latestJobs(db()).refresh).toBeNull();
+    addRegion(db(), { catalog: 'paca' });
+    enqueueJob(db(), { kind: 'build', regionId: 'paca' });
+    await workerTick(db(), { ...deps, now });
+    setRegionEnabled(db(), 'paca', true);
+    expect(scheduleMonthlyRefresh(db(), now)).toBe(false); // December already handled
+    const jan = new Date('2027-01-02T09:00:00Z');
+    expect(scheduleMonthlyRefresh(db(), jan)).toBe(true);
+    expect(latestJobs(db()).refresh?.status).toBe('queued');
+    expect(scheduleMonthlyRefresh(db(), jan)).toBe(false);
+  });
+});

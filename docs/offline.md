@@ -7,43 +7,53 @@ the region needs for routing. Download API for the app: [`companion-app-api.md`]
 ## Admin
 
 `/admin/offline` (administrators in `ADMIN_EMAILS`): register a region (predefined metropolitan France regions or a custom
-bounding box `west,south,east,north`), see size / build date / segments, enable or disable it, delete it (the file is removed).
-**Master switch**: nothing is served unless `OFFLINE_PACKS_ENABLED=on` in `.env` **and** the switch in `/admin/offline` is on.
+bounding box `west,south,east,north`), **build / rebuild** it with a button, see its state (queued, building the map,
+downloading segments, failed + retry), size / build date / segments, enable or disable it, delete it (the file is removed),
+**refresh now**. **Master switch**: nothing is served unless `OFFLINE_PACKS_ENABLED=on` in `.env` **and** the switch in
+`/admin/offline` is on.
 
-## Building a pack
+## Build service (`offline-worker`, #1749)
+
+Buttons do not build anything in the web app: they queue a job (`offline_job` table) that the separate **`offline-worker`**
+service runs, one at a time. It uses the `singletrack-tools` image (it has the `pmtiles` CLI), shares `./data` with the app,
+writes a heartbeat every 10 s (older than 2 min: `/admin/offline` says the service is stopped and disables the buttons) and,
+at start-up, marks a job interrupted by a restart as failed. The web app never talks to Docker.
+
+```bash
+docker compose --profile offline up -d offline-worker     # distribution compose.yml: opt-in profile
+docker compose -f docker-compose.yml up -d offline-worker # maintainer compose file: always on
+docker compose logs -f offline-worker
+```
+
+A build extracts the region from the latest Protomaps planet build with `pmtiles extract` (HTTP range requests: only the
+region is downloaded, not the planet) into `data/offline/<region>.pmtiles` (or `OFFLINE_DIR`), written to `<file>.part` then
+renamed, records size, version (build date) and the covered `.rd5` tiles (5° × 5°, named after the south-west corner, e.g.
+`E5_N40`), then downloads the BRouter segments of the region that are missing on the server. `PMTILES_SOURCE` overrides the
+Protomaps build.
+
+## Monthly refresh (#1740, #1751)
+
+The worker queues a refresh by itself once a month, from the **2nd at 03:00 Europe/Paris** (no host cron needed), if at least
+one pack is enabled; "Refresh now" in `/admin/offline` does the same on demand. A refresh rebuilds every **enabled, built**
+region from the latest Protomaps build and refreshes the BRouter segments they list (downloaded only if the remote file is
+newer, `If-Modified-Since`). Each file is written to `<file>.part` then replaced with a single `rename`: a download already
+streaming finishes on the old inode, BRouter keeps routing, and a client resuming with `If-Range` and the old `ETag` simply
+receives the new file in full (200) and can detect the version change. The version is the build date; a region already at that
+version is skipped. The result (date, per region and segment status) is shown in `/admin/offline`, and `/api/app/offline`
+exposes the new `version`.
+
+## Command line (scripting)
+
+The same code is available without the worker, through the `tools` service:
 
 ```bash
 docker compose -f docker-compose.yml run --rm tools npm run offline:build -- --list
-docker compose -f docker-compose.yml run --rm tools npm run offline:build -- paca
+docker compose -f docker-compose.yml run --rm tools npm run offline:build -- paca [--source <url|file>] [--dry-run]
 docker compose -f docker-compose.yml run --rm tools npm run offline:build -- my-area --name "My area" --bbox 4.2,43.0,7.7,45.1
-```
-
-The command uses `pmtiles extract` (included in the `tools` image) with HTTP range requests: only the region is
-downloaded, not the planet. Output: `data/offline/<region>.pmtiles` (or `OFFLINE_DIR`). It then records size, version
-(build date) and the covered `.rd5` tiles. Rebuilding replaces the file. `--source <url|file>` / `PMTILES_SOURCE`
-overrides the Protomaps build; `--dry-run` prints the plan.
-
-BRouter segments are the ones already on the server (`./scripts/get-brouter-segments.sh`); the pack only lists which
-5° × 5° tiles (named after the south-west corner, e.g. `E5_N40`) cover the region.
-
-## Monthly refresh (#1740)
-
-```bash
 docker compose -f docker-compose.yml run --rm tools npm run offline:refresh [-- --dry-run] [--source <url|file>] [--no-segments]
 ```
 
-Rebuilds every **enabled, built** region from the latest Protomaps build and refreshes the BRouter segments they list
-(downloaded only if the remote file is newer, `If-Modified-Since`). Each file is written to `<file>.part` then replaced with a
-single `rename`: a download already streaming finishes on the old inode, BRouter keeps routing, and a client resuming with
-`If-Range` and the old `ETag` simply receives the new file in full (200) and can detect the version change. The version is the
-build date; a region already at that version is skipped. The result (date, per region and segment status) is shown in
-`/admin/offline`, and `/api/app/offline` exposes the new `version`. Exit code 1 if anything failed.
-
-Scheduling is up to you, e.g. a host cron on the 2nd of each month at 03:00 (not required):
-
-```cron
-0 3 2 * * cd /path/to/singletrack && docker compose -f docker-compose.yml run --rm tools npm run offline:refresh >> data/offline-refresh.log 2>&1
-```
+`offline:refresh` exits with code 1 if anything failed.
 
 ## Disk space
 

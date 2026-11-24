@@ -2,6 +2,7 @@ import type { Db } from '@/db';
 import { buildRegion, runRefresh, type Extract, type SegmentFetch } from './build';
 import { claimNextJob, finishJob, setJobStep, workerHeartbeat, type Job } from './jobs';
 import { getRegion } from './store';
+import { scheduleMonthlyRefresh } from './schedule';
 
 /** Job runner of the `offline-worker` service (#1749); the loop lives in `scripts/offline-worker.ts`. */
 
@@ -31,9 +32,10 @@ export async function runJob(db: Db, job: Job, deps: Deps = {}): Promise<boolean
   }
 }
 
-/** One worker tick: heartbeat, then the next queued job if any. Returns true when a job ran. */
-export async function workerTick(db: Db, deps: Deps = {}): Promise<boolean> {
+/** One worker tick: heartbeat, monthly refresh when due (#1751), then the next queued job if any. Returns true when a job ran. */
+export async function workerTick(db: Db, deps: Deps & { now?: Date } = {}): Promise<boolean> {
   workerHeartbeat(db);
+  if (scheduleMonthlyRefresh(db, deps.now)) deps.log?.('monthly refresh queued');
   const job = claimNextJob(db);
   if (!job) return false;
   const beat = setInterval(() => workerHeartbeat(db), 30_000);
