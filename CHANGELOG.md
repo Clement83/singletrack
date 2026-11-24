@@ -7,6 +7,16 @@ Each release ticket writes the `## [X.Y.Z] - YYYY-MM-DD` section from the conven
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-24
+
+### Added
+- **Offline packs built from the admin page**: each region has a Build / Rebuild button with its progress (queued, building the map, downloading segments, failed + retry), and "Refresh now" updates every enabled pack. Builds run in a new `offline-worker` service (in `compose.yml`: `docker compose --profile offline up -d`).
+- **Automatic monthly refresh** of the offline packs, from the 2nd of each month at 03:00 (Europe/Paris), run by the worker: no cron job to set up.
+
+### Changed
+- `/admin/offline` no longer shows any command line; it says when the build service is stopped.
+- Building a pack also downloads the BRouter segments of the region that are missing on the server.
+
 ## [0.8.1] - 2026-11-24
 
 ### Fixed
