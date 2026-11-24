@@ -10,8 +10,8 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: () => {} }) }))
 
 const region = (id: string, built: boolean) => ({ id, name: id.toUpperCase(), bbox: [5, 43, 6, 44], enabled: built, sizeBytes: built ? 5e6 : null, version: built ? '20261101' : null, builtAt: built ? '2026-11-01T00:00:00Z' : null, segments: ['E5_N40'], built });
 type Props = Parameters<typeof AdminOffline>[0];
-const render = (p: Partial<Props>) => renderToStaticMarkup(h(NextIntlClientProvider, { locale: 'fr', messages: fr, timeZone: 'Europe/Paris' },
-  h(AdminOffline, { lastRefresh: null, usage: [], envEnabled: true, switchOn: true, freeBytes: null, regions: [], catalog: [], jobs: { builds: {}, refresh: null }, workerAlive: true, ...p })));
+const render = (p: Partial<Props>) => renderToStaticMarkup(h(NextIntlClientProvider, { locale: 'fr', messages: fr, timeZone: 'Europe/Paris',
+  children: h(AdminOffline, { lastRefresh: null, usage: [], envEnabled: true, switchOn: true, freeBytes: null, regions: [], catalog: [], jobs: { builds: {}, refresh: null }, workerAlive: true, ...p }) }));
 
 describe('AdminOffline (#1750)', () => {
   it('build / rebuild / retry buttons and job states, no command', () => {
