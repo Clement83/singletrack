@@ -18,6 +18,7 @@
     "elevation:recompute": "tsx scripts/recompute-elevation.ts",
     "rides:dedupe": "tsx scripts/dedupe-rides.ts",
     "offline:build": "tsx scripts/offline-build.ts",
+    "offline:refresh": "tsx scripts/offline-refresh.ts",
     "sync:osm": "tsx scripts/sync-osm.ts",
     "sync:singles": "tsx scripts/sync-singles.ts",
     "sync:geotrek": "tsx scripts/sync-geotrek.ts",

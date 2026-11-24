@@ -9,6 +9,7 @@ import { AdminOffline } from '@/components/admin/admin-offline';
 import { requireUser } from '@/lib/current-user';
 import { isAdmin } from '@/lib/admin';
 import { REGION_CATALOG } from '@/lib/offline/regions';
+import { getLastRefresh } from '@/lib/offline/refresh';
 import { usageSummary } from '@/lib/offline/serve';
 import { adminSwitch, envPacksEnabled, listRegions, offlineDir } from '@/lib/offline/store';
 
@@ -31,6 +32,7 @@ export default async function Page() {
       <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] lg:pt-16 pb-[calc(var(--spacing-nav)+2rem+env(safe-area-inset-bottom))] lg:pl-[calc(var(--spacing-rail)+1rem)]">
         <PageHeader title={t('title')} />
         <AdminOffline
+          lastRefresh={getLastRefresh(db)}
           envEnabled={envPacksEnabled()} switchOn={adminSwitch(db)} freeBytes={freeBytes} regions={regions}
           usage={usageSummary(db).map((u) => ({ ...u, last: u.last ? new Date(u.last).toISOString() : null }))}
           catalog={REGION_CATALOG.map((c) => ({ id: c.id, name: c.name }))}

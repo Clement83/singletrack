@@ -12,7 +12,8 @@ import { useErrorText } from '@/lib/use-error-text';
 type Region = { id: string; name: string; bbox: number[]; enabled: boolean; sizeBytes: number | null; version: string | null; builtAt: string | null; segments: string[]; built: boolean };
 
 /** Offline packs admin (#1738): master switch, regions list (enable, delete), registration of a region to build. */
-export function AdminOffline({ envEnabled, switchOn, freeBytes, regions, catalog, usage }: {
+export function AdminOffline({ lastRefresh, envEnabled, switchOn, freeBytes, regions, catalog, usage }: {
+  lastRefresh: { at: string; ok: boolean; regions: { status: string }[]; segments: { status: string }[] } | null;
   usage: { userId: string; name: string; email: string; bytes: number; requests: number; last: string | null }[];
   envEnabled: boolean; switchOn: boolean; freeBytes: number | null; regions: Region[]; catalog: { id: string; name: string }[];
 }) {
@@ -51,6 +52,15 @@ export function AdminOffline({ envEnabled, switchOn, freeBytes, regions, catalog
           <Button variant="outline" disabled={busy} onClick={() => call('PATCH', { switch: !switchOn })}>{switchOn ? t('turnOff') : t('turnOn')}</Button>
         </div>
         {freeBytes != null && <p className="text-small text-muted-foreground">{t('free', { size: size(freeBytes) })}</p>}
+      </section>
+
+      <section aria-label={t('refresh')} className="flex flex-col gap-1 rounded-2xl border border-border bg-card p-4">
+        <h2 className="text-heading">{t('refresh')}</h2>
+        {lastRefresh ? (() => {
+          const all = [...lastRefresh.regions, ...lastRefresh.segments];
+          const v = { date: date.format(new Date(lastRefresh.at)), updated: all.filter((x) => x.status === 'updated').length, failed: all.filter((x) => x.status === 'failed').length };
+          return <p className="text-small text-muted-foreground">{lastRefresh.ok ? t('refreshOk', v) : t('refreshKo', v)}</p>;
+        })() : <p className="text-small text-muted-foreground">{t('refreshNone')}</p>}
       </section>
 
       <section aria-label={t('usage')} className="flex flex-col gap-3">

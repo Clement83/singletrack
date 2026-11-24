@@ -26,6 +26,25 @@ overrides the Protomaps build; `--dry-run` prints the plan.
 BRouter segments are the ones already on the server (`./scripts/get-brouter-segments.sh`); the pack only lists which
 5° × 5° tiles (named after the south-west corner, e.g. `E5_N40`) cover the region.
 
+## Monthly refresh (#1740)
+
+```bash
+docker compose -f docker-compose.yml run --rm tools npm run offline:refresh [-- --dry-run] [--source <url|file>] [--no-segments]
+```
+
+Rebuilds every **enabled, built** region from the latest Protomaps build and refreshes the BRouter segments they list
+(downloaded only if the remote file is newer, `If-Modified-Since`). Each file is written to `<file>.part` then replaced with a
+single `rename`: a download already streaming finishes on the old inode, BRouter keeps routing, and a client resuming with
+`If-Range` and the old `ETag` simply receives the new file in full (200) and can detect the version change. The version is the
+build date; a region already at that version is skipped. The result (date, per region and segment status) is shown in
+`/admin/offline`, and `/api/app/offline` exposes the new `version`. Exit code 1 if anything failed.
+
+Scheduling is up to you, e.g. a host cron on the 2nd of each month at 03:00 (not required):
+
+```cron
+0 3 2 * * cd /path/to/singletrack && docker compose -f docker-compose.yml run --rm tools npm run offline:refresh >> data/offline-refresh.log 2>&1
+```
+
 ## Disk space
 
 Vector tiles for a region are typically a few hundred MB (a large region such as Nouvelle-Aquitaine: ~1 GB; all of France: a few GB).
