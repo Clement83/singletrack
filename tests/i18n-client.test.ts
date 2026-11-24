@@ -45,7 +45,7 @@ function clientNamespaces(entries: string[]): Set<string> {
     const s = readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\/|^\s*\/\/.*$/gm, '');
     const isClient = client || /^['"]use client['"]/m.test(s);
     if (isClient) {
-      for (const m of s.matchAll(/useTranslations\('(\w+)'\)/g)) ns.add(m[1]);
+      for (const m of s.matchAll(/useTranslations\('(\w+)[\w.]*'\)/g)) ns.add(m[1]);
       if (/useTranslations\(\)/.test(s)) for (const m of s.matchAll(/\bt\('(\w+)\./g)) ns.add(m[1]);
       if (/useErrorText\(/.test(s)) ns.add('errors');
     }
