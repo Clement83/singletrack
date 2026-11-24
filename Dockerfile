@@ -2,7 +2,7 @@
 # Media base (#1693): jellyfin-ffmpeg = recent ffmpeg build with Intel QSV (oneVPL + iHD driver on amd64), amd64 and
 # arm64. Debian's ffmpeg fails in QSV mode with the iHD driver. Unrelated to the Jellyfin server; installed in
 # /usr/lib/jellyfin-ffmpeg/. The GPU stays optional: without /dev/dri the app falls back to libx264 (same binary).
-FROM node:22-slim AS media
+FROM node:25-slim AS media
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl gnupg \
  && mkdir -p /etc/apt/keyrings \
  && curl -fsSL https://repo.jellyfin.org/jellyfin_team.gpg.key | gpg --dearmor -o /etc/apt/keyrings/jellyfin.gpg \
