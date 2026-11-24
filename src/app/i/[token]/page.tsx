@@ -109,6 +109,8 @@ export default async function Page({ params }: { params: Promise<{ token: string
               lat={o.meetingLat}
               lon={o.meetingLon}
               showDirections={false}
+              qrPath={`/i/${token}`}
+              qrPersonal
             />
             {viewer && !closed && outingPermissions(db, { userId: viewer.id }, o).canInviteFriends && (
               <InviteFriends endpoint={`/api/i/${token}/friends`} friends={listInvitableFriends(db, viewer.id, o)} />

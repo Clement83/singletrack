@@ -5,6 +5,7 @@ import { CalendarPlus, Copy, Download, Navigation, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { CalendarSubscribe } from '@/components/outings/calendar-subscribe';
+import { OutingQr } from '@/components/outings/outing-qr';
 import { MAP_APPS, directionsLinks } from '@/lib/outings/share';
 
 type Props = {
@@ -23,6 +24,10 @@ type Props = {
   feedUrl?: string;
   /** Help text under the "Share" button (or instead of it when there is no link). */
   hint?: string;
+  /** Path of the page to open with the companion app (#1735); absent = no "QR code" button. */
+  qrPath?: string | null;
+  /** The QR carries a guest's personal link (shows the "don't share" warning). */
+  qrPersonal?: boolean;
 };
 
 type ShareArgs = {
@@ -70,7 +75,7 @@ export function HeaderShareButton({ sharePath, shareText, title }: { sharePath: 
  * GPX of the frozen track, directions to the meeting point in the chosen maps app. Secondary actions: on the guest
  * page, the GO button stays the main action.
  */
-export function OutingShare({ sharePath, shareText, title, icsHref, gpxHref, lat, lon, showDirections = true, feedUrl, hint }: Props) {
+export function OutingShare({ sharePath, shareText, title, icsHref, gpxHref, lat, lon, showDirections = true, feedUrl, hint, qrPath, qrPersonal }: Props) {
   const t = useTranslations('share');
   const links = directionsLinks(lat, lon);
 
@@ -90,6 +95,7 @@ export function OutingShare({ sharePath, shareText, title, icsHref, gpxHref, lat
           </Button>
         </div>
       )}
+      {qrPath && <OutingQr path={qrPath} title={title} personal={qrPersonal} />}
       {hint && <p className="text-small text-muted-foreground text-pretty">{hint}</p>}
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <Button asChild variant="outline">

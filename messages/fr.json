@@ -395,6 +395,13 @@
     }
   },
   "share": {
+    "qr": {
+      "button": "QR code",
+      "close": "Fermer",
+      "alt": "QR code de la sortie",
+      "scan": "Scanne-le avec l’app compagnon ou l’appareil photo du téléphone.",
+      "personal": "Lien personnel : ne le partage pas."
+    },
     "title": "Partager et préparer",
     "share": "Partager la sortie",
     "shareHint": "Le lien du groupe : chacun saisit son prénom et reçoit son lien perso.",

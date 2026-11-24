@@ -395,6 +395,13 @@
     }
   },
   "share": {
+    "qr": {
+      "button": "QR code",
+      "close": "Close",
+      "alt": "Outing QR code",
+      "scan": "Scan it with the companion app or your phone’s camera.",
+      "personal": "Personal link: don’t share it."
+    },
     "title": "Share and get ready",
     "share": "Share the ride",
     "shareHint": "The group link: everyone enters their first name and gets their own link.",

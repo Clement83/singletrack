@@ -112,6 +112,7 @@ export default async function Page({ params, searchParams }: { params: Promise<{
                 lat={o.meetingLat}
                 lon={o.meetingLon}
                 hint={o.openLinkEnabled ? t('shareHint') : t('noGroupLink')}
+                qrPath={o.openLinkEnabled && o.openLinkToken ? `/s/${o.openLinkToken}/join` : null}
               />
             }
           />
