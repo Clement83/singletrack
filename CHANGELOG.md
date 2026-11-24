@@ -7,6 +7,11 @@ Each release ticket writes the `## [X.Y.Z] - YYYY-MM-DD` section from the conven
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-11-24
+
+### Fixed
+- **Offline packs admin page**: `/admin/offline` showed raw translation keys instead of its texts.
+
 ## [0.8.0] - 2026-11-24
 
 ### Added
