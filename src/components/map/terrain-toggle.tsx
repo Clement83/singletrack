@@ -24,8 +24,10 @@ class PortalControl implements IControl {
 }
 
 function whenStyleReady(map: MaplibreMap, fn: () => void) {
-  if (map.isStyleLoaded()) fn();
-  else map.once('load', fn);
+  // `isStyleLoaded()` goes false again while tiles load (and may stay false when the elevation
+  // tiles fail), and 'load' fires only once: gate on the style/source existing instead (#1763).
+  if (map.getStyle() && map.getSource(TERRAIN.source)) fn();
+  else map.once('styledata', () => whenStyleReady(map, fn));
 }
 
 function apply(map: MaplibreMap, on: boolean) {
