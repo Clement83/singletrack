@@ -7,6 +7,14 @@ Each release ticket writes the `## [X.Y.Z] - YYYY-MM-DD` section from the conven
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-11-25
+
+### Added
+- **Solo outing from the Sillage app**: `POST /api/app/rides` turns a recording made in the companion app into a private solo outing, idempotent on the client id (the same recording sent twice returns the same outing).
+
+### Fixed
+- The offline catalogue and map style given to the app now use the public address of the instance instead of the internal one (`0.0.0.0`).
+
 ## [0.9.0] - 2026-11-24
 
 ### Added
