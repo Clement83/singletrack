@@ -502,20 +502,20 @@
       "maybe": "C’est noté : peut-être.",
       "no": "C’est noté, tu ne viens pas."
     },
-    "go": "GO",
+    "go": "Je viens",
     "maybe": "Peut-être",
-    "no": "Non",
+    "no": "Je ne viens pas",
     "nameAndWord": "Mon nom et un mot",
     "myName": "Mon prénom",
     "word": "Un mot pour les autres (facultatif)",
     "wordPlaceholder": "ex. Je viens en VAE…",
-    "save": "Enregistrer",
+    "save": "Enregistrer ma réponse",
     "saved": "Enregistré",
     "errors": {
-      "full": "Désolé, la sortie est complète.",
+      "full": "La sortie est complète\u00a0: toutes les places sont prises.",
       "closed": "Cette sortie n’accepte plus de réponses.",
-      "generic": "Ça n’a pas marché, réessaie.",
-      "network": "Pas de réseau, réessaie."
+      "generic": "Ta réponse n’a pas été enregistrée. Réessaie.",
+      "network": "Pas de connexion\u00a0: ta réponse n’est pas partie. Réessaie."
     }
   },
   "guest": {
@@ -534,7 +534,7 @@
     "metaTitle": "Rejoindre — singletrack",
     "closed": "Cette sortie n’accepte plus de réponses.",
     "name": "Ton prénom",
-    "nameHint": "Tu recevras ton lien perso : garde-le pour changer ta réponse.",
+    "nameHint": "Tu recevras ton lien perso. Garde-le pour changer ta réponse.",
     "submit": "Continuer"
   },
   "welcome": {
@@ -1004,7 +1004,7 @@
     "max": "Nombre de places (facultatif)",
     "create": "Créer la sortie",
     "save": "Enregistrer",
-    "saveFailed": "Impossible d’enregistrer, réessaie.",
+    "saveFailed": "La sortie n’a pas pu être enregistrée. Vérifie ta connexion, puis réessaie.",
     "saving": "Enregistrement…"
   },
   "duplicate": {
@@ -1433,7 +1433,7 @@
     }
   },
   "outingBar": {
-    "respond": "Je viens\u00a0?",
+    "respond": "Tu viens\u00a0?",
     "yes": "Je viens",
     "maybe": "Peut-être",
     "no": "Non",

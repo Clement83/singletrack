@@ -502,20 +502,20 @@
       "maybe": "Got it: maybe.",
       "no": "Got it, you’re not coming."
     },
-    "go": "GO",
+    "go": "I’m in",
     "maybe": "Maybe",
-    "no": "No",
+    "no": "I’m not coming",
     "nameAndWord": "My name and a note",
     "myName": "My first name",
     "word": "A note for the others (optional)",
     "wordPlaceholder": "e.g. Coming on an e-bike…",
-    "save": "Save",
+    "save": "Save my answer",
     "saved": "Saved",
     "errors": {
-      "full": "Sorry, the ride is full.",
+      "full": "The ride is full: all spots are taken.",
       "closed": "This ride no longer takes answers.",
-      "generic": "That didn’t work, try again.",
-      "network": "No network, try again."
+      "generic": "Your answer wasn’t saved. Try again.",
+      "network": "No connection: your answer wasn’t sent. Try again."
     }
   },
   "guest": {
@@ -534,7 +534,7 @@
     "metaTitle": "Join — singletrack",
     "closed": "This ride no longer takes answers.",
     "name": "Your first name",
-    "nameHint": "You’ll get your own link: keep it to change your answer.",
+    "nameHint": "You’ll get a personal link. Keep it to change your answer later.",
     "submit": "Continue"
   },
   "welcome": {
@@ -1004,7 +1004,7 @@
     "max": "Number of spots (optional)",
     "create": "Create the ride",
     "save": "Save",
-    "saveFailed": "Couldn’t save, try again.",
+    "saveFailed": "The ride couldn’t be saved. Check your connection and try again.",
     "saving": "Saving…"
   },
   "duplicate": {
