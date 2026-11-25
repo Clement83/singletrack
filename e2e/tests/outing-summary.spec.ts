@@ -19,11 +19,12 @@ async function mockSummary(page: Page) {
   await page.route('**/api/styleguide/recap', (r) => r.fulfill({
     json: {
       track: {
-        id: 'r1', geometry: { type: 'LineString', coordinates: coords }, bbox: [x, y, x + 0.012, y + 0.004], distanceM: 1700, gainM: 50,
+        id: 'r1', geometry: { type: 'LineString', coordinates: coords }, bbox: [x, y, x + 0.012, y + 0.004], distanceM: 1700, gainM: 50, moments: [],
         times: coords.map((_, i) => 1_700_000_000_000 + i * 600_000), profile: coords.map((p, i) => ({ km: i * 0.57, ele: p[2] })),
       },
       media: [m('p1', 'photo', 150, true), m('p2', 'photo', 900), m('v1', 'video', 1200), m('p3', 'photo', null)],
       music: [{ id: 0, title: 'Piste' }],
+      choices: [],
     },
   }));
   const media = (r: Parameters<Parameters<Page['route']>[1]>[0]) => {
