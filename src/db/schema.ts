@@ -391,6 +391,29 @@ export const remoteResponse = sqliteTable(
   (t) => [primaryKey({ columns: [t.remoteOutingId, t.userId] }), index('remote_response_user_idx').on(t.userId)],
 );
 
+/**
+ * My ridden track on an outing from another server (#1775). Kept here whole (my own copy); its id is the federated object
+ * `/ap/rides/<id>`, served trimmed (first/last 300 m hidden) and only to the organiser's server. `sentAt` = delivered at least
+ * once (so a change is an `Update` and a removal a `Delete`); NULL = kept here only (federation off, organiser's server too old).
+ */
+export const remoteRide = sqliteTable(
+  'remote_ride',
+  {
+    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    remoteOutingId: text('remote_outing_id').notNull().references(() => remoteOuting.id, { onDelete: 'cascade' }),
+    userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+    geometry: text('geometry', { mode: 'json' }).$type<import('@/lib/geo/types').TrackGeometry>().notNull(),
+    distanceM: real('distance_m').notNull(),
+    gainM: real('gain_m'),
+    movingSec: integer('moving_sec'),
+    elapsedSec: integer('elapsed_sec'),
+    times: text('times', { mode: 'json' }).$type<number[]>(),
+    sentAt: integer('sent_at', { mode: 'timestamp' }),
+    updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  },
+  (t) => [uniqueIndex('remote_ride_outing_user_idx').on(t.remoteOutingId, t.userId)],
+);
+
 /** Server blocked by the admin (#1477): nothing is accepted or sent. `source`: typed by hand or imported from a shared list. */
 export const federationBlock = sqliteTable('federation_block', {
   domain: text('domain').primaryKey(),
@@ -458,6 +481,11 @@ export const outingRide = sqliteTable(
     elapsedSec: integer('elapsed_sec'),
     /** Time of each point of `geometry` (epoch ms, flattened in order); NULL if the file has no timestamps (#1692). */
     times: text('times', { mode: 'json' }).$type<number[]>(),
+    /**
+     * URL of the federated ride object (`/ap/rides/<id>` on the participant's server) when this track came from a guest on
+     * another server (#1775). Its first and last 300 m were already hidden by that server: never trimmed again on read.
+     */
+    remoteUrl: text('remote_url').unique(),
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   },
   (t) => [index('outing_ride_outing_idx').on(t.outingId)],

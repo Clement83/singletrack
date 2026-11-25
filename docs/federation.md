@@ -1,6 +1,6 @@
 # ActivityPub federation — study and decisions (#1471, epic #1470)
 
-Status: study completed on 2026-11-14; **P6 (#1476, outings across servers) delivered**, see §10; **P5 (#1475, friends across servers) delivered**, see §9; **P4 (#1474) delivered**: identity, WebFinger, NodeInfo, actor, signatures, delivery queue, `remote_actor` (see §8). The spike in `spikes/federation/` validates **Fedify 2.4.5**. Tickets P4 to P7 build on this document.
+Status: study completed on 2026-11-14; **ridden tracks of remote participants (#1775) delivered**, see §12; **P6 (#1476, outings across servers) delivered**, see §10; **P5 (#1475, friends across servers) delivered**, see §9; **P4 (#1474) delivered**: identity, WebFinger, NodeInfo, actor, signatures, delivery queue, `remote_actor` (see §8). The spike in `spikes/federation/` validates **Fedify 2.4.5**. Tickets P4 to P7 build on this document.
 
 ## 1. Maintainer decisions (2026-11-14)
 
@@ -117,7 +117,7 @@ No `Public` for a non-public outing, **including in `cc`**. Delivery: `ctx.sendA
 - Answer from a remote user: `Join(Event)` (I'm in), `TentativeAccept` (maybe, ActivityStreams vocabulary) and `Leave(Event)` (no). The organiser's server applies the rules of `outingPermissions`/`joinVisibleOuting` (seats, closed outing, visibility), then answers `Accept(Join)` or `Reject(Join)` (reason `full` / `closed` in `summary`). State is also sent back in `Update(Event)` (number of "I'm in", remaining seats).
 - Removing a guest: `Undo(Join)` or `Reject` depending on the side.
 
-**Never sent**: `/i/<token>`, guests without an account, buddy book, emails, drafts, comments (out of v1), photos and the actually ridden track (out of v1).
+**Never sent**: `/i/<token>`, guests without an account, buddy book, emails, drafts, comments (out of v1), photos and videos (out of v1). The actually ridden track of a participant from another server **is** sent to the organiser's server since #1775 (§12).
 
 ### Security and moderation (P7)
 Server blocking (as early as possible in the inbox), account blocking, rate limits per server, activity size, clock (±12 h), mandatory signature, rejection log. Blocks also apply to outgoing deliveries. Delivered in P7: see §11.
@@ -181,3 +181,18 @@ Code: `src/lib/federation/moderation.ts` (rules and limits, `LIMITS` constant), 
 - **Rejection log** (`federation_log`): domain, reason, activity type, never content; 1,000 rows kept.
 - **Known limit**: early filtering (blocking, rate) relies on the actor **declared** by the activity, not verified; signature verification follows, and blocking is checked again on the verified actor. An attacker can therefore use up the quota of a domain they impersonate, never act on its behalf.
 - **Enabled by default**: `FEDERATION` unset = `on` as soon as `FEDERATION_KEY_ENC` exists (without a key: off, warning at start-up); `FEDERATION=off` turns it off. Enabling it on a given server remains the operator's decision.
+
+## 12. Ridden tracks of participants from another server (#1775, epic #1767)
+
+Code: `src/lib/federation/rides.ts` (logic, serialisation, signed fetch, NodeInfo check), wiring in `src/lib/federation/index.ts` (object dispatcher `/ap/rides/{id}`, `Create` / `Update` / `Delete` listeners, NodeInfo `metadata`), app routes `src/app/api/app/outings/*` + `src/lib/app/remote-outings.ts`. Migration 0036: `remote_ride` (participant side), `outing_ride.remote_url` (organiser side). Tests: `tests/federation-rides.test.ts` (two in-memory servers), `tests/app-api.test.ts`, and the network round trip in `scripts/federation-two-instances.ts`.
+
+- **Reference**: the organiser's server. The participant's server keeps its user's track whole (`remote_ride`, one per account and remote outing) and sends a **signed activity tied to the `Event`**: `Create(Document)` the first time, `Update(Document)` to replace it, `Delete(Tombstone)` to remove it. The `Document` is named `singletrack:ride`, `inReplyTo` = the outing's `Event`, `attributedTo` = the participant, id = `/ap/rides/<id>`, and carries **only the stats** (distance, gain, moving and total time) in a `data:` JSON URL: the activity stays far below the 256 KB inbox limit (§11).
+- **Track read by a signed request**: on `Create` / `Update`, the organiser's server GETs the ride URL signed with the organiser's key (`signRequest`), no redirect, 15 s, body read up to 3 MB (`readBounded`), then parses it defensively (`parseRideDocument`: values bounded, geometry = `LineString` / `MultiLineString`, ≤ 100,000 points). **SSRF**: the URL must be on the **same origin as the signing actor** (already contacted to verify the signature) and HTTPS (HTTP only with `FEDERATION_DEV_HTTP=1`).
+- **Served only to the organiser**: `/ap/rides/<id>` answers only a request signed by the organiser's actor of that outing (`getSignedKeyOwner`); anyone else, unsigned, or unknown ⇒ 404. The document is simplified (10 → 80 m) if it would exceed 1.5 MB.
+- **Privacy**: the first and last 300 m are cut **before sending** (`trimEnds` on the served document); times are not sent. The organiser stores the trimmed track (`outing_ride.remote_url` set) and never trims it again (`listRides`, recap). A track of 600 m or less has nothing left: nothing is sent (`tooShort`), and an earlier version is withdrawn.
+- **Who may send**: accepted only from an actor who **joined**: a live `invitation` of that remote actor on the outing, answered `yes` or `maybe` (the `Join` / `TentativeAccept` of §10). The outing must have started (3 h margin) and not be cancelled. Otherwise the activity is refused and logged (`federation_log`, reason `invalid`, activity `ride`); nothing is fetched. A `Delete` only removes a ride of that actor; a ride URL already stored for another guest is refused.
+- **Mixed versions**: NodeInfo announces `metadata.features: ["singletrack:rides"]`. The participant's server checks it before sending (a positive answer is cached one hour, a negative one is asked again next time). Without it (older server), **nothing is sent** and the track stays with the participant: the app API answers `federated: "unsupported"` (the app shows "the organiser's server does not receive tracks yet"). `federated: "off"` = federation off here; `"sent"` = delivered through the queue (retries over ~48 h).
+- **NodeInfo routing fix**: `@fedify/next` only routes `/.well-known/nodeinfo` without an ActivityPub `Accept`; `/nodeinfo/2.1` read with `Accept: application/json` (Fedify's `getNodeInfo`, Mastodon) fell into Next's 404. `src/proxy.ts` now hands `/nodeinfo/*` to Fedify directly.
+- **Participant side, app**: a remote outing the account joined (`yes` / `maybe`, not refused) appears in `GET /api/app/outings` (role `guest`, `remote: { domain }`), `GET /api/app/outings/<id>` gives its detail from the cached copy, and Sillage sends the track through the same `…/<id>/ride` routes (see `docs/companion-app-api.md`).
+- **Not done** (follow-up ticket): uploading from the web page `/sorties/distante/<id>`, and the participant's personal summary of a remote outing on their own server (their track + their media). Photos and videos of the others stay out of federation.
+

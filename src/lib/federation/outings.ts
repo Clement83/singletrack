@@ -129,10 +129,10 @@ const oneOf = <T extends string>(list: readonly T[], v: unknown, fallback: T): T
 const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 const str = (v: unknown, max: number): string | null => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null);
 
-function sanitizeTrack(raw: unknown): TrackSnapshot | null {
-  const t = raw as Partial<TrackSnapshot> | null;
-  const g = t?.geometry as { type?: unknown; coordinates?: unknown } | undefined;
-  if (!t || !g || (g.type !== 'LineString' && g.type !== 'MultiLineString') || !Array.isArray(g.coordinates)) return null;
+/** A received GeoJSON line: `LineString` / `MultiLineString` of finite [lon, lat(, ele)] numbers, 100,000 points at most; null otherwise. */
+export function sanitizeGeometry(raw: unknown): TrackSnapshot['geometry'] | null {
+  const g = raw as { type?: unknown; coordinates?: unknown } | null | undefined;
+  if (!g || (g.type !== 'LineString' && g.type !== 'MultiLineString') || !Array.isArray(g.coordinates)) return null;
   const lines = (g.type === 'LineString' ? [g.coordinates] : g.coordinates) as unknown[];
   let points = 0;
   for (const line of lines) {
@@ -142,11 +142,18 @@ function sanitizeTrack(raw: unknown): TrackSnapshot | null {
       if (++points > 100_000) return null;
     }
   }
+  return { type: g.type, coordinates: g.coordinates } as TrackSnapshot['geometry'];
+}
+
+function sanitizeTrack(raw: unknown): TrackSnapshot | null {
+  const t = raw as Partial<TrackSnapshot> | null;
+  const g = sanitizeGeometry(t?.geometry);
+  if (!t || !g) return null;
   const bbox = Array.isArray(t.bbox) && t.bbox.length === 4 && t.bbox.every((n) => num(n) != null) ? (t.bbox as TrackSnapshot['bbox']) : null;
   const start = Array.isArray(t.start) && t.start.length === 2 && t.start.every((n) => num(n) != null) ? (t.start as [number, number]) : null;
   if (!bbox || !start || num(t.distanceM) == null) return null;
   return {
-    slug: '', name: str(t.name, 120) ?? '', geometry: g as TrackSnapshot['geometry'], bbox, start,
+    slug: '', name: str(t.name, 120) ?? '', geometry: g, bbox, start,
     distanceM: t.distanceM as number, elevationGainM: num(t.elevationGainM), elevationLossM: num(t.elevationLossM),
     minEle: num(t.minEle), maxEle: num(t.maxEle),
     difficulty: (['green', 'blue', 'red', 'black'] as const).find((d) => d === t.difficulty) ?? null,

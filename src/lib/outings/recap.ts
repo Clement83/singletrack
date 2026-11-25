@@ -63,7 +63,7 @@ function viewableRides(db: Db, o: Pick<OutingRow, 'id'>, actor: Actor): ViewRide
     const mine = mineOf(row);
     if (!mine && !all) return [];
     if (mine) return [{ row, geometry: row.geometry, times: row.times, mine }];
-    const geometry = trimEnds(row.geometry);
+    const geometry = row.remoteUrl ? row.geometry : trimEnds(row.geometry); // already trimmed by its server (#1775)
     return geometry ? [{ row, geometry, times: null, mine }] : [];
   });
 }

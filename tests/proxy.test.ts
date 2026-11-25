@@ -69,6 +69,15 @@ describe('proxy (#1482)', () => {
       expect(res.headers.get('location')).toBeNull();
       vi.unstubAllEnvs();
     });
+    it('FEDERATION=on : /nodeinfo/2.1 lu avec Accept: application/json atteint Fedify (#1775)', async () => {
+      vi.stubEnv('FEDERATION', 'on');
+      vi.stubEnv('DATABASE_URL', ':memory:');
+      vi.stubEnv('FEDERATION_DB', ':memory:');
+      const res = await proxy(new NextRequest('http://localhost/nodeinfo/2.1', { headers: { accept: 'application/json' } }));
+      expect(res.status).toBe(200);
+      expect(((await res.json()) as { metadata: { features: string[] } }).metadata.features).toContain('singletrack:rides');
+      vi.unstubAllEnvs();
+    });
   });
 
   it('un préfixe voisin n’est pas public (/sorties ≠ /s, /api/sx ≠ /api/s, /tx ≠ /t)', () => {

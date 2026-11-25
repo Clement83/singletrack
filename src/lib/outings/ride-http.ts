@@ -11,6 +11,22 @@ type Params = Promise<Record<string, string>>;
 const STATUS = { not_found: 404, closed: 409, tooEarly: 409, tooLarge: 413, notGpx: 422, doctype: 422, noTrack: 422 } as const;
 const NOT_FOUND = () => Response.json({ error: 'not_found' }, { status: 404 });
 
+/** Multipart `file` (.gpx / .kml / .kmz ≤ 5 MB) → XML text, or the error response (shared with remote outings, #1775). */
+export async function readRideUpload(req: Request): Promise<string | Response> {
+  const form = await req.formData().catch(() => null);
+  const file = form?.get('file');
+  if (!(file instanceof File)) return Response.json({ error: 'notGpx' }, { status: 422 });
+  if (file.size > RIDE_MAX_BYTES) return Response.json({ error: 'tooLarge' }, { status: 413 });
+  const bytes = Buffer.from(await file.arrayBuffer());
+  if (bytes.subarray(0, 2).toString('latin1') !== 'PK') return bytes.toString('utf8');
+  try {
+    return kmlFromKmz(bytes);
+  } catch (e) {
+    const code = e instanceof Error ? e.message : '';
+    return Response.json({ error: code === 'tooBig' ? 'tooLarge' : code === 'noTrack' ? 'noTrack' : 'notGpx' }, { status: code === 'tooBig' ? 413 : 422 });
+  }
+}
+
 /** GET / POST (multipart `file`, .gpx / .kml / .kmz ≤ 5 MB) / DELETE of the ridden track, shared by the guest and organiser routes. */
 export function rideHandlers(resolve: (req: Request, p: Record<string, string>) => Promise<Ctx>, limitKey: (req: Request, p: Record<string, string>) => string) {
   return {
@@ -27,20 +43,8 @@ export function rideHandlers(resolve: (req: Request, p: Record<string, string>) 
       }
       const ctx = await resolve(req, p);
       if (!ctx) return NOT_FOUND();
-      const form = await req.formData().catch(() => null);
-      const file = form?.get('file');
-      if (!(file instanceof File)) return Response.json({ error: 'notGpx' }, { status: 422 });
-      if (file.size > RIDE_MAX_BYTES) return Response.json({ error: 'tooLarge' }, { status: 413 });
-      const bytes = Buffer.from(await file.arrayBuffer());
-      let xml: string;
-      if (bytes.subarray(0, 2).toString('latin1') === 'PK') {
-        try {
-          xml = kmlFromKmz(bytes);
-        } catch (e) {
-          const code = e instanceof Error ? e.message : '';
-          return Response.json({ error: code === 'tooBig' ? 'tooLarge' : code === 'noTrack' ? 'noTrack' : 'notGpx' }, { status: code === 'tooBig' ? 413 : 422 });
-        }
-      } else xml = bytes.toString('utf8');
+      const xml = await readRideUpload(req);
+      if (xml instanceof Response) return xml;
       const res = await saveRide(getDb().db, ctx.outing, ctx.actor, xml);
       return res.ok ? Response.json({ ok: true, id: res.id }, { status: 201 }) : Response.json({ error: res.error }, { status: STATUS[res.error] });
     },

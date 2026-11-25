@@ -77,6 +77,14 @@ describe('Fedify : identité (#1474)', () => {
     expect(ni.protocols).toEqual(['activitypub']);
     expect(ni.usage.users.total).toBe(1);
     expect(typeof ni.openRegistrations).toBe('boolean');
+    // #1775: other singletrack servers send ridden tracks only to a server announcing it.
+    const { announcesRides } = await import('@/lib/federation/rides');
+    expect(ni.metadata.features).toContain('singletrack:rides');
+    expect(announcesRides(ni)).toBe(true);
+    expect(announcesRides({ metadata: {} })).toBe(false);
+  });
+  it('trace roulée /ap/rides/<id> : requête non signée ou inconnue → 404 (#1775)', async () => {
+    expect((await get(`${ORIGIN}/ap/rides/00000000-0000-4000-8000-000000000000`, 'application/activity+json')).status).toBe(404);
   });
   it('boîte d’entrée : un POST sans signature valide est refusé', async () => {
     const res = await fed.federation.fetch(

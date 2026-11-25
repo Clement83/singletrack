@@ -192,3 +192,55 @@ describe('/api/app/outings/[ref]/ride', () => {
     expect((await upload(pairUser('b'), gpx)).status).toBe(404);
   });
 });
+
+describe('sortie d’un autre serveur dans l’app (#1775)', () => {
+  const gpx = '<?xml version="1.0"?><gpx version="1.1" creator="app"><trk><trkseg>'
+    + Array.from({ length: 30 }, (_, i) => `<trkpt lat="43.2" lon="${(6.1 + i * 0.001).toFixed(4)}"><time>2026-11-14T08:${String(i).padStart(2, '0')}:00Z</time></trkpt>`).join('')
+    + '</trkseg></trk></gpx>';
+  let remoteId: string;
+  beforeEach(async () => {
+    const { upsertRemoteActor } = await import('@/lib/federation/remote-actors');
+    const { onEvent } = await import('@/lib/federation/outings');
+    const { remoteResponse } = await import('@/db/schema');
+    const actor = upsertRemoteActor(db(), { actorUrl: 'https://far.example/ap/users/zoe', handle: 'zoe', displayName: 'Zoé', inboxUrl: 'https://far.example/ap/users/zoe/inbox' });
+    remoteId = onEvent(db(), actor.actorUrl, {
+      objectUrl: 'https://far.example/ap/outings/o1', actorUrl: actor.actorUrl, title: 'Ailleurs', description: null,
+      startsAt: new Date(Date.now() - 3600_000), lat: 44, lon: 5, label: null,
+      ext: { v: 1, level: 'sportif', ebike: 'yes', visibility: 'public', maxParticipants: null, yesCount: 1, status: 'planned', track: null },
+    }, [])!.id;
+    db().insert(remoteResponse).values({ remoteOutingId: remoteId, userId: 'b', answer: 'yes', state: 'accepted' }).run();
+  });
+  const upload = (token: string) => {
+    const fd = new FormData();
+    fd.append('file', new File([gpx], 'ride.gpx'));
+    return appRide.POST(bearer(token, { method: 'POST', body: fd }), ctx({ ref: remoteId }));
+  };
+
+  it('listée et lisible pour le participant qui l’a rejointe, pas pour un autre compte', async () => {
+    const token = pairUser('b');
+    const list = (await (await appOutings.GET(bearer(token), ctx({}))).json()) as { outings: { id: string; role: string; remote?: { domain: string } }[] };
+    expect(list.outings.find((o) => o.id === remoteId)).toMatchObject({ role: 'guest', remote: { domain: 'far.example' } });
+    const detail = await appOuting.GET(bearer(token), ctx({ ref: remoteId }));
+    expect(detail.status).toBe(200);
+    expect(await detail.json()).toMatchObject({ title: 'Ailleurs', webPath: `/sorties/distante/${remoteId}`, myAnswer: 'yes', track: null });
+    const other = pairUser('a');
+    const listA = (await (await appOutings.GET(bearer(other), ctx({}))).json()) as { outings: { id: string }[] };
+    expect(listA.outings.some((o) => o.id === remoteId)).toBe(false);
+    expect((await appOuting.GET(bearer(other), ctx({ ref: remoteId }))).status).toBe(404);
+  });
+
+  it('trace envoyée par les mêmes routes : gardée ici (fédération coupée), relue, supprimée ; 404 pour un autre compte', async () => {
+    vi.stubEnv('FEDERATION', 'off');
+    const token = pairUser('b');
+    const res = await upload(token);
+    expect(res.status).toBe(201);
+    expect(await res.json()).toMatchObject({ ok: true, federated: 'off' });
+    const list = (await (await appRide.GET(bearer(token), ctx({ ref: remoteId }))).json()) as { rides: { mine: boolean }[] };
+    expect(list.rides).toEqual([expect.objectContaining({ mine: true })]);
+    expect((await upload(pairUser('a'))).status).toBe(404);
+    expect((await appRide.DELETE(bearer(token, { method: 'DELETE' }), ctx({ ref: remoteId }))).status).toBe(200);
+    const after = (await (await appRide.GET(bearer(token), ctx({ ref: remoteId }))).json()) as { rides: unknown[] };
+    expect(after.rides).toHaveLength(0);
+    vi.unstubAllEnvs();
+  });
+});

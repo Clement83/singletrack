@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { count, eq, isNotNull } from 'drizzle-orm';
 import { createExponentialBackoffPolicy, createFederation, type Federation } from '@fedify/fedify';
-import { Accept, Activity, Create, Delete, Endpoints, Event, Follow, Join, Leave, Person, PUBLIC_COLLECTION, Reject, TentativeAccept, Undo, Update } from '@fedify/vocab';
+import { Accept, Activity, Create, Delete, Document, Endpoints, Event, Follow, Join, Leave, Person, PUBLIC_COLLECTION, Reject, TentativeAccept, Undo, Update } from '@fedify/vocab';
 import { SqliteKvStore, SqliteMessageQueue } from '@fedify/sqlite';
 import { getDb } from '@/db';
 import { outing, user } from '@/db/schema';
@@ -14,6 +14,7 @@ import { upsertRemoteActor } from './remote-actors';
 import { isDomainBlocked, LIMITS, logRefusal, pruneRemoteOutings } from './moderation';
 import { onAccept, onFollow, onReject, onUndoFollow } from './friends';
 import { buildEvent, eventData, onDeleteEvent, onEvent, onJoinResult, onRemoteResponse, parseEvent } from './outings';
+import { isRideDocument, onRemoteRide, onRemoteRideDelete, parseRideDocument, rideDocumentFor, RIDES_FEATURE } from './rides';
 
 /**
  * ActivityPub federation (#1474, docs/federation.md). Fedify; KV and persistent delivery queue in a separate SQLite
@@ -85,6 +86,13 @@ export function buildFederation(opts: { dbFile?: string; origin?: string; allowP
     return data ? buildEvent(data, { to: [PUBLIC_COLLECTION] }) : null;
   });
 
+  // A participant's ridden track on another server's outing (#1775): readable only by that outing's organiser (signed GET,
+  // key owner checked), first and last 300 m already hidden. Anyone else: 404.
+  federation.setObjectDispatcher(Document, '/ap/rides/{id}', async (ctx, values) => {
+    const owner = await ctx.getSignedKeyOwner().catch(() => null);
+    return rideDocumentFor(db, values.id, owner?.id?.href);
+  });
+
   // Empty collections in P4: filled by P5 (friends) and P6 (outings).
   federation.setOutboxDispatcher('/ap/users/{identifier}/outbox', async () => ({ items: [] }));
   federation.setFollowersDispatcher('/ap/users/{identifier}/followers', async () => ({ items: [] }));
@@ -128,6 +136,12 @@ export function buildFederation(opts: { dbFile?: string; origin?: string; allowP
     if (!actorUrl) return;
     await guard(a instanceof Create ? 'Create' : 'Update', async () => {
       const obj = await a.getObject(ctx);
+      // Ridden track of a participant from another server (#1775): `Create` = new, `Update` = replaces it.
+      if (isRideDocument(obj)) {
+        const ride = parseRideDocument(obj);
+        if (ride) await onRemoteRide(db, actorUrl, ride);
+        return;
+      }
       if (!(obj instanceof Event)) return;
       const data = await parseEvent(obj);
       if (!data) return;
@@ -170,7 +184,7 @@ export function buildFederation(opts: { dbFile?: string; origin?: string; allowP
     .on(Update, (ctx, a) => onEventActivity(ctx, a))
     .on(Delete, async (ctx, a) => {
       const actorUrl = await cacheActor(ctx, a);
-      if (actorUrl) await guard('Delete', () => onDeleteEvent(db, actorUrl, a.objectId?.href ?? null));
+      if (actorUrl) await guard('Delete', () => { onDeleteEvent(db, actorUrl, a.objectId?.href ?? null); onRemoteRideDelete(db, actorUrl, a.objectId?.href ?? null); });
     })
     .on(Undo, async (ctx, undo) => {
       const actorUrl = await cacheActor(ctx, undo);
@@ -189,6 +203,8 @@ export function buildFederation(opts: { dbFile?: string; origin?: string; allowP
     protocols: ['activitypub'],
     openRegistrations: process.env.AUTH_DISABLE_SIGNUP !== 'true',
     usage: { users: { total: db.select({ n: count() }).from(user).where(isNotNull(user.handle)).get()?.n ?? 0 }, localPosts: 0, localComments: 0 },
+    // Features other singletrack servers check before sending something new (#1775: ridden tracks of remote participants).
+    metadata: { features: [RIDES_FEATURE] },
   }));
 
   pruneRemoteOutings(db); // expired copies (#1477)

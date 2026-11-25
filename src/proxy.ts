@@ -21,6 +21,9 @@ export async function proxy(req: NextRequest) {
 // Fedify (@fedify/next) answers WebFinger, NodeInfo, actor and inboxes; the rest passes through (Next 404 page).
 async function handleFederation(req: NextRequest) {
   const [{ fedifyWith }, { getFederation }, guard] = await Promise.all([import('@fedify/next'), import('@/lib/federation'), import('@/lib/federation/inbox-guard')]);
+  // `/nodeinfo/2.1` is read with `Accept: application/json` (Fedify's own `getNodeInfo`, Mastodon…), which `fedifyWith` only
+  // routes for `/.well-known/nodeinfo`: hand it to Fedify directly, otherwise the document is a Next 404 (#1775).
+  if (req.nextUrl.pathname.startsWith('/nodeinfo/')) return getFederation().fetch(req, { contextData: undefined });
   const next = fedifyWith(getFederation())();
   if (!guard.isInboxRequest(req, req.nextUrl.pathname)) return (await next(req)) as Response;
   // Inboxes (#1477): size, blocked server, rate, before signature verification.

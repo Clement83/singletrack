@@ -135,9 +135,12 @@ export async function saveRide(db: Db, o: OutingRow, actor: Actor, xml: string, 
   return storeRide(db, o, actor, s, now);
 }
 
-/** Inserts or replaces the actor's ride from already analysed stats (#1765: shared with the app's solo outing creation). */
-export function storeRide(db: Db, o: OutingRow, actor: Actor, s: RideStats, now = new Date()): { ok: true; id: string } {
-  const values = { geometry: s.geometry, distanceM: s.distanceM, gainM: s.gainM, movingSec: s.movingSec, elapsedSec: s.elapsedSec, times: s.times };
+/**
+ * Inserts or replaces the actor's ride from already analysed stats (#1765: shared with the app's solo outing creation).
+ * `remoteUrl`: the ride came from a guest on another server, already trimmed there (#1775).
+ */
+export function storeRide(db: Db, o: OutingRow, actor: Actor, s: RideStats, now = new Date(), remoteUrl: string | null = null): { ok: true; id: string } {
+  const values = { geometry: s.geometry, distanceM: s.distanceM, gainM: s.gainM, movingSec: s.movingSec, elapsedSec: s.elapsedSec, times: s.times, remoteUrl };
   return db.transaction((tx) => {
     const existing = tx.select().from(outingRide).where(where(o.id, actor)).get();
     if (existing) {
@@ -180,7 +183,8 @@ export function listRides(db: Db, outingId: string, actor: Actor): RideView[] {
     .sort((a, b) => Number(a.r.invitationId !== null) - Number(b.r.invitationId !== null) || a.r.createdAt.getTime() - b.r.createdAt.getTime())
     .flatMap(({ r, name }) => {
       const mine = isMine(r);
-      const geometry = mine ? r.geometry : trimEnds(r.geometry);
+      // A track from another server was already trimmed there (#1775): never twice.
+      const geometry = mine || r.remoteUrl ? r.geometry : trimEnds(r.geometry);
       if (!geometry) return [];
       const b = bboxOf(geometry)!;
       return [{

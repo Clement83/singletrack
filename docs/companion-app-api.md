@@ -27,10 +27,10 @@ The code works once (replay ⇒ 401). Only SHA-256 hashes of the code and of the
 
 | Route | Auth | Description |
 |---|---|---|
-| `GET /api/app/outings` | Bearer | My outings (organiser or guest linked to my account): upcoming and the last 30 days, oldest first. |
+| `GET /api/app/outings` | Bearer | My outings (organiser or guest linked to my account, plus outings from other servers I joined, #1775): upcoming and the last 30 days, oldest first. |
 | `GET /api/app/outings/<ref>` | Bearer | One outing. `ref` = slug (organiser, same rights as `/s/<slug>`) or outing `id` (also works for a linked guest). Not mine ⇒ `404`. |
 | `GET /api/app/i/<token>` | none | Same data and rights as `/i/<token>` (personal link, no account). Unknown or revoked ⇒ `404`. 60 requests / minute / IP. |
-| `GET` / `POST` / `DELETE /api/app/outings/<ref>/ride` | Bearer | Ridden track, same handler and limits as the web (`multipart` field `file`, GPX / KML / KMZ ≤ 5 MB; `<wpt>` waypoints are accepted and ignored). Errors `tooEarly` / `closed` (409), `tooLarge` (413), `notGpx` / `noTrack` / `doctype` (422). |
+| `GET` / `POST` / `DELETE /api/app/outings/<ref>/ride` | Bearer | Ridden track, same handler and limits as the web (`multipart` field `file`, GPX / KML / KMZ ≤ 5 MB; `<wpt>` waypoints are accepted and ignored). Errors `tooEarly` / `closed` (409), `tooLarge` (413), `notGpx` / `noTrack` / `doctype` (422). For an outing from another server, see below. |
 | `GET /api/app/offline` | Bearer | Offline catalogue (#1739): `{ enabled, regions: [{ id, name, bbox, pmtilesSize, version, segments: [{ name, size, sha256 }] }], style, attribution }`. `enabled: false` (and no regions) when the master switch is off. Only enabled, built regions; segments missing on disk are left out. |
 | `GET /api/app/offline/<region>.pmtiles` | Bearer | Region map archive. **`Range` required** (`206`, `Content-Range`, `ETag` = pack version; no `Range` ⇒ `416`). Read it by ranges: a whole region or an outing's corridor. |
 | `GET /api/app/offline/segments/<name>.rd5` | Bearer | BRouter segment (e.g. `E5_N40`) of an active region only. Plain `200` or `Range` to resume an interrupted download (`If-Range` with the `ETag` is honoured; verify the catalogue `sha256`). |
@@ -52,6 +52,21 @@ Anything the account may not see is `404`, never `403`.
 Answers: `201 { slug, url }` outing created; `200 { slug, url }` this `clientId` was already received for the account (same outing, nothing created); `400 { error }` with `notGpx`, `noPoints`, `clientIdInvalid`, `title`, `date`; `413 { error: "tooBig" }`; `401` missing or revoked token; `429` + `Retry-After`. `url` is built on the public origin (`BETTER_AUTH_URL`).
 
 The outing is a **past, private (`invite`), one-person** outing (the token's account is owner, organiser and only participant) running from the first to the last point of the GPX. It has no `track` row (nothing in "My tracks"): its frozen route is built from the GPX geometry (IGN elevation completed), and the GPX is stored as the organiser's ridden track and the reference ride (real distance, gain, total and moving time, summary, photos). Nobody is notified (no invitation, mail or federation). It appears in `GET /api/app/outings`. Code: `src/lib/outings/solo.ts`.
+
+### Outing from another server (#1775)
+
+An outing organised on another singletrack server that my account joined ("yes" / "maybe", not refused by the organiser) is listed with `role: "guest"` and an extra `remote: { domain }`; its `id` is the id of the local copy and works as `ref` on the routes above. Its detail comes from the cached copy: `webPath` = `/sorties/distante/<id>`, `participants` = `[]` (only `yesCount`), `track` may be `null`, no `slug`.
+
+The ridden track is kept on **my** server (whole) and sent to the organiser's server, first and last 300 m hidden (docs/federation.md §12). `POST` answers `201 { ok, id, federated }`:
+
+| `federated` | Meaning |
+|---|---|
+| `sent` | delivered to the organiser's server (through the federation queue) |
+| `unsupported` | the organiser's server does not receive tracks yet (older version): kept here only. Show "the organiser's server does not receive tracks yet". |
+| `off` | federation is off on my server: kept here only |
+| `tooShort` | ≤ 600 m: nothing left once the ends are hidden, nothing sent |
+
+`GET` lists only my own track (`federated: true|false` on it); `DELETE` removes it here and, if it had been sent, on the organiser's server. Errors: `not_found` (404, not joined), `tooEarly` / `closed` (409). An older server answers `404` on these ids (the outing is not listed there either).
 
 ### Outing summary (`outings[]`)
 
