@@ -238,10 +238,12 @@ export const outing = sqliteTable(
     participantsCanInvite: integer('participants_can_invite', { mode: 'boolean' }).notNull().default(false),
     /** Ridden track chosen by the organiser for the outing recap (#1692). No FK: a stale id falls back to the default. */
     referenceRideId: text('reference_ride_id'),
+    /** Idempotency key of an outing created from an app recording (#1765): unique per creator. */
+    clientId: text('client_id'),
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
     updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   },
-  (t) => [index('outing_track_idx').on(t.trackId), index('outing_starts_idx').on(t.startsAt)],
+  (t) => [index('outing_track_idx').on(t.trackId), index('outing_starts_idx').on(t.startsAt), uniqueIndex('outing_client_id_uq').on(t.createdBy, t.clientId)],
 );
 
 /**

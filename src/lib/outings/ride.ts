@@ -132,6 +132,11 @@ export async function saveRide(db: Db, o: OutingRow, actor: Actor, xml: string, 
     const code = e instanceof Error ? e.message : '';
     return { ok: false, error: code === 'doctype' || code === 'noTrack' ? code : 'notGpx' };
   }
+  return storeRide(db, o, actor, s, now);
+}
+
+/** Inserts or replaces the actor's ride from already analysed stats (#1765: shared with the app's solo outing creation). */
+export function storeRide(db: Db, o: OutingRow, actor: Actor, s: RideStats, now = new Date()): { ok: true; id: string } {
   const values = { geometry: s.geometry, distanceM: s.distanceM, gainM: s.gainM, movingSec: s.movingSec, elapsedSec: s.elapsedSec, times: s.times };
   return db.transaction((tx) => {
     const existing = tx.select().from(outingRide).where(where(o.id, actor)).get();
