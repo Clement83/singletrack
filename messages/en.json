@@ -1453,7 +1453,13 @@
     "discussionUnread": "Discussion, {n, plural, one {# unread message} other {# unread messages}}",
     "restricted": "Participants only"
   },
+  "moments": {
+    "label": "Key moment",
+    "aria": "{name}, {time}"
+  },
   "summary": {
+    "aroundMoment": "Key moment: {name}",
+    "momentUnnamed": "Key moment",
     "ride": {
       "label": "Replayed track",
       "mine": "My track",

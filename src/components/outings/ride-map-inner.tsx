@@ -6,6 +6,7 @@ import { TrackTip, useTrackTip } from '@/components/map/track-tip';
 import BaseMap from '@/components/BaseMap';
 import { useMapColors } from '@/components/tracks/use-map-colors';
 import type { TrackGeometry } from '@/lib/geo/types';
+import { MomentMarker, type MomentPoint } from '@/components/map/moment-marker';
 import type { MediaPoint } from '@/lib/outings/media-points';
 
 /** Colours of the other participants' tracks (map tokens, readable on the light topo map); the cards use the same CSS variables. */
@@ -23,10 +24,12 @@ export type RideMapProps = {
   media?: MediaPoint[];
   labels?: { photo: string; video: string };
   onMedia?: (m: MediaPoint) => void;
+  /** Key moments of the selected ride (#1798): flag + name, always shown. */
+  moments?: MomentPoint[];
 };
 
 /** Planned (dashed, discreet) under the actual ride (solid line): the gap shows immediately. */
-export default function RideMapInner({ planned, ride, others, bbox, media, labels, onMedia }: RideMapProps) {
+export default function RideMapInner({ planned, ride, others, bbox, media, labels, onMedia, moments }: RideMapProps) {
   const colors = useMapColors();
   // "km from the start" tooltip (#1535), on the planned route as on the actual one.
   const { tip, onMove, onTap, clear } = useTrackTip((e) => {
@@ -53,6 +56,7 @@ export default function RideMapInner({ planned, ride, others, bbox, media, label
           <Layer id="ride-real-line" type="line" layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': colors.primary, 'line-width': 4 }} />
         </Source>
       )}
+      {moments?.map((m) => <MomentMarker key={m.id} moment={m} />)}
       {media?.map((p) => (
         <Marker key={p.id} longitude={p.lon} latitude={p.lat} anchor="center">
           <button type="button" aria-label={p.type === 'video' ? labels?.video : labels?.photo} onClick={() => onMedia?.(p)} className="flex size-touch items-center justify-center" data-testid={`ride-map-${p.type}`}>

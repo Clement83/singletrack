@@ -491,6 +491,24 @@ export const outingRide = sqliteTable(
   (t) => [index('outing_ride_outing_idx').on(t.outingId)],
 );
 
+/**
+ * Key moments noted during a ridden track (#1798): GPX `<wpt>` / KML `Placemark` Point, kept when the track is analysed.
+ * Replacing the track replaces its moments (cascade + re-insert). `at` = epoch ms, NULL if the waypoint is undated.
+ */
+export const outingRideMoment = sqliteTable(
+  'outing_ride_moment',
+  {
+    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    rideId: text('ride_id').notNull().references(() => outingRide.id, { onDelete: 'cascade' }),
+    lat: real('lat').notNull(),
+    lon: real('lon').notNull(),
+    at: integer('at'),
+    name: text('name'),
+    type: text('type'),
+  },
+  (t) => [index('outing_ride_moment_ride_idx').on(t.rideId)],
+);
+
 /** Outing photos (#1413). Files in `data/media/<outing>/` (JPEG without EXIF); lat/lon = EXIF position kept only to place the photo on the map. */
 export const outingPhoto = sqliteTable(
   'outing_photo',

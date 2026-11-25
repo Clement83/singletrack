@@ -11,3 +11,4 @@ export * from './along';
 export * from './timed';
 export * from './dedupe-lines';
 export * from './trim-ends';
+export * from './moments';

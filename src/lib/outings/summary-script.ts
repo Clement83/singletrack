@@ -10,6 +10,8 @@ export type SummaryMedia = {
   durationMs: number | null;
   /** Distance along the reference track (m); `null` = not placed. */
   distanceM: number | null;
+  /** Featured with a key moment (#1798): shown first at its stop. */
+  featured?: boolean;
 };
 
 /** Media placed within this distance of each other (m) share one stop and play one after the other. */
@@ -33,6 +35,8 @@ export function buildStops(media: SummaryMedia[]): Stop[] {
     if (last && (m.distanceM as number) - last.distanceM <= STOP_MERGE_M) last.media.push(m);
     else stops.push({ distanceM: m.distanceM as number, media: [m] });
   }
+  // Featured media first within a stop (stable: the rest keeps its order).
+  for (const s of stops) s.media = [...s.media.filter((m) => m.featured), ...s.media.filter((m) => !m.featured)];
   return stops;
 }
 

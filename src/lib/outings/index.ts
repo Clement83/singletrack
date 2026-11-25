@@ -23,3 +23,4 @@ export * from './recap';
 export * from './photo-placement';
 export * from './photo-time';
 export * from './videos';
+export * from './moment-media';

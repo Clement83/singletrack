@@ -7,6 +7,7 @@ import { Marker, type MapRef } from 'react-map-gl/maplibre';
 import type { Marker as MaplibreMarker } from 'maplibre-gl';
 import BaseMap from '@/components/BaseMap';
 import { Button } from '@/components/ui/button';
+import { MomentMarker } from '@/components/map/moment-marker';
 import { SlopeRouteLayer } from '@/components/map/slope-route-layer';
 import { BASE_ZOOM, PITCH, TILE_WAIT_MS } from '@/components/map/flyover';
 import { useMapColors } from '@/components/tracks/use-map-colors';
@@ -86,7 +87,7 @@ function Stage({ recap, track, onPickRide, photoBase, videoBase, musicBase, onDe
   const [removed, setRemoved] = useState<ReadonlySet<string>>(() => new Set());
   const live = useMemo(() => recap.media.filter((m) => !removed.has(m.id)), [recap.media, removed]);
   const deletable = useMemo(() => new Set(recap.media.filter((m) => m.canDelete).map((m) => m.id)), [recap.media]);
-  const media = useMemo<SummaryMedia[]>(() => live.map((m) => ({ id: m.id, type: m.type, author: m.author, durationMs: m.durationMs, distanceM: m.placement.distanceM })), [live]);
+  const media = useMemo<SummaryMedia[]>(() => live.map((m) => ({ id: m.id, type: m.type, author: m.author, durationMs: m.durationMs, distanceM: m.placement.distanceM, featured: m.momentId != null })), [live]);
   const stops = useMemo(() => buildStops(media), [media]);
   const slides = useMemo(() => buildSlides(media), [media]);
   const authors = useMemo(() => new Map(recap.media.map((m) => [m.id, m.organizer ? '' : m.author])), [recap.media]);
@@ -574,6 +575,8 @@ function Stage({ recap, track, onPickRide, photoBase, videoBase, musicBase, onDe
   };
 
   const cur = shown?.media ?? null;
+  const curMoment = cur ? recap.media.find((m) => m.id === cur.id)?.momentId : null;
+  const momentName = curMoment ? (track.moments.find((m) => m.id === curMoment)?.name ?? t('momentUnnamed')) : null;
   const author = cur ? authors.get(cur.id) : '';
   const barBtn = 'flex size-11 items-center justify-center rounded-full text-media-foreground hover:bg-media-foreground/15 active:opacity-70 focus-visible:ring-2 focus-visible:ring-ring';
   const startPos = path.coords[0];
@@ -598,6 +601,7 @@ function Stage({ recap, track, onPickRide, photoBase, videoBase, musicBase, onDe
                 </Marker>
               );
             })}
+            {track.moments.map((m) => <MomentMarker key={m.id} moment={m} interactive={false} onDark />)}
             <Marker ref={markerRef} longitude={startPos[0]} latitude={startPos[1]} style={{ pointerEvents: 'none', zIndex: 5 }}>
               <span className="block size-5 rounded-full border-[3px] border-media-foreground bg-primary shadow-lg" role="img" aria-label={t('point')} />
             </Marker>
@@ -627,6 +631,7 @@ function Stage({ recap, track, onPickRide, photoBase, videoBase, musicBase, onDe
                 className="max-h-[55%] max-w-[92%] rounded-2xl object-contain shadow-lg sm:max-w-[60%]"
               />
             )}
+            {momentName != null && <p className="absolute top-16 left-4 rounded-full bg-media-surface/60 px-3 py-1 text-sm" data-testid="summary-around-moment">{t('aroundMoment', { name: momentName })}</p>}
             {author && <p className="absolute bottom-40 left-4 rounded-full bg-media-surface/60 px-3 py-1 text-sm">{t('by', { name: author })}</p>}
           </div>
         )}

@@ -18,12 +18,12 @@ export const CLIENT_NAMESPACES = {
   root: ROOT,
   auth: [...ROOT, 'auth', 'welcome'],
   track: [...ROOT, ...TRACK, 'userMenu'],
-  guest: [...ROOT, ...TRACK, 'rsvp', 'share', 'conditions', 'comments', 'ride', 'photos', 'summary', 'claim', 'inviteFriends', 'userMenu', 'participants', 'outingView', 'nextStep', 'outingBar', 'sheet'],
-  outing: [...ROOT, ...TRACK, 'rsvp', 'join', 'share', 'outingManager', 'inviteFriends', 'contacts', 'outingForm', 'outingVisibility', 'duplicate', 'outingLabels', 'conditions', 'comments', 'ride', 'photos', 'summary', 'userMenu', 'participants', 'outingView', 'nextStep', 'outingBar', 'sheet'],
+  guest: [...ROOT, ...TRACK, 'rsvp', 'share', 'conditions', 'comments', 'ride', 'photos', 'summary', 'moments', 'claim', 'inviteFriends', 'userMenu', 'participants', 'outingView', 'nextStep', 'outingBar', 'sheet'],
+  outing: [...ROOT, ...TRACK, 'rsvp', 'join', 'share', 'outingManager', 'inviteFriends', 'contacts', 'outingForm', 'outingVisibility', 'duplicate', 'outingLabels', 'conditions', 'comments', 'ride', 'photos', 'summary', 'moments', 'userMenu', 'participants', 'outingView', 'nextStep', 'outingBar', 'sheet'],
   editor: [...ROOT, ...TRACK, 'editor', 'singles', 'userMenu', 'userProfile', 'outingVisibility'],
   private: [
     ...ROOT, ...TRACK, 'nav', 'sheet', 'theme', 'charte', 'share', 'userMenu', 'explorer', 'filters', 'trackCard', 'singles', 'importer', 'editor', 'contacts', 'friends', 'history', 'userProfile',
-    'outingForm', 'outingVisibility', 'outingLabels', 'conditions', 'outings', 'outingsMap', 'remoteOutings', 'moderation', 'admin', 'guest', 'participants', 'outingView', 'summary', 'ride', 'photos',
+    'outingForm', 'outingVisibility', 'outingLabels', 'conditions', 'outings', 'outingsMap', 'remoteOutings', 'moderation', 'admin', 'guest', 'participants', 'outingView', 'summary', 'moments', 'ride', 'photos',
   ],
   all: 'all',
 } satisfies Record<string, Ns[] | 'all'>;

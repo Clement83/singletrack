@@ -1,7 +1,7 @@
 import { and, eq, isNull } from 'drizzle-orm';
 import type { Db } from '@/db';
-import { invitation, outingRide, type OutingRow } from '@/db/schema';
-import { trimEnds, bboxOf, dedupeLineIndexes, enrichElevation, type EnrichOptions, gainLoss, gpxTimedSegments, haversine, kmlTimedSegments, lineLength, parseGpxFile, parseKmlFile, simplifyIndexes, type Position, type TrackGeometry } from '@/lib/geo';
+import { invitation, outingRide, outingRideMoment, type OutingRow } from '@/db/schema';
+import { trimEnds, bboxOf, dedupeLineIndexes, enrichElevation, type EnrichOptions, gainLoss, gpxMoments, gpxTimedSegments, haversine, kmlMoments, visibleMoments, type Moment, kmlTimedSegments, lineLength, parseGpxFile, parseKmlFile, simplifyIndexes, type Position, type TrackGeometry } from '@/lib/geo';
 import { type Actor } from './comments';
 
 export const RIDE_MAX_BYTES = 5 * 1024 * 1024;
@@ -17,6 +17,8 @@ export type RideStats = {
   elapsedSec: number | null;
   /** Epoch ms of each point of `geometry` (flattened); `null` without timestamps (#1692). */
   times: number[] | null;
+  /** Key moments (#1798): waypoints of the file; absent = none. */
+  moments?: Moment[];
 };
 
 /** Fills the holes of a per-point time list (linear between known neighbours, flat at the ends); `null` if fewer than 2 known times. */
@@ -87,6 +89,7 @@ export async function analyzeRide(xml: string, enrich: EnrichOptions = {}): Prom
   return {
     geometry: simpLines.length === 1 ? { type: 'LineString', coordinates: simpLines[0] } : { type: 'MultiLineString', coordinates: simpLines },
     times,
+    moments: kml ? kmlMoments(xml) : gpxMoments(xml),
     distanceM: Math.round(distanceM),
     gainM: gainM == null ? null : Math.round(gainM),
     movingSec: timed ? Math.round(moving) : null,
@@ -94,7 +97,11 @@ export async function analyzeRide(xml: string, enrich: EnrichOptions = {}): Prom
   };
 }
 
+export type RideMoment = { id: string; lat: number; lon: number; at: number | null; name: string | null; type: string | null };
+
 export type RideView = {
+  /** Key moments (#1798); absent for a ride that carries none (remote ride). */
+  moments?: RideMoment[];
   id: string;
   /** Guest's first name; `organizer` for the organiser. */
   author: string;
@@ -145,6 +152,8 @@ export function storeRide(db: Db, o: OutingRow, actor: Actor, s: RideStats, now 
     const existing = tx.select().from(outingRide).where(where(o.id, actor)).get();
     if (existing) {
       tx.update(outingRide).set({ ...values, createdAt: now }).where(eq(outingRide.id, existing.id)).run();
+      tx.delete(outingRideMoment).where(eq(outingRideMoment.rideId, existing.id)).run();
+      saveMoments(tx as unknown as Db, existing.id, s.moments);
       return { ok: true as const, id: existing.id };
     }
     const row = tx.insert(outingRide).values({
@@ -152,8 +161,26 @@ export function storeRide(db: Db, o: OutingRow, actor: Actor, s: RideStats, now 
       invitationId: actor.kind === 'guest' ? actor.invitationId : null,
       authorUserId: actor.kind === 'organizer' ? actor.userId : null,
     }).returning({ id: outingRide.id }).get();
+    saveMoments(tx as unknown as Db, row.id, s.moments);
     return { ok: true as const, id: row.id };
   });
+}
+
+function saveMoments(db: Db, rideId: string, moments: Moment[] | undefined): void {
+  if (moments?.length) db.insert(outingRideMoment).values(moments.map((m) => ({ rideId, lat: m.lat, lon: m.lon, at: m.at, name: m.name, type: m.type }))).run();
+}
+
+/** Moments of a ride, by time then name (undated last). */
+export function momentsOf(db: Db, rideId: string): RideMoment[] {
+  return db.select().from(outingRideMoment).where(eq(outingRideMoment.rideId, rideId)).all()
+    .map((m) => ({ id: m.id, lat: m.lat, lon: m.lon, at: m.at, name: m.name, type: m.type }))
+    .sort((a, b) => (a.at ?? Infinity) - (b.at ?? Infinity) || (a.name ?? '').localeCompare(b.name ?? ''));
+}
+
+/** Moments the actor may see on `r` (#1798): all of their own, others' minus the ones in the hidden 300 m (#1772). */
+export function viewMoments(db: Db, r: { id: string; geometry: TrackGeometry; remoteUrl: string | null }, mine: boolean): RideMoment[] {
+  const all = momentsOf(db, r.id);
+  return mine || r.remoteUrl ? all : visibleMoments(all, r.geometry);
 }
 
 export function deleteRide(db: Db, o: OutingRow, actor: Actor): void {
@@ -188,6 +215,7 @@ export function listRides(db: Db, outingId: string, actor: Actor): RideView[] {
       if (!geometry) return [];
       const b = bboxOf(geometry)!;
       return [{
+        moments: viewMoments(db, r, mine),
         id: r.id, author: name ?? '', organizer: r.invitationId === null, mine,
         geometry, bbox: [b.minLon, b.minLat, b.maxLon, b.maxLat] as [number, number, number, number],
         distanceM: r.distanceM, gainM: r.gainM, movingSec: r.movingSec, elapsedSec: r.elapsedSec,

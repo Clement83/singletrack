@@ -106,7 +106,7 @@ export function RideSection({ base, rides, planned, canUpload, reference }: Prop
 
       {selected && (
         <>
-          <RideMap label={t('mapLabel')} planned={planned?.geometry ?? null} ride={selected.geometry} others={rides.filter((r) => r.id !== selected.id).map((r) => ({ id: r.id, geometry: r.geometry, slot: rides.indexOf(r) }))} bbox={planned ? (selected.bbox.map((v, i) => (i < 2 ? Math.min(v, planned.bbox[i]) : Math.max(v, planned.bbox[i]))) as [number, number, number, number]) : selected.bbox} />
+          <RideMap label={t('mapLabel')} moments={selected.moments} planned={planned?.geometry ?? null} ride={selected.geometry} others={rides.filter((r) => r.id !== selected.id).map((r) => ({ id: r.id, geometry: r.geometry, slot: rides.indexOf(r) }))} bbox={planned ? (selected.bbox.map((v, i) => (i < 2 ? Math.min(v, planned.bbox[i]) : Math.max(v, planned.bbox[i]))) as [number, number, number, number]) : selected.bbox} />
           {planned && <ul className="flex items-center gap-4 text-small text-muted-foreground" aria-label={t('legend')}>
             <li className="flex items-center gap-2"><span aria-hidden className="h-0 w-6 border-t-[3px] border-dashed border-foreground" />{t('planned')}</li>
             <li className="flex items-center gap-2"><span aria-hidden className="h-1 w-6 rounded-full bg-primary" />{t('real')}</li>

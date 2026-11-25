@@ -1453,7 +1453,13 @@
     "discussionUnread": "Discussion, {n, plural, one {# message non lu} other {# messages non lus}}",
     "restricted": "Réservée aux participants"
   },
+  "moments": {
+    "label": "Moment clé",
+    "aria": "{name}, {time}"
+  },
   "summary": {
+    "aroundMoment": "Moment clé : {name}",
+    "momentUnnamed": "Moment clé",
     "ride": {
       "label": "Trace rejouée",
       "mine": "Ma trace",

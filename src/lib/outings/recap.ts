@@ -5,7 +5,8 @@ import { bboxOf, lineLength, type Position, type TrackGeometry } from '@/lib/geo
 import type { Actor } from './comments';
 import { placePhoto, type Placement } from './photo-placement';
 import { isMine } from './photos';
-import { isRegistered } from './ride';
+import { isRegistered, viewMoments } from './ride';
+import { mediaAroundMoments } from './moment-media';
 import { trimEnds } from '@/lib/geo/trim-ends';
 
 const NOT_PLACED: Placement = { method: 'none', distanceM: null, at: null, pos: null };
@@ -90,9 +91,12 @@ export type RecapMedia = {
   /** Clip length for a video (#1693), `null` for a photo. */
   durationMs: number | null;
   placement: Placement;
+  /** Key moment this media is featured with (#1798), else `null`. */
+  momentId: string | null;
   /** The viewer may delete it from the player (#1701): its author, or the organiser — same rule as the gallery. */
   canDelete: boolean;
 };
+export type RecapMoment = { id: string; name: string | null; type: string | null; at: number | null; lat: number; lon: number; distanceM: number | null };
 export type Recap = {
   /** `null` when nobody uploaded a ridden track. */
   track: {
@@ -104,6 +108,8 @@ export type Recap = {
     /** Epoch ms of each point of `geometry` (flattened); `null` for an old/untimed track. */
     times: number[] | null;
     profile: { km: number; ele: number }[] | null;
+    /** Key moments noted during the ride (#1798), placed on the track; others' ones in the hidden 300 m are left out. */
+    moments: RecapMoment[];
   } | null;
   /** Photos and ready videos ordered along the track (placed ones by distance, then the unplaced by capture / upload order). */
   media: RecapMedia[];
@@ -133,14 +139,26 @@ export function buildRecap(db: Db, o: OutingRow, actor: Actor, rideId?: string |
     .leftJoin(invitation, eq(invitation.id, outingVideo.invitationId))
     .where(and(eq(outingVideo.outingId, o.id), eq(outingVideo.status, 'ready'))).orderBy(asc(outingVideo.createdAt), asc(outingVideo.id)).all()
     .map(({ p, name }) => ({ p, name, type: 'video' as const, durationMs: p.durationMs }));
+  const moments: RecapMoment[] = picked
+    ? viewMoments(db, picked.row, picked.mine).map((m) => ({ ...m, distanceM: placePhoto({ geometry: picked.geometry, times: picked.times }, { takenAt: m.at, lat: m.lat, lon: m.lon }).distanceM }))
+    : [];
   const rows = [...photos, ...videos].sort((a, b) => a.p.createdAt.getTime() - b.p.createdAt.getTime());
+  const around = mediaAroundMoments(moments, rows.map(({ p, type, durationMs }) => ({ id: p.id, type, takenAt: p.takenAt, durationMs })));
+  const momentOf = new Map([...around].flatMap(([mo, ids]) => ids.map((id) => [id, mo] as const)));
   const media: RecapMedia[] = rows.map(({ p, name, type, durationMs }, idx) => ({
     id: p.id, type, author: name ?? '', organizer: p.invitationId === null,
     width: p.width, height: p.height, takenAt: p.takenAt, durationMs,
     canDelete: actor.kind === 'organizer' || isMine(p, actor),
+    momentId: momentOf.get(p.id) ?? null,
     placement: ref ? placePhoto({ geometry: ref.geometry, times: ref.times }, { takenAt: p.takenAt, lat: p.lat, lon: p.lon }) : NOT_PLACED,
     _i: idx,
-  })).sort((a, b) => {
+  })).map((m) => {
+    // A media featured with a moment that is not placed itself (no GPS, untimed track) is shown at the moment (#1798).
+    const mo = m.momentId ? moments.find((x) => x.id === m.momentId) : null;
+    return mo && m.placement.distanceM == null && mo.distanceM != null
+      ? { ...m, placement: { method: 'position' as const, distanceM: mo.distanceM, at: mo.at, pos: [mo.lon, mo.lat] as [number, number] } }
+      : m;
+  }).sort((a, b) => {
     const da = a.placement.distanceM;
     const dbm = b.placement.distanceM;
     if (da != null && dbm != null) return da - dbm || a._i - b._i;
@@ -156,6 +174,7 @@ export function buildRecap(db: Db, o: OutingRow, actor: Actor, rideId?: string |
       id: ref.id, geometry: ref.geometry, bbox: [b.minLon, b.minLat, b.maxLon, b.maxLat],
       distanceM: ref.distanceM, gainM: ref.gainM, times: ref.times,
       profile: coords.every((p) => typeof p[2] === 'number') ? slopeProfileOf(coords) : null,
+      moments,
     },
     media,
     choices,
