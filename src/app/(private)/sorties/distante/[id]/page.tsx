@@ -10,7 +10,12 @@ import { OutingView } from '@/components/outings/outing-view';
 import { RemoteAnswer } from '@/components/outings/remote-answer';
 import { RemoteModeration } from '@/components/federation/remote-moderation';
 import { requireUser } from '@/lib/current-user';
+import { RideSection } from '@/components/outings/ride-section';
+import { OutingSummary } from '@/components/outings/outing-summary/outing-summary';
 import { listRemoteOutings } from '@/lib/federation/outings';
+import { joinedRemoteOuting, listMyRemoteRide } from '@/lib/federation/rides';
+import { canUploadRide } from '@/lib/outings/ride';
+import { isDone } from '@/lib/outings/history';
 
 export const dynamic = 'force-dynamic';
 export async function generateMetadata(): Promise<Metadata> {
@@ -20,7 +25,8 @@ export async function generateMetadata(): Promise<Metadata> {
 // Outing from another server (#1476): cached copy, the organiser remains the reference. Weather, map and track will come from the copy.
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
-  const o = listRemoteOutings(getDb().db, user.id, { id: (await params).id })[0];
+  const { db } = getDb();
+  const o = listRemoteOutings(db, user.id, { id: (await params).id })[0];
   if (!o) notFound();
   const t = await getTranslations('remoteOutings');
   const answerable = o.status === 'planned' && !o.closed;
@@ -29,6 +35,11 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     : t(`state.${o.state}`, { domain: o.organizer.domain });
   // Never a slug (already emptied on reception); absent ⇒ route block hidden.
   const track = o.track && o.track.geometry ? o.track : null;
+  // My ridden track (#1779): kept here, sent to the organiser's server when it can receive it; personal summary built from it.
+  const joined = !!joinedRemoteOuting(db, user.id, o.id);
+  const rides = joined ? listMyRemoteRide(db, user.id, o.id) : [];
+  const canRide = joined && canUploadRide(o);
+  const base = `/api/remote-outings/${o.id}`;
   return (
     <>
       <main className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] lg:pt-16 pb-[calc(var(--spacing-nav)+2rem+env(safe-area-inset-bottom))] lg:pl-[calc(var(--spacing-rail)+1rem)]">
@@ -63,6 +74,10 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
               {o.answer !== 'pending' && <p className="text-small">{t('yourAnswer', { answer: t(`answers.${o.answer}`) })}{stateText ? ` — ${stateText}` : ''}</p>}
             </>
           }
+          summary={rides.length > 0 && isDone(o, new Date()) && o.status !== 'cancelled' ? (
+            <OutingSummary recapUrl={`${base}/recap`} photoBase={`${base}/photos`} videoBase={`${base}/videos`} />
+          ) : undefined}
+          activity={canRide || rides.length > 0 ? <RideSection base={`${base}/ride`} rides={rides} planned={null} canUpload={canRide} /> : undefined}
           secondaryActions={
             <>
               <p className="text-small text-muted-foreground">{t('copy')}</p>

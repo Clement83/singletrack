@@ -23,7 +23,7 @@ export const CLIENT_NAMESPACES = {
   editor: [...ROOT, ...TRACK, 'editor', 'singles', 'userMenu', 'userProfile', 'outingVisibility'],
   private: [
     ...ROOT, ...TRACK, 'nav', 'sheet', 'theme', 'charte', 'share', 'userMenu', 'explorer', 'filters', 'trackCard', 'singles', 'importer', 'editor', 'contacts', 'friends', 'history', 'userProfile',
-    'outingForm', 'outingVisibility', 'outingLabels', 'conditions', 'outings', 'outingsMap', 'remoteOutings', 'moderation', 'admin', 'guest', 'participants', 'outingView', 'summary',
+    'outingForm', 'outingVisibility', 'outingLabels', 'conditions', 'outings', 'outingsMap', 'remoteOutings', 'moderation', 'admin', 'guest', 'participants', 'outingView', 'summary', 'ride', 'photos',
   ],
   all: 'all',
 } satisfies Record<string, Ns[] | 'all'>;

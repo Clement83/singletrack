@@ -19,7 +19,8 @@ type Planned = { geometry: TrackGeometry; bbox: [number, number, number, number]
 type Props = {
   base: string;
   rides: RideView[];
-  planned: Planned;
+  /** `null` for a remote outing without a route (#1779): no planned line, no comparison. */
+  planned: Planned | null;
   canUpload: boolean;
   /** Organiser only (#1692): which ridden track feeds the recap. */
   reference?: { id: string | null; timed: Record<string, boolean> };
@@ -51,6 +52,7 @@ export function RideSection({ base, rides, planned, canUpload, reference }: Prop
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
         toast.success(t('saved'));
+        if (data.federated === 'unsupported') toast.message(t('unsupported'));
         setPicked(null);
         router.refresh();
       } else toast.error(t.has(`errors.${data.error}` as never) ? t(`errors.${data.error}` as never) : errText(data.error));
@@ -104,11 +106,11 @@ export function RideSection({ base, rides, planned, canUpload, reference }: Prop
 
       {selected && (
         <>
-          <RideMap label={t('mapLabel')} planned={planned.geometry} ride={selected.geometry} others={rides.filter((r) => r.id !== selected.id).map((r) => ({ id: r.id, geometry: r.geometry, slot: rides.indexOf(r) }))} bbox={selected.bbox.map((v, i) => (i < 2 ? Math.min(v, planned.bbox[i]) : Math.max(v, planned.bbox[i]))) as [number, number, number, number]} />
-          <ul className="flex items-center gap-4 text-small text-muted-foreground" aria-label={t('legend')}>
+          <RideMap label={t('mapLabel')} planned={planned?.geometry ?? null} ride={selected.geometry} others={rides.filter((r) => r.id !== selected.id).map((r) => ({ id: r.id, geometry: r.geometry, slot: rides.indexOf(r) }))} bbox={planned ? (selected.bbox.map((v, i) => (i < 2 ? Math.min(v, planned.bbox[i]) : Math.max(v, planned.bbox[i]))) as [number, number, number, number]) : selected.bbox} />
+          {planned && <ul className="flex items-center gap-4 text-small text-muted-foreground" aria-label={t('legend')}>
             <li className="flex items-center gap-2"><span aria-hidden className="h-0 w-6 border-t-[3px] border-dashed border-foreground" />{t('planned')}</li>
             <li className="flex items-center gap-2"><span aria-hidden className="h-1 w-6 rounded-full bg-primary" />{t('real')}</li>
-          </ul>
+          </ul>}
         </>
       )}
 
@@ -116,8 +118,8 @@ export function RideSection({ base, rides, planned, canUpload, reference }: Prop
         {rides.map((r) => {
           const avg = r.movingSec ? (r.distanceM / 1000) / (r.movingSec / 3600) : null;
           const on = r.id === selected?.id;
-          const dKm = deltaKm(r.distanceM, planned.distanceM);
-          const dGain = r.gainM != null && planned.gainM != null ? deltaGain(r.gainM, planned.gainM) : null;
+          const dKm = planned ? deltaKm(r.distanceM, planned.distanceM) : null;
+          const dGain = planned && r.gainM != null && planned.gainM != null ? deltaGain(r.gainM, planned.gainM) : null;
           return (
             <li key={r.id}>
               <button

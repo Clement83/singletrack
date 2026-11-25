@@ -162,7 +162,7 @@ export function buildRecap(db: Db, o: OutingRow, actor: Actor, rideId?: string |
   };
 }
 
-function slopeProfileOf(coords: Position[]): { km: number; ele: number }[] {
+export function slopeProfileOf(coords: Position[]): { km: number; ele: number }[] {
   let d = 0;
   return coords.map((p, i) => {
     if (i) d += lineLength([coords[i - 1], p]);

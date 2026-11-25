@@ -1208,6 +1208,7 @@
     "delete": "Delete my track",
     "deleteConfirm": "Delete your ride?",
     "saved": "Track saved.",
+    "unsupported": "The organiser’s server doesn’t receive tracks yet: your track stays here.",
     "hint": "A .gpx, .kml or .kmz file from your watch or app, {mb} MB max.",
     "referenceLabel": "Recap track",
     "referenceSet": "Recap track chosen.",

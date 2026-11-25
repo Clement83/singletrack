@@ -7,7 +7,7 @@ import { ensureHandle } from '@/lib/federation/handle';
 import { upsertRemoteActor } from '@/lib/federation/remote-actors';
 import { onEvent, onJoinResult, onRemoteResponse, publishOuting, respondRemote, type OutingDeliver } from '@/lib/federation/outings';
 import {
-  buildRideDocument, deleteRemoteRide, listMyRemoteRide, onRemoteRide, onRemoteRideDelete, parseRideDocument, rideDocumentFor, rideUrlAllowed,
+  buildRemoteRecap, buildRideDocument, deleteRemoteRide, listMyRemoteRide, onRemoteRide, onRemoteRideDelete, parseRideDocument, rideDocumentFor, rideUrlAllowed,
   saveRemoteRide, type RideDeliver, type RideFedDeps, type RideObject,
 } from '@/lib/federation/rides';
 import { remotePairKey } from '@/lib/friends';
@@ -263,5 +263,20 @@ describe('traces roulées entre serveurs (#1775)', () => {
     const inv = a.db.select().from(invitation).where(and(eq(invitation.id, row.invitationId!))).get()!;
     expect(inv.remoteActorId).toBeTruthy();
     expect(row.authorUserId).toBeNull();
+  });
+});
+
+describe('résumé perso d’une sortie distante (#1779)', () => {
+  it('construit depuis ma trace entière gardée ici, sans média ; rien sans trace, ni si je n’ai pas rejoint', async () => {
+    expect(buildRemoteRecap(b.db, 'up', remoteId)).toBeNull();
+    const s = ride(3);
+    await as(b, () => saveRemoteRide(b.db, 'up', remoteId, s, rideDeps(b)));
+    const r = buildRemoteRecap(b.db, 'up', remoteId)!;
+    expect(r.track).toMatchObject({ geometry: s.geometry, distanceM: 3000, gainM: 12, times: null });
+    expect(r.track!.profile).not.toBeNull();
+    expect(r.media).toEqual([]);
+    expect(r.choices).toEqual([]);
+    b.db.update(remoteResponse).set({ answer: 'no' }).where(eq(remoteResponse.userId, 'up')).run();
+    expect(buildRemoteRecap(b.db, 'up', remoteId)).toBeNull();
   });
 });

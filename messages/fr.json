@@ -1208,6 +1208,7 @@
     "delete": "Supprimer ma trace",
     "deleteConfirm": "Supprimer ta trace roulée ?",
     "saved": "Trace enregistrée.",
+    "unsupported": "Le serveur de l’organisateur ne reçoit pas encore les traces\u00a0: ta trace reste ici.",
     "hint": "Fichier .gpx, .kml ou .kmz de ta montre ou de ton appli, {mb} Mo maximum.",
     "referenceLabel": "Trace du résumé",
     "referenceSet": "Trace du résumé choisie.",

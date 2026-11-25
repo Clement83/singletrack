@@ -4,7 +4,8 @@ import { getNodeInfo, signRequest } from '@fedify/fedify';
 import { Create, Delete, Document, Tombstone, Update } from '@fedify/vocab';
 import type { Db } from '@/db';
 import { invitation, outing, outingRide, remoteActor, remoteOuting, remoteRide } from '@/db/schema';
-import { simplifyGeometry, trimEnds, type TrackGeometry } from '@/lib/geo';
+import { bboxOf, simplifyGeometry, trimEnds, type TrackGeometry } from '@/lib/geo';
+import { slopeProfileOf, type Recap } from '@/lib/outings/recap';
 import { canUploadRide, storeRide, type RideStats } from '@/lib/outings/ride';
 import { federationEnabled, publicOrigin } from './config';
 import { getFederation } from './index';
@@ -356,3 +357,26 @@ export function announcesRides(nodeInfo: unknown): boolean {
 
 export const defaultRideDeps: RideFedDeps = { deliver: deliverRideWithFedify, fetchRide: fetchRideWithFedify, supportsRides: supportsRidesViaNodeInfo };
 
+
+// ───────────────────────── Personal summary at home (#1779) ─────────────────────────
+
+/**
+ * Summary of a remote outing I joined, **at home**: my own `remote_ride` (whole, with its times) and nothing else. Photos and videos
+ * of others are not federated (out of scope), so `media` and `choices` stay empty. `null` when I did not join, or have no track.
+ */
+export function buildRemoteRecap(db: Db, userId: string, remoteOutingId: string, now = new Date()): Recap | null {
+  if (!joinedRemoteOuting(db, userId, remoteOutingId, now)) return null;
+  const r = db.select().from(remoteRide).where(and(eq(remoteRide.remoteOutingId, remoteOutingId), eq(remoteRide.userId, userId))).get();
+  const b = r && bboxOf(r.geometry);
+  if (!r || !b) return null;
+  const coords = r.geometry.type === 'LineString' ? r.geometry.coordinates : r.geometry.coordinates.flat();
+  return {
+    track: {
+      id: r.id, geometry: r.geometry, bbox: [b.minLon, b.minLat, b.maxLon, b.maxLat], distanceM: r.distanceM, gainM: r.gainM,
+      times: r.times && r.times.length === coords.length ? r.times : null,
+      profile: coords.every((p) => typeof p[2] === 'number') ? slopeProfileOf(coords) : null,
+    },
+    media: [],
+    choices: [],
+  };
+}

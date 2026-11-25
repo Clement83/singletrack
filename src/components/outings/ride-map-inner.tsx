@@ -13,7 +13,8 @@ export const OTHER_COLORS = ['mapBlue', 'mapRed', 'mapGreen', 'mapBlack'] as con
 export const OTHER_VARS = ['--map-diff-blue', '--map-diff-red', '--map-diff-green', '--map-diff-black'] as const;
 
 export type RideMapProps = {
-  planned: TrackGeometry;
+  /** Absent for an outing without a route (remote outing, #1779). */
+  planned?: TrackGeometry | null;
   ride: TrackGeometry | null;
   /** Other participants' tracks (#1772), drawn thin under the selected one; `slot` picks the colour (`OTHER_COLORS`). */
   others?: { id: string; geometry: TrackGeometry; slot: number }[];
@@ -30,12 +31,12 @@ export default function RideMapInner({ planned, ride, others, bbox, media, label
   // "km from the start" tooltip (#1535), on the planned route as on the actual one.
   const { tip, onMove, onTap, clear } = useTrackTip((e) => {
     const id = e.features?.[0]?.layer.id;
-    return id === 'ride-real-casing' && ride ? { geometry: ride } : id === 'ride-planned-casing' ? { geometry: planned } : null;
+    return id === 'ride-real-casing' && ride ? { geometry: ride } : id === 'ride-planned-casing' && planned ? { geometry: planned } : null;
   });
   return (
     <BaseMap lat={(bbox[1] + bbox[3]) / 2} lon={(bbox[0] + bbox[2]) / 2} embedded bounds={bbox} boundsPadding={32} interactiveLayerIds={['ride-real-casing', 'ride-planned-casing']} onMouseMove={onMove} onClick={onTap} onMouseLeave={clear}>
       <TrackTip tip={tip} />
-      {colors && (
+      {colors && planned && (
         <Source id="ride-planned" type="geojson" data={{ type: 'Feature', properties: {}, geometry: planned } as never}>
           <Layer id="ride-planned-casing" type="line" layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': colors.card, 'line-width': 6, 'line-opacity': 0.85 }} />
           <Layer id="ride-planned-line" type="line" layout={{ 'line-join': 'round' }} paint={{ 'line-color': colors.foreground, 'line-width': 3, 'line-dasharray': [2, 2], 'line-opacity': 0.8 }} />
