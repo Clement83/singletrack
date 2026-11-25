@@ -8,9 +8,15 @@ import { useMapColors } from '@/components/tracks/use-map-colors';
 import type { TrackGeometry } from '@/lib/geo/types';
 import type { MediaPoint } from '@/lib/outings/media-points';
 
+/** Colours of the other participants' tracks (map tokens, readable on the light topo map); the cards use the same CSS variables. */
+export const OTHER_COLORS = ['mapBlue', 'mapRed', 'mapGreen', 'mapBlack'] as const;
+export const OTHER_VARS = ['--map-diff-blue', '--map-diff-red', '--map-diff-green', '--map-diff-black'] as const;
+
 export type RideMapProps = {
   planned: TrackGeometry;
   ride: TrackGeometry | null;
+  /** Other participants' tracks (#1772), drawn thin under the selected one; `slot` picks the colour (`OTHER_COLORS`). */
+  others?: { id: string; geometry: TrackGeometry; slot: number }[];
   bbox: [number, number, number, number];
   /** Located photos (#1413) and videos (#1702): one chip ≥ 44 px each (camera / video icon), a tap opens it. */
   media?: MediaPoint[];
@@ -19,7 +25,7 @@ export type RideMapProps = {
 };
 
 /** Planned (dashed, discreet) under the actual ride (solid line): the gap shows immediately. */
-export default function RideMapInner({ planned, ride, bbox, media, labels, onMedia }: RideMapProps) {
+export default function RideMapInner({ planned, ride, others, bbox, media, labels, onMedia }: RideMapProps) {
   const colors = useMapColors();
   // "km from the start" tooltip (#1535), on the planned route as on the actual one.
   const { tip, onMove, onTap, clear } = useTrackTip((e) => {
@@ -35,6 +41,11 @@ export default function RideMapInner({ planned, ride, bbox, media, labels, onMed
           <Layer id="ride-planned-line" type="line" layout={{ 'line-join': 'round' }} paint={{ 'line-color': colors.foreground, 'line-width': 3, 'line-dasharray': [2, 2], 'line-opacity': 0.8 }} />
         </Source>
       )}
+      {colors && others?.map((o) => (
+        <Source key={o.id} id={`ride-other-${o.id}`} type="geojson" data={{ type: 'Feature', properties: {}, geometry: o.geometry } as never}>
+          <Layer id={`ride-other-line-${o.id}`} type="line" layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': colors[OTHER_COLORS[o.slot % OTHER_COLORS.length]], 'line-width': 3, 'line-opacity': 0.9 }} />
+        </Source>
+      ))}
       {colors && ride && (
         <Source id="ride-real" type="geojson" data={{ type: 'Feature', properties: {}, geometry: ride } as never}>
           <Layer id="ride-real-casing" type="line" layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': colors.card, 'line-width': 7 }} />

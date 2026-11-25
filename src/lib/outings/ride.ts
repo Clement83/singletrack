@@ -1,7 +1,7 @@
 import { and, eq, isNull } from 'drizzle-orm';
 import type { Db } from '@/db';
 import { invitation, outingRide, type OutingRow } from '@/db/schema';
-import { bboxOf, dedupeLineIndexes, enrichElevation, type EnrichOptions, gainLoss, gpxTimedSegments, haversine, kmlTimedSegments, lineLength, parseGpxFile, parseKmlFile, simplifyIndexes, type Position, type TrackGeometry } from '@/lib/geo';
+import { trimEnds, bboxOf, dedupeLineIndexes, enrichElevation, type EnrichOptions, gainLoss, gpxTimedSegments, haversine, kmlTimedSegments, lineLength, parseGpxFile, parseKmlFile, simplifyIndexes, type Position, type TrackGeometry } from '@/lib/geo';
 import { type Actor } from './comments';
 
 export const RIDE_MAX_BYTES = 5 * 1024 * 1024;
@@ -157,21 +157,36 @@ export function deleteRide(db: Db, o: OutingRow, actor: Actor): void {
   db.delete(outingRide).where(where(o.id, actor)).run();
 }
 
-/** Tracks visible to the actor: the guest only sees their own, the organiser sees everyone's. */
+/** Registered participant (#1772): the organiser, or a guest whose invitation is live and answered "yes" or "maybe". */
+export function isRegistered(db: Db, actor: Actor): boolean {
+  if (actor.kind === 'organizer') return true;
+  const inv = db.select({ status: invitation.status, revokedAt: invitation.revokedAt }).from(invitation).where(eq(invitation.id, actor.invitationId)).get();
+  return !!inv && !inv.revokedAt && (inv.status === 'yes' || inv.status === 'maybe');
+}
+
+/**
+ * Tracks visible to the actor (#1772): every registered participant sees everyone's (the organiser too); anyone else (pending
+ * or declined guest) only their own. Other people's tracks lose their first and last 300 m (`trimEnds`, applied here on read:
+ * the stored track stays whole); a track too short to keep anything is left out. Stats stay those of the whole ride.
+ */
 export function listRides(db: Db, outingId: string, actor: Actor): RideView[] {
   const rows = db.select({ r: outingRide, name: invitation.name }).from(outingRide)
     .leftJoin(invitation, eq(invitation.id, outingRide.invitationId))
     .where(eq(outingRide.outingId, outingId)).all();
+  const isMine = (r: typeof outingRide.$inferSelect) => (actor.kind === 'guest' ? r.invitationId === actor.invitationId : r.invitationId === null && r.authorUserId === actor.userId);
+  const all = isRegistered(db, actor);
   return rows
-    .filter(({ r }) => actor.kind === 'organizer' || r.invitationId === actor.invitationId)
+    .filter(({ r }) => all || isMine(r))
     .sort((a, b) => Number(a.r.invitationId !== null) - Number(b.r.invitationId !== null) || a.r.createdAt.getTime() - b.r.createdAt.getTime())
-    .map(({ r, name }) => {
-      const b = bboxOf(r.geometry)!;
-      return {
-        id: r.id, author: name ?? '', organizer: r.invitationId === null,
-        mine: actor.kind === 'guest' ? r.invitationId === actor.invitationId : r.invitationId === null && r.authorUserId === actor.userId,
-        geometry: r.geometry, bbox: [b.minLon, b.minLat, b.maxLon, b.maxLat] as [number, number, number, number],
+    .flatMap(({ r, name }) => {
+      const mine = isMine(r);
+      const geometry = mine ? r.geometry : trimEnds(r.geometry);
+      if (!geometry) return [];
+      const b = bboxOf(geometry)!;
+      return [{
+        id: r.id, author: name ?? '', organizer: r.invitationId === null, mine,
+        geometry, bbox: [b.minLon, b.minLat, b.maxLon, b.maxLat] as [number, number, number, number],
         distanceM: r.distanceM, gainM: r.gainM, movingSec: r.movingSec, elapsedSec: r.elapsedSec,
-      };
+      }];
     });
 }

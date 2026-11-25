@@ -13,6 +13,7 @@ import type { RideView } from '@/lib/outings/ride';
 import type { TrackGeometry } from '@/lib/geo/types';
 import { cn } from '@/lib/utils';
 import { RideMap } from './ride-map';
+import { OTHER_VARS } from './ride-map-inner';
 
 type Planned = { geometry: TrackGeometry; bbox: [number, number, number, number]; distanceM: number; gainM: number | null };
 type Props = {
@@ -98,12 +99,12 @@ export function RideSection({ base, rides, planned, canUpload, reference }: Prop
 
   return (
     <section aria-label={t('title')} className="flex flex-col gap-3">
-      <h2 className="text-heading">{t('title')}</h2>
+      <h2 className="text-heading">{rides.length > 1 || (rides.length === 1 && !mine) ? t('titleGroup') : t('title')}</h2>
       {rides.length === 0 && <p className="text-muted-foreground">{t('empty')}</p>}
 
       {selected && (
         <>
-          <RideMap label={t('mapLabel')} planned={planned.geometry} ride={selected.geometry} bbox={selected.bbox.map((v, i) => (i < 2 ? Math.min(v, planned.bbox[i]) : Math.max(v, planned.bbox[i]))) as [number, number, number, number]} />
+          <RideMap label={t('mapLabel')} planned={planned.geometry} ride={selected.geometry} others={rides.filter((r) => r.id !== selected.id).map((r) => ({ id: r.id, geometry: r.geometry, slot: rides.indexOf(r) }))} bbox={selected.bbox.map((v, i) => (i < 2 ? Math.min(v, planned.bbox[i]) : Math.max(v, planned.bbox[i]))) as [number, number, number, number]} />
           <ul className="flex items-center gap-4 text-small text-muted-foreground" aria-label={t('legend')}>
             <li className="flex items-center gap-2"><span aria-hidden className="h-0 w-6 border-t-[3px] border-dashed border-foreground" />{t('planned')}</li>
             <li className="flex items-center gap-2"><span aria-hidden className="h-1 w-6 rounded-full bg-primary" />{t('real')}</li>
@@ -125,7 +126,10 @@ export function RideSection({ base, rides, planned, canUpload, reference }: Prop
                 onClick={() => setPicked(r.id)}
                 className={cn('flex min-h-touch w-full flex-col gap-2 rounded-2xl border p-4 text-left shadow-sm transition-colors active:bg-muted', on ? 'border-primary bg-card' : 'border-border bg-card')}
               >
-                <span className="font-medium">{r.mine ? t('mine') : r.organizer ? t('organizer') : r.author}</span>
+                <span className="flex items-center gap-2 font-medium">
+                  <span aria-hidden className="h-1 w-4 rounded-full" style={{ background: on ? 'var(--primary)' : `var(${OTHER_VARS[rides.indexOf(r) % OTHER_VARS.length]})` }} />
+                  {r.mine ? t('mine') : r.organizer ? t('organizer') : r.author}
+                </span>
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-2 tabular-nums sm:grid-cols-4">
                   <Stat label={t('distance')} value={km(r.distanceM)} hint={dKm ? t('vsPlanned', { delta: dKm }) : undefined} />
                   <Stat label={t('gain')} value={r.gainM != null ? formatElevation(r.gainM, locale) : t('unknown')} hint={dGain ? t('vsPlanned', { delta: dGain }) : undefined} />

@@ -1200,8 +1200,9 @@
   },
   "ride": {
     "title": "Ma trace roulée",
+    "titleGroup": "Les traces de la sortie",
     "empty": "Pas encore de trace roulée — téléverse ton GPX après la sortie.",
-    "upload": "Ajouter ma trace (GPX, KML)",
+    "upload": "Ajoute ta trace (GPX, KML)",
     "replace": "Remplacer ma trace",
     "uploading": "Envoi…",
     "delete": "Supprimer ma trace",

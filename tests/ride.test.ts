@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { openDb } from '@/db';
 import { invitation, outing, outingRide, user } from '@/db/schema';
 import { upsertTrack } from '@/lib/tracks';
+import { trimEnds, type TrackGeometry } from '@/lib/geo';
 import { analyzeRide, canUploadRide, createOuting, deleteRide, listRides, saveRide } from '@/lib/outings';
 
 const gpx = (pts: string) => `<?xml version="1.0"?><gpx version="1.1" creator="t"><trk><trkseg>${pts}</trkseg></trk></gpx>`;
@@ -74,7 +75,7 @@ describe('analyzeRide (#1412)', () => {
 });
 
 describe('saveRide / listRides', () => {
-  it('une trace par personne (remplacée), chacun ne voit que la sienne, l’organisateur voit tout', async () => {
+  it('une trace par personne (remplacée), chacun ne supprime que la sienne', async () => {
     const { db, o, inv } = await setup();
     const a = inv('a', 'Alice');
     const b = inv('b', 'Bob');
@@ -84,15 +85,52 @@ describe('saveRide / listRides', () => {
     expect((await saveRide(db, o, b, ride, after, ign())).ok).toBe(true);
     expect((await saveRide(db, o, orga, ride, after, ign())).ok).toBe(true);
     expect(db.select().from(outingRide).all()).toHaveLength(3);
-    expect(listRides(db, o.id, a).map((r) => r.mine)).toEqual([true]);
-    expect(listRides(db, o.id, b)).toHaveLength(1);
     const all = listRides(db, o.id, orga);
-    expect(all).toHaveLength(3);
-    expect(all[0].organizer && all[0].mine).toBe(true);
+    expect(all.filter((r) => r.mine)).toHaveLength(1);
     expect(all.filter((r) => r.author === 'Alice')).toHaveLength(1);
     deleteRide(db, o, a);
-    expect(listRides(db, o.id, a)).toHaveLength(0);
-    expect(listRides(db, o.id, b)).toHaveLength(1);
+    expect(db.select().from(outingRide).all()).toHaveLength(2);
+    expect(listRides(db, o.id, b).map((r) => r.mine).sort()).toEqual([false, true]);
+  });
+  it('#1772 : tout participant inscrit voit toutes les traces ; en attente / refusé / révoqué ne voit que la sienne', async () => {
+    const { db, o, inv } = await setup();
+    const a = inv('a', 'Alice');
+    const b = inv('b', 'Bob');
+    const orga = { kind: 'organizer' as const, userId: 'u1' };
+    for (const x of [a, b, orga]) expect((await saveRide(db, o, x, ride, after, ign())).ok).toBe(true);
+    expect(listRides(db, o.id, a)).toHaveLength(3);
+    expect(listRides(db, o.id, a).filter((r) => r.mine).map((r) => r.author)).toEqual(['Alice']);
+    expect(listRides(db, o.id, orga)).toHaveLength(3);
+    // un inscrit par le lien de groupe / un compte : invitation « yes » comme les autres
+    db.insert(invitation).values({ id: 'g', outingId: o.id, tokenHash: 'hg', name: 'Gina', status: 'yes', origin: 'open_link' }).run();
+    expect(listRides(db, o.id, { kind: 'guest', invitationId: 'g' })).toHaveLength(3);
+    // non inscrit
+    db.insert(invitation).values({ id: 'p', outingId: o.id, tokenHash: 'hp', name: 'Pat', status: 'pending' }).run();
+    db.insert(invitation).values({ id: 'n', outingId: o.id, tokenHash: 'hn', name: 'Nina', status: 'no' }).run();
+    expect(listRides(db, o.id, { kind: 'guest', invitationId: 'p' })).toHaveLength(0);
+    expect(listRides(db, o.id, { kind: 'guest', invitationId: 'n' })).toHaveLength(0);
+    // la sienne reste visible même sans être « inscrit »
+    expect((await saveRide(db, o, { kind: 'guest', invitationId: 'n' }, ride, after, ign())).ok).toBe(true);
+    expect(listRides(db, o.id, { kind: 'guest', invitationId: 'n' }).map((r) => r.mine)).toEqual([true]);
+    // révoqué
+    db.update(invitation).set({ revokedAt: new Date() }).where(eq(invitation.id, 'b')).run();
+    expect(listRides(db, o.id, b).map((r) => r.mine)).toEqual([true]);
+  });
+  it('#1772 : les 300 premiers et derniers mètres des autres sont masqués, pas ceux de sa propre trace', async () => {
+    const { db, o, inv } = await setup();
+    const a = inv('a', 'Alice');
+    const b = inv('b', 'Bob');
+    // ~2.2 km: long enough to keep a middle part
+    expect((await saveRide(db, o, a, ride, after, ign())).ok).toBe(true);
+    expect((await saveRide(db, o, b, ride, after, ign())).ok).toBe(true);
+    const seen = listRides(db, o.id, a);
+    const mine = seen.find((r) => r.mine)!;
+    const other = seen.find((r) => !r.mine)!;
+    const first = (g: typeof mine.geometry) => (g.type === 'LineString' ? g.coordinates[0] : g.coordinates[0][0]);
+    expect(first(other.geometry)[0]).toBeGreaterThan(first(mine.geometry)[0] + 0.003);
+    expect(other.distanceM).toBe(mine.distanceM); // stats of the whole ride
+    // the stored track stays whole
+    expect(db.select().from(outingRide).all().every((r) => r.geometry.type === 'LineString' && Math.abs(r.geometry.coordinates[0][0] - 6.1) < 1e-6)).toBe(true);
   });
   it('refusée avant la sortie, si annulée, ou si le fichier est mauvais', async () => {
     const { db, o, inv } = await setup();
@@ -153,5 +191,28 @@ describe('dédoublonnage des lignes (#1699)', () => {
     const single = await base();
     expect(both.distanceM).toBeGreaterThan(single.distanceM * 1.9);
     expect(both.geometry.type).toBe('MultiLineString');
+  });
+});
+
+describe('trimEnds (#1772)', () => {
+  const pts = (n: number, dx = 0) => Array.from({ length: n }, (_, i) => [6.1 + dx + i * 0.00123, 43.2] as [number, number]); // 100 m steps
+  const line = (n: number): TrackGeometry => ({ type: 'LineString', coordinates: pts(n) });
+  it('retire 300 m de chaque côté (interpolé)', () => {
+    const g = trimEnds(line(21), 300)! as { coordinates: [number, number][] }; // 2 km
+    expect(g.coordinates[0][0]).toBeCloseTo(6.1 + 3 * 0.00123, 4);
+    expect(g.coordinates[g.coordinates.length - 1][0]).toBeCloseTo(6.1 + 17 * 0.00123, 4);
+  });
+  it('trace trop courte (≤ 600 m) : rien à montrer', () => {
+    expect(trimEnds(line(7), 300)).toBeNull(); // 600 m
+    expect(trimEnds(line(2), 300)).toBeNull();
+  });
+  it('MultiLineString : coupe le début de la première ligne et la fin de la dernière', () => {
+    const a = pts(11);
+    const b = pts(11, 0.02);
+    const g = trimEnds({ type: 'MultiLineString', coordinates: [a, b] }, 300)!;
+    expect(g.type).toBe('MultiLineString');
+    const c = (g as { coordinates: [number, number][][] }).coordinates;
+    expect(c[0][0][0]).toBeCloseTo(6.1 + 3 * 0.00123, 4);
+    expect(c[1][c[1].length - 1][0]).toBeCloseTo(6.12 + 7 * 0.00123, 4);
   });
 });

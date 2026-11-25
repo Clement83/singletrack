@@ -1200,8 +1200,9 @@
   },
   "ride": {
     "title": "My ride",
+    "titleGroup": "The ride’s tracks",
     "empty": "No ride yet — upload your GPX after the outing.",
-    "upload": "Add my track (GPX, KML)",
+    "upload": "Add your track (GPX, KML)",
     "replace": "Replace my track",
     "uploading": "Uploading…",
     "delete": "Delete my track",
