@@ -1453,6 +1453,13 @@
     "restricted": "Participants only"
   },
   "summary": {
+    "ride": {
+      "label": "Replayed track",
+      "mine": "My track",
+      "organizer": "Organiser",
+      "of": "{name}",
+      "km": "{km} km"
+    },
     "title": "Outing summary",
     "open": "Watch the summary",
     "close": "Close the summary",

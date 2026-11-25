@@ -1453,6 +1453,13 @@
     "restricted": "Réservée aux participants"
   },
   "summary": {
+    "ride": {
+      "label": "Trace rejouée",
+      "mine": "Ma trace",
+      "organizer": "Organisateur",
+      "of": "{name}",
+      "km": "{km} km"
+    },
     "title": "Résumé de la sortie",
     "open": "Voir le résumé",
     "close": "Fermer le résumé",

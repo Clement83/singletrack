@@ -154,11 +154,11 @@ describe('trace de référence et résumé', () => {
     ins('gps', { lat: 43.2, lon: 6.1 + 3 * 0.00246 });
     ins('none', {});
     ins('early', { takenAt: T0 + 60_000 });
-    const rc = buildRecap(db, o, guest);
+    const rc = buildRecap(db, o, orga);
     expect(rc.track?.times).toHaveLength(2);
     expect(rc.media.map((m) => m.id)).toEqual(['early', 'gps', 'late', 'none']);
     expect(rc.media.map((m) => m.placement.method)).toEqual(['time', 'position', 'time', 'none']);
-    expect(buildRecap(db, o, orga).media).toHaveLength(4);
+    expect(buildRecap(db, o, guest).media).toHaveLength(4);
   });
   it('canDelete (#1701) : l’organisateur supprime tout, un invité seulement ses médias', async () => {
     const { db, o, guest, orga } = await setup();
@@ -170,6 +170,30 @@ describe('trace de référence et résumé', () => {
     const can = (a: Parameters<typeof buildRecap>[2]) => Object.fromEntries(buildRecap(db, o, a).media.map((m) => [m.id, m.canDelete]));
     expect(can(orga)).toEqual({ lea: true, paul: true, orga: true });
     expect(can(guest)).toEqual({ lea: true, paul: false, orga: false });
+  });
+  it('trace choisie (#1773) : la mienne par défaut, ?ride= valide, invalide ⇒ défaut, médias recalés', async () => {
+    const { db, o, guest, orga } = await setup();
+    const g = await saveRide(db, o, guest, fx('appli-gx-track.kml'), after, noIgn);
+    const m = await saveRide(db, o, orga, fx('montre-horodatee.gpx'), after, noIgn);
+    if (!g.ok || !m.ok) throw new Error('ride');
+    db.insert(outingPhoto).values({ id: 'p', outingId: o.id, width: 1, height: 1, takenAt: T0 + 300_000 }).run();
+    expect(buildRecap(db, o, guest).track?.id).toBe(g.id);
+    expect(buildRecap(db, o, orga).track?.id).toBe(m.id);
+    const other = buildRecap(db, o, guest, m.id);
+    expect(other.track?.id).toBe(m.id);
+    expect(other.track?.times).toBeNull(); // trimmed track of someone else: no times
+    expect(buildRecap(db, o, guest, 'inconnu').track?.id).toBe(g.id);
+    expect(buildRecap(db, o, orga).choices.map((c) => [c.id, c.mine])).toEqual([[m.id, true], [g.id, false]]);
+    expect(buildRecap(db, o, guest).choices.find((c) => c.mine)?.id).toBe(g.id);
+  });
+  it('trace choisie (#1773) : un invité en attente ne voit que la sienne', async () => {
+    const { db, o, guest, orga } = await setup();
+    const m = await saveRide(db, o, orga, fx('montre-horodatee.gpx'), after, noIgn);
+    db.update(invitation).set({ status: 'pending' }).where(eq(invitation.id, 'i1')).run();
+    if (!m.ok) throw new Error('ride');
+    const rc = buildRecap(db, o, guest, m.id);
+    expect(rc.track).toBeNull();
+    expect(rc.choices).toEqual([]);
   });
   it('sans trace : track nul, photos non placées', async () => {
     const { db, o, orga } = await setup();

@@ -43,24 +43,32 @@ export default function SummaryPlayer({ recapUrl, photoBase, videoBase, onDelete
   const t = useTranslations('summary');
   const [recap, setRecap] = useState<RecapData | null>(null);
   const [failed, setFailed] = useState(false);
+  // Replayed track (#1773): `?ride=<id>` of the page URL (shareable); the server falls back to the default one if not visible.
+  const [rideId, setRideId] = useState<string | null>(() => new URLSearchParams(window.location.search).get('ride'));
+  const pickRide = useCallback((id: string) => {
+    setRideId(id);
+    const u = new URL(window.location.href);
+    u.searchParams.set('ride', id);
+    window.history.replaceState(window.history.state, '', u);
+  }, []);
   useEffect(() => {
     const ctl = new AbortController();
-    fetch(recapUrl, { signal: ctl.signal })
+    fetch(rideId ? `${recapUrl}?ride=${encodeURIComponent(rideId)}` : recapUrl, { signal: ctl.signal })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
       .then((d: RecapData) => { if (d.track) setRecap(d); else setFailed(true); })
       .catch((e) => { if (e?.name !== 'AbortError') setFailed(true); });
     return () => ctl.abort();
-  }, [recapUrl]);
+  }, [recapUrl, rideId]);
   if (failed) return <p role="alert" className="flex size-full items-center justify-center p-6 text-center">{t('error')}</p>;
   if (!recap || !recap.track) return <div className="flex size-full items-center justify-center text-sm opacity-80">{t('loading')}</div>;
-  return <Stage recap={recap} track={recap.track} photoBase={photoBase} videoBase={videoBase} musicBase={recapUrl.replace(/\/recap$/, '/music')} onDeleted={onDeleted} />;
+  return <Stage key={recap.track.id} recap={recap} track={recap.track} onPickRide={pickRide} photoBase={photoBase} videoBase={videoBase} musicBase={recapUrl.replace(/\/recap$/, '/music')} onDeleted={onDeleted} />;
 }
 
 type TrackData = NonNullable<Recap['track']>;
 /** Recap response: + the instance's background music (#1706). */
 type RecapData = Recap & { music?: MusicTrack[] };
 
-function Stage({ recap, track, photoBase, videoBase, musicBase, onDeleted }: { recap: RecapData; track: TrackData; photoBase: string; videoBase: string; musicBase: string; onDeleted?: () => void }) {
+function Stage({ recap, track, onPickRide, photoBase, videoBase, musicBase, onDeleted }: { recap: RecapData; track: TrackData; onPickRide: (id: string) => void; photoBase: string; videoBase: string; musicBase: string; onDeleted?: () => void }) {
   const t = useTranslations('summary');
   const locale = useLocale() as 'fr' | 'en';
   const colors = useMapColors();
@@ -659,6 +667,23 @@ function Stage({ recap, track, photoBase, videoBase, musicBase, onDeleted }: { r
             className="absolute inset-x-0 bottom-0 h-4 w-full cursor-pointer accent-primary"
           />
         </div>
+        {recap.choices.length > 1 && (
+          <div className="mb-1 flex justify-center">
+            <select
+              aria-label={t('ride.label')}
+              value={track.id}
+              onChange={(e) => onPickRide(e.target.value)}
+              data-testid="summary-ride"
+              className="h-11 max-w-full rounded-md bg-media-surface/60 px-3 text-sm text-media-foreground focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {recap.choices.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {t(c.mine ? 'ride.mine' : c.organizer ? 'ride.organizer' : 'ride.of', { name: c.author })} · {t('ride.km', { km: (c.distanceM / 1000).toFixed(1) })}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <div className="flex items-center justify-center gap-1">
           <button type="button" className={barBtn} aria-label={t('prev')} onClick={skipPrev} data-testid="summary-prev"><SkipBack aria-hidden className="size-5" /></button>
           {ended ? (

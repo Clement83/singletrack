@@ -19,7 +19,7 @@ export function recapHandlers(resolve: (req: Request, p: Record<string, string>)
       if (!ctx) return NOT_FOUND();
       const { db } = getDb();
       return Response.json(
-        { ...buildRecap(db, ctx.outing, ctx.actor), music: listMusic(), ...(ctx.actor.kind === 'organizer' ? { rides: listRideChoices(db, ctx.outing) } : {}) },
+        { ...buildRecap(db, ctx.outing, ctx.actor, new URL(req.url).searchParams.get('ride')), music: listMusic(), ...(ctx.actor.kind === 'organizer' ? { rides: listRideChoices(db, ctx.outing) } : {}) },
         { headers: { 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex' } },
       );
     },

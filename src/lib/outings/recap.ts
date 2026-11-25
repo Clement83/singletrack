@@ -5,6 +5,8 @@ import { bboxOf, lineLength, type Position, type TrackGeometry } from '@/lib/geo
 import type { Actor } from './comments';
 import { placePhoto, type Placement } from './photo-placement';
 import { isMine } from './photos';
+import { isRegistered } from './ride';
+import { trimEnds } from '@/lib/geo/trim-ends';
 
 const NOT_PLACED: Placement = { method: 'none', distanceM: null, at: null, pos: null };
 
@@ -45,6 +47,37 @@ export function listRideChoices(db: Db, o: Pick<OutingRow, 'id' | 'referenceRide
   }));
 }
 
+/** A track the viewer can replay in the summary (#1773). */
+export type RecapRide = { id: string; author: string; organizer: boolean; mine: boolean; distanceM: number; reference: boolean };
+type ViewRide = { row: RideRow; geometry: TrackGeometry; times: number[] | null; mine: boolean };
+
+/**
+ * Tracks the actor may replay (same rights as `listRides`, #1772): registered participants see all, others only their own.
+ * Other people's tracks lose their first/last 300 m, so their per-point times no longer line up: they are dropped
+ * (media are then placed by position only) — the stored track is untouched.
+ */
+function viewableRides(db: Db, o: Pick<OutingRow, 'id'>, actor: Actor): ViewRide[] {
+  const all = isRegistered(db, actor);
+  const mineOf = (r: RideRow) => (actor.kind === 'guest' ? r.invitationId === actor.invitationId : r.invitationId === null && r.authorUserId === actor.userId);
+  return allRides(db, o.id).flatMap((row): ViewRide[] => {
+    const mine = mineOf(row);
+    if (!mine && !all) return [];
+    if (mine) return [{ row, geometry: row.geometry, times: row.times, mine }];
+    const geometry = trimEnds(row.geometry);
+    return geometry ? [{ row, geometry, times: null, mine }] : [];
+  });
+}
+
+/**
+ * Track replayed by default and for a given `?ride=` (#1773): the requested one if the viewer may see it, otherwise
+ * their own, otherwise the outing's reference (when visible), otherwise the first visible one.
+ */
+export function pickRide(db: Db, o: Pick<OutingRow, 'id' | 'referenceRideId'>, actor: Actor, rideId?: string | null): ViewRide | null {
+  const rides = viewableRides(db, o, actor);
+  const ref = referenceRide(db, o);
+  return (rideId ? rides.find((r) => r.row.id === rideId) : undefined) ?? rides.find((r) => r.mine) ?? rides.find((r) => r.row.id === ref?.id) ?? rides[0] ?? null;
+}
+
 export type RecapMedia = {
   id: string;
   type: 'photo' | 'video';
@@ -74,14 +107,23 @@ export type Recap = {
   } | null;
   /** Photos and ready videos ordered along the track (placed ones by distance, then the unplaced by capture / upload order). */
   media: RecapMedia[];
+  /** Tracks the viewer can switch to (#1773), mine first then the organiser's, `reference` = the organiser's choice. */
+  choices: RecapRide[];
 };
 
 /**
  * Data of the outing recap (#1692): reference track + photos and videos (#1693) placed on it. Rights are those of the photos:
  * the caller has resolved an `Actor` (organiser, or guest with a valid link) — otherwise the route answers 404 before this.
  */
-export function buildRecap(db: Db, o: OutingRow, actor: Actor): Recap {
-  const ref = referenceRide(db, o);
+export function buildRecap(db: Db, o: OutingRow, actor: Actor, rideId?: string | null): Recap {
+  const picked = pickRide(db, o, actor, rideId);
+  const ref = picked ? { id: picked.row.id, geometry: picked.geometry, times: picked.times, distanceM: picked.row.distanceM, gainM: picked.row.gainM } : null;
+  const refId = referenceRide(db, o)?.id;
+  const names = new Map(db.select({ id: invitation.id, name: invitation.name }).from(invitation).where(eq(invitation.outingId, o.id)).all().map((i) => [i.id, i.name]));
+  const choices: RecapRide[] = viewableRides(db, o, actor).map((r) => ({
+    id: r.row.id, author: r.row.invitationId ? (names.get(r.row.invitationId) ?? '') : '', organizer: r.row.invitationId === null,
+    mine: r.mine, distanceM: r.row.distanceM, reference: r.row.id === refId,
+  })).sort((a, b) => Number(b.mine) - Number(a.mine));
   const photos = db.select({ p: outingPhoto, name: invitation.name }).from(outingPhoto)
     .leftJoin(invitation, eq(invitation.id, outingPhoto.invitationId))
     .where(eq(outingPhoto.outingId, o.id)).orderBy(asc(outingPhoto.createdAt), asc(outingPhoto.id)).all()
@@ -106,7 +148,7 @@ export function buildRecap(db: Db, o: OutingRow, actor: Actor): Recap {
     if (dbm != null) return 1;
     return (a.takenAt ?? Infinity) - (b.takenAt ?? Infinity) || a._i - b._i;
   }).map(({ _i, ...m }) => { void _i; return m; });
-  if (!ref) return { track: null, media };
+  if (!ref) return { track: null, media, choices };
   const b = bboxOf(ref.geometry)!;
   const coords = ref.geometry.type === 'LineString' ? ref.geometry.coordinates : ref.geometry.coordinates.flat();
   return {
@@ -116,6 +158,7 @@ export function buildRecap(db: Db, o: OutingRow, actor: Actor): Recap {
       profile: coords.every((p) => typeof p[2] === 'number') ? slopeProfileOf(coords) : null,
     },
     media,
+    choices,
   };
 }
 
