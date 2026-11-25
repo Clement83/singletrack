@@ -3,6 +3,6 @@
   "private": true,
   "description": "Tests de bout en bout de l'éditeur (#1523). Lancés par le service compose `e2e` (profil e2e), jamais sur l'hôte.",
   "devDependencies": {
-    "@playwright/test": "1.56.1"
+    "@playwright/test": "1.65.1"
   }
 }

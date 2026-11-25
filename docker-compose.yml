@@ -192,7 +192,7 @@ services:
   # Playwright (Chromium) in the official image, same version as e2e/package.json. Targets the `app-e2e` container.
   e2e:
     profiles: [e2e]
-    image: mcr.microsoft.com/playwright:v1.56.1-noble
+    image: mcr.microsoft.com/playwright:v1.65.1-noble
     network_mode: bridge
     ipc: host
     working_dir: /work
