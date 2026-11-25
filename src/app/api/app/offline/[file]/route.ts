@@ -3,6 +3,7 @@ import { appNotFound, withAppAuth } from '@/lib/app/http';
 import { REGION_ID_RE } from '@/lib/offline/regions';
 import { offlineStyle, pmtilesResponse, throttled } from '@/lib/offline/serve';
 import { packsEnabled } from '@/lib/offline/store';
+import { publicOrigin } from '@/lib/outings/export';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +16,7 @@ export const GET = withAppAuth(async (req, c, auth) => {
   if (file === 'style.json') {
     if (!packsEnabled(db)) return appNotFound();
     const region = new URL(req.url).searchParams.get('region') ?? '{region}';
-    const url = `${new URL(req.url).origin}/api/app/offline/${region === '{region}' || REGION_ID_RE.test(region) ? region : '{region}'}.pmtiles`;
+    const url = `${publicOrigin(req)}/api/app/offline/${region === '{region}' || REGION_ID_RE.test(region) ? region : '{region}'}.pmtiles`;
     return Response.json(offlineStyle(url), { headers: { 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex' } });
   }
   const m = /^([a-z0-9][a-z0-9-]{0,39})\.pmtiles$/.exec(file);

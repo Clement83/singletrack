@@ -34,6 +34,7 @@ beforeEach(() => {
   vi.stubEnv('OFFLINE_DIR', dir);
   vi.stubEnv('BROUTER_SEGMENTS_DIR', segDir);
   vi.stubEnv('OFFLINE_PACKS_ENABLED', 'on');
+  vi.stubEnv('BETTER_AUTH_URL', '');
   const now = new Date();
   db().insert(user).values({ id: 'a', name: 'A', email: 'a@x.fr', emailVerified: true, createdAt: now, updatedAt: now }).run();
   const r = exchangePairing(db(), createPairing(db(), 'a').code, 'Pixel');
@@ -67,6 +68,14 @@ describe('offline API (#1739)', () => {
     expect(body.regions[0]).toMatchObject({ id: 'paca', pmtilesSize: PM.length, version: '20261101' });
     expect(body.regions[0].segments).toEqual([{ name: 'E5_N40', size: RD5.length, sha256: expect.stringMatching(/^[0-9a-f]{64}$/) }]);
     expect(body.style).toBe('http://x/api/app/offline/style.json');
+  });
+
+  it('catalogue and style use the public origin, not the request origin (#1771)', async () => {
+    vi.stubEnv('BETTER_AUTH_URL', 'https://st.example/');
+    const body = await (await catalog.GET(req('/api/app/offline', token), ctx({}))).json();
+    expect(body.style).toBe('https://st.example/api/app/offline/style.json');
+    const s = await (await file.GET(req('/api/app/offline/style.json?region=paca', token), ctx({ file: 'style.json' }))).json();
+    expect(s.sources.protomaps.url).toBe('pmtiles://https://st.example/api/app/offline/paca.pmtiles');
   });
 
   it('a disabled region is not listed and its files are 404', async () => {
