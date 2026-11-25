@@ -7,6 +7,17 @@ Each release ticket writes the `## [X.Y.Z] - YYYY-MM-DD` section from the conven
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-11-25
+
+### Added
+- **Everyone's ridden tracks on a group outing**: the organiser and registered guests see all participants' tracks; others' tracks lose their first and last 300 m for privacy.
+- **Summary per person**: the summary player has a track selector and places photos and videos on the chosen track.
+- **Ridden tracks across servers**: a participant from another server keeps their track at home and sends it to the organiser's server (announced in NodeInfo as `singletrack:rides`); a remote outing shows my track and my summary from the web.
+- **Key moments**: GPX waypoints and KML placemarks of a ridden track become named markers on the map and in the summary player, with nearby photos and videos shown first.
+
+### Changed
+- Clearer copy for the invitation answer and the outing form errors.
+
 ## [0.10.0] - 2026-11-25
 
 ### Added
