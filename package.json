@@ -43,7 +43,7 @@
     "drizzle-orm": "^0.45.4",
     "flatgeobuf": "^4.6.1",
     "lucide-react": "^1.72.0",
-    "maplibre-gl": "^5.0.0",
+    "maplibre-gl": "^6.19.0",
     "mp4-muxer": "5.2.2",
     "next": "^16.4.6",
     "next-intl": "4.14.9",
