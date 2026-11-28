@@ -7,6 +7,14 @@ Each release ticket writes the `## [X.Y.Z] - YYYY-MM-DD` section from the conven
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-11-28
+
+### Added
+- **Editor alternatives are easier to see (desktop)**: alternative paths after a drag are drawn with a casing in a dedicated colour; hovering one highlights it and previews its elevation profile and distance/gain without changing the track.
+
+### Changed
+- **Validated path stays frozen**: keeping an option or choosing an alternative freezes the line with the fewest normal waypoints, no alternatives are shown afterwards, and moving another point leaves the validated path intact; a new drag proposes alternatives from it.
+
 ## [0.11.0] - 2026-11-25
 
 ### Added
