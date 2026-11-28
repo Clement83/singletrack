@@ -3,6 +3,7 @@ import path from 'node:path';
 import type { Position } from '@/lib/geo';
 import { docGeometry, emptyDoc, pendingSegments, type EditorDoc, type LonLat } from '@/lib/editor/doc';
 import { editorReducer, initialState, type EditorAction, type EditorState } from '@/lib/editor/state';
+import { freezeCuts } from '@/lib/editor/freeze';
 import { buildWiden, planWiden, withoutChoiceAlts } from '@/lib/editor/choice';
 import { liveAltSets, upsertAlt, type AltSet } from '@/lib/editor/alts';
 import {
@@ -49,6 +50,8 @@ export class EditorSim {
   private lastDrag = -Infinity;
   private cache = new Map<string, { coords: Position[]; alts: Fixture['alternatives'] }>();
   failFor = new Set<string>();
+  /** Generic routing tried before the fixtures (a network where any two vertices are joined by the line between them). */
+  router: ((from: LonLat, to: LonLat) => Position[] | null) | null = null;
   private extra: Fixture[] = [];
   /** Forces the BRouter line of a pair of points (cases the fixtures do not have). */
   stub(from: LonLat, to: LonLat, coordinates: Position[], alternatives: Fixture['alternatives'] = []) {
@@ -125,6 +128,13 @@ export class EditorSim {
     const result = buildWiden(pd, plan, up, down);
     if (result) this.dispatch({ type: 'widen', result });
   }
+  /** Freezes validated paths (#1812): same wiring as the editor (routing from the fixtures / stubs). */
+  async freeze() {
+    for (const target of [...this.state.toFreeze]) {
+      const cuts = await freezeCuts(target, async (a, b) => this.route(a, b)?.coords ?? null);
+      this.dispatch({ type: 'freeze', target, cuts });
+    }
+  }
   undo() { this.dispatch({ type: 'undo' }); }
   redo() { this.dispatch({ type: 'redo' }); }
   chooseAlt(i: number, seg?: number) {
@@ -138,6 +148,8 @@ export class EditorSim {
   private route(from: LonLat, to: LonLat): { coords: Position[]; alts: Fixture['alternatives'] } | null {
     const k = `${from}|${to}`;
     if (this.failFor.has(k)) return null;
+    const g = this.router?.(from, to);
+    if (g) return { coords: g, alts: [] };
     const f = [...this.extra, ...FIXTURES].find((x) => eq(x.from, from) && eq(x.to, to));
     if (f) return { coords: f.coordinates, alts: f.alternatives };
     return { coords: [from, [(from[0] + to[0]) / 2, (from[1] + to[1]) / 2 + 0.0005], to], alts: [] };

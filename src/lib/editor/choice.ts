@@ -54,9 +54,9 @@ export function planWiden(p: PendingDeviation, maxM = CHOICE_MAX_M, maxPts = CHO
   return { up, down };
 }
 
-type XY = [number, number];
-const toXY = (c: Position, lat0: number): XY => [c[0] * Math.cos((lat0 * Math.PI) / 180) * 111320, c[1] * 110540];
-function distToSeg(q: XY, a: XY, b: XY) {
+export type XY = [number, number];
+export const toXY = (c: Position, lat0: number): XY => [c[0] * Math.cos((lat0 * Math.PI) / 180) * 111320, c[1] * 110540];
+export function distToSeg(q: XY, a: XY, b: XY) {
   const dx = b[0] - a[0];
   const dy = b[1] - a[1];
   const l2 = dx * dx + dy * dy;

@@ -31,6 +31,7 @@ import { snapTolerance, hitWidth } from '@/lib/editor/snap';
 import { useSnapPref } from '@/lib/editor/snap-pref';
 import { FINE_POINTER } from '@/lib/use-desktop-autofocus';
 import type { Deviation } from '@/lib/editor/doc';
+import { freezeCuts } from '@/lib/editor/freeze';
 import { buildWiden, choiceSegs, planWiden, withoutChoiceAlts, type ChoiceWhich } from '@/lib/editor/choice';
 import { docSig, liveAltSets, nextAlt, upsertAlt, type AltSet } from '@/lib/editor/alts';
 import { chooseAltResult, snapPointIn, decideClick, dragPointAction, endLineDrag, moveLineDrag, pointDragExclude, resolveRouted, type HitFeature } from '@/lib/editor/gestures';
@@ -328,6 +329,20 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
       cancelled = true;
     };
   }, [state.pending, desktop]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Validated path (#1812, desktop): the minimum of normal waypoints is inserted so that BRouter gives this line back.
+  useEffect(() => {
+    if (!desktop || !state.toFreeze.length) return;
+    let cancelled = false;
+    state.toFreeze.forEach((target) => {
+      void freezeCuts(target, routeCoords).then((cuts) => {
+        if (!cancelled) dispatch({ type: 'freeze', target, cuts });
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [state.toFreeze, desktop]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // One set per re-routed segment: after a drag (2 segments) the alternatives of both are kept (#1527).
   const alts = withoutChoiceAlts(liveAltSets(altSets, (i) => doc.segments[i]?.coords ?? undefined, rider), state.choice);

@@ -3,7 +3,8 @@ import {
   addWaypoint, closeLoop, deviateWaypoint, insertWaypoint, restoreDeviation, type Deviation, moveWaypoint, prependHome, removeWaypoint, resolveSegment, reverseDoc,
   setAllModes, snapWaypoint, setSegmentMode, trimAfter, trimBefore, type EditorDoc, type LonLat, type SegmentMode,
 } from './doc';
-import type { ChoicePair, ChoiceWhich, PendingDeviation, WidenResult } from './choice';
+import { choiceSegs, type ChoicePair, type ChoiceWhich, type PendingDeviation, type WidenResult } from './choice';
+import { freezeSegment } from './freeze';
 
 /** Undo / redo history: only user gestures are stacked, not computed lines. */
 export type EditorState = {
@@ -19,12 +20,14 @@ export type EditorState = {
   pending: PendingDeviation | null;
   /** "New / old path" pair (#1641): `present` is the selected option, the history has no entry yet. */
   choice: ChoicePair | null;
+  /** Validated lines (#1812) waiting to be frozen by waypoints: the caller routes, then dispatches `freeze`. Cleared by undo / redo. */
+  toFreeze: Position[][];
 };
 
 export const HISTORY_LIMIT = 100;
 
 export const initialState = (doc: EditorDoc, newMode: SegmentMode = 'route'): EditorState => ({
-  past: [], present: doc, future: [], newMode, selected: null, deviation: null, pending: null, choice: null,
+  past: [], present: doc, future: [], newMode, selected: null, deviation: null, pending: null, choice: null, toFreeze: [],
 });
 
 export type EditorAction =
@@ -40,6 +43,8 @@ export type EditorAction =
   | { type: 'selectChoice'; which: ChoiceWhich }
   /** Validates the selected option: a single history entry (undo = before the drag). */
   | { type: 'commitChoice' }
+  /** Freezes a validated line (#1812): inserts the waypoints `cuts` (vertex indices of `target`), outside history (same step as the validation). */
+  | { type: 'freeze'; target: Position[]; cuts: number[] }
   | { type: 'remove'; i: number }
   | { type: 'segmentMode'; seg: number; mode: SegmentMode }
   | { type: 'allModes'; mode: SegmentMode }
@@ -64,7 +69,9 @@ export type EditorAction =
 function settleChoice(s: EditorState): EditorState {
   const c = s.choice;
   if (!c) return s;
-  return { ...s, past: [...s.past, c.old].slice(-HISTORY_LIMIT), present: c.selected === 'new' ? c.new : c.old, future: [], choice: null, pending: null };
+  const kept = c.selected === 'new' ? c.new : c.old;
+  const toFreeze = choiceSegs(c, c.selected).flatMap((k) => (kept.segments[k]?.mode === 'route' && kept.segments[k].coords ? [kept.segments[k].coords!] : []));
+  return { ...s, past: [...s.past, c.old].slice(-HISTORY_LIMIT), present: kept, future: [], choice: null, pending: null, toFreeze: [...s.toFreeze, ...toFreeze] };
 }
 
 function commit(s: EditorState, next: EditorDoc, selected: number | null = null): EditorState {
@@ -120,6 +127,11 @@ function reduce(s: EditorState, a: EditorAction): EditorState {
       if (!s.deviation) return s;
       return commit(s, restoreDeviation(d, s.deviation));
     }
+    case 'freeze': {
+      const rest = s.toFreeze.filter((t) => t !== a.target);
+      const next = freezeSegment(d, a.target, a.cuts);
+      return next === d && rest.length === s.toFreeze.length ? s : { ...s, present: next, toFreeze: rest };
+    }
     case 'remove':
       return commit(s, removeWaypoint(d, a.i));
     case 'segmentMode':
@@ -142,13 +154,13 @@ function reduce(s: EditorState, a: EditorAction): EditorState {
       return { ...s, selected: a.i };
     case 'undo': {
       // Active choice pair: undo = exact return to before the drag (the history has no entry yet).
-      if (s.choice) return { ...s, present: s.choice.old, choice: null, pending: null, selected: null, deviation: null };
+      if (s.choice) return { ...s, present: s.choice.old, choice: null, pending: null, selected: null, deviation: null, toFreeze: [] };
       const prev = s.past.at(-1);
-      return prev ? { ...s, past: s.past.slice(0, -1), present: prev, future: [d, ...s.future], selected: null, deviation: null, pending: null } : s;
+      return prev ? { ...s, past: s.past.slice(0, -1), present: prev, future: [d, ...s.future], selected: null, deviation: null, pending: null, toFreeze: [] } : s;
     }
     case 'redo': {
       const [next, ...rest] = s.future;
-      return next ? { ...s, past: [...s.past, d], present: next, future: rest, selected: null, deviation: null, pending: null } : s;
+      return next ? { ...s, past: [...s.past, d], present: next, future: rest, selected: null, deviation: null, pending: null, toFreeze: [] } : s;
     }
     case 'resolved': {
       const next = resolveSegment(d, a.seg, a.from, a.to, a.coords);
@@ -156,7 +168,7 @@ function reduce(s: EditorState, a: EditorAction): EditorState {
     }
     case 'chooseRoute': {
       const next = resolveSegment(d, a.seg, a.from, a.to, a.coords);
-      return next === d ? s : { ...commit(s, next, s.selected), deviation: s.deviation };
+      return next === d ? s : { ...commit(s, next, s.selected), deviation: s.deviation, toFreeze: [...s.toFreeze, a.coords] };
     }
     case 'snapEnd': {
       // Only if the point has not moved since the computation.
