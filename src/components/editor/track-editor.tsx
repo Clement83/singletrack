@@ -20,7 +20,7 @@ import { useMapColors } from '@/components/tracks/use-map-colors';
 import { SinglesLayer, useSingles, useSinglesPref } from '@/components/tracks/singles-layer';
 import { cn } from '@/lib/utils';
 import { DESKTOP, useMediaQuery } from '@/lib/use-media-query';
-import { docGeometry, docToStored, pendingSegments, segmentLine, type EditorDoc, type LonLat } from '@/lib/editor/doc';
+import { docGeometry, docToStored, resolveSegment, pendingSegments, segmentLine, type EditorDoc, type LonLat } from '@/lib/editor/doc';
 import { editorReducer, initialState, type EditorAction, type EditorState } from '@/lib/editor/state';
 import { liveStats, type LiveStats } from '@/lib/editor/stats';
 import type { Position } from '@/lib/geo';
@@ -61,6 +61,9 @@ type Props = {
 };
 
 /** Everything the layouts (mobile #1392, desktop #1393) need: state, actions, saving. */
+type HoverAlt = { kind: 'choice'; which: ChoiceWhich } | { kind: 'alt'; seg: number; i: number } | null;
+const sameHover = (a: HoverAlt, b: HoverAlt) => (a === null || b === null ? a === b : a.kind === 'alt' ? b.kind === 'alt' && a.seg === b.seg && a.i === b.i : b.kind === 'choice' && a.which === b.which);
+
 export type EditorCtl = {
   mode: EditorMode;
   state: EditorState;
@@ -384,6 +387,41 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
   const keepChoice = () => dispatch({ type: 'commitChoice' });
 
   const stats = useMemo(() => liveStats(doc), [doc]);
+
+  // Hover / focus of an alternative (#1811, desktop): highlights it and previews its profile and stats, without touching the document.
+  const [hoverAlt, setHoverAlt] = useState<HoverAlt>(null);
+  const hoverLine = useMemo<Position[] | null>(() => {
+    if (!hoverAlt) return null;
+    if (hoverAlt.kind === 'choice') {
+      if (!choice) return null;
+      const d = hoverAlt.which === 'new' ? choice.new : choice.old;
+      return choiceSegs(choice, hoverAlt.which).flatMap((k) => segmentLine(d, k));
+    }
+    return alts.find((a) => a.seg === hoverAlt.seg)?.routes[hoverAlt.i] ?? null;
+  }, [hoverAlt, choice, alts]);
+  const previewStats = useMemo(() => {
+    if (!hoverAlt) return null;
+    if (hoverAlt.kind === 'choice') return choice && choice.selected !== hoverAlt.which ? liveStats(hoverAlt.which === 'new' ? choice.new : choice.old) : null;
+    const set = alts.find((a) => a.seg === hoverAlt.seg);
+    const r = set && hoverAlt.i !== set.active ? set.routes[hoverAlt.i] : null;
+    return set && r ? liveStats(resolveSegment(doc, set.seg, set.from, set.to, r)) : null;
+  }, [hoverAlt, choice, alts, doc]);
+  const hlFeatures = useMemo(
+    () => ({
+      type: 'FeatureCollection' as const,
+      features: hoverLine && previewStats ? [{ type: 'Feature' as const, properties: {}, geometry: { type: 'LineString' as const, coordinates: hoverLine } }] : [],
+    }),
+    [hoverLine, previewStats],
+  );
+  const hovering = hlFeatures.features.length > 0;
+  // The current path and the other alternatives are dimmed while one is highlighted.
+  useEffect(() => {
+    const m = mapRef.current?.getMap();
+    if (!m) return;
+    const set = (id: string, prop: string, v: number) => m.getLayer(id) && m.setPaintProperty(id, prop, v);
+    for (const id of ['slope-line', 'slope-casing', 'edit-line', 'edit-casing']) set(id, 'line-opacity', hovering ? 0.35 : 1);
+    for (const id of ['alt-line', 'alt-casing']) set(id, 'line-opacity', hovering ? 0.4 : 1);
+  }, [hovering]);
   const segFeatures = useMemo(
     () => ({
       type: 'FeatureCollection' as const,
@@ -609,7 +647,7 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
   }
 
   const ctl: EditorCtl = {
-    mode, state, dispatch, doc, stats, pending, canSave, home,
+    mode, state, dispatch, doc, stats: previewStats ?? stats, pending, canSave, home,
     quitHref,
     slug: liveSlug,
     dirty, autosave, saveKey: liveStatus === 'published' ? 'update' : 'publish', canDelete: !!liveSlug, requestLeave, name, setName, description, setDescription, visibility, setVisibility, errors, saving, save, setProfileCursor, mapHoverIndex, rider, alts, chooseAlt, cycleAlt, deviation: state.deviation, restoreDeviation, snapOn, keepChoice,
@@ -668,7 +706,10 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
               if (dragLine) {
                 return setDragLine(moveLineDrag(dragLine, e.point, [e.lngLat.lng, e.lngLat.lat]));
               }
-              const over = !!e.features?.some((f) => f.layer.id === 'edit-hit');
+              const altHit = desktop ? e.features?.find((f) => f.layer.id === 'alt-hit' || f.layer.id === 'choice-hit') : undefined;
+              const nextHover: HoverAlt = !altHit ? null : altHit.layer.id === 'alt-hit' ? { kind: 'alt', seg: Number(altHit.properties.seg), i: Number(altHit.properties.alt) } : { kind: 'choice', which: altHit.properties.which as ChoiceWhich };
+              setHoverAlt((cur) => (sameHover(cur, nextHover) ? cur : nextHover));
+              const over = !altHit && !!e.features?.some((f) => f.layer.id === 'edit-hit');
               setOverLine(over);
               // Hovering the track → profile cursor (#1383); the profile follows the geometry point by point.
               const near = over && located.length > 1 ? nearestProfileIndex(located, e.lngLat.lng, e.lngLat.lat) : null;
@@ -676,6 +717,7 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
               setTip(desktop && near !== null && !lineMenu ? tipAt(e.point.x, e.point.y, near) : null);
             }}
             onMouseLeave={() => {
+              setHoverAlt(null);
               setOverLine(false);
               setMapHoverIndex(null);
               setTip(null);
@@ -696,7 +738,8 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
             </Source>
             <Source id="alts" type="geojson" data={altFeatures}>
               <Layer id="alt-hit" type="line" layout={{ 'line-cap': 'round' }} paint={{ 'line-color': colors.muted, 'line-width': hitPx, 'line-opacity': 0.01 }} />
-              <Layer id="alt-line" type="line" layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': colors.muted, 'line-width': 3 }} />
+              <Layer id="alt-casing" type="line" layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': colors.casing, 'line-width': 9 }} />
+              <Layer id="alt-line" type="line" layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': colors.alt, 'line-width': 5 }} />
             </Source>
             <Source id="deviation" type="geojson" data={deviationFeatures}>
               <Layer id="dev-hit" type="line" layout={{ 'line-cap': 'round' }} paint={{ 'line-color': colors.muted, 'line-width': hitPx, 'line-opacity': 0.01 }} />
@@ -705,6 +748,11 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
             <SlopeRouteLayer id="slope" data={slopeData} colors={colors} />
             <Source id="choice-hit-src" type="geojson" data={choiceFeatures}>
               <Layer id="choice-hit" type="line" filter={['==', ['get', 'sel'], false]} layout={{ 'line-cap': 'round' }} paint={{ 'line-color': colors.muted, 'line-width': hitPx, 'line-opacity': 0.01 }} />
+            </Source>
+            <Source id="alt-hl" type="geojson" data={hlFeatures}>
+              <Layer id="alt-hl-halo" type="line" layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': colors.alt, 'line-width': 20, 'line-opacity': 0.3 }} />
+              <Layer id="alt-hl-casing" type="line" layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': colors.casing, 'line-width': 12 }} />
+              <Layer id="alt-hl-line" type="line" layout={{ 'line-cap': 'round', 'line-join': 'round' }} paint={{ 'line-color': colors.alt, 'line-width': 8 }} />
             </Source>
             <KmMarkers geometry={geometry} />
             {cursorPos && <ProfileCursorMarker mapRef={mapRef} lon={cursorPos[0]} lat={cursorPos[1]} />}
@@ -783,8 +831,8 @@ export function TrackEditor({ mode, initialDoc, initialName = '', initialDescrip
                 <span aria-hidden className="block size-6 rounded-full border-2 border-card bg-card shadow-md ring-4 ring-ring" />
               </Marker>
             )}
-            {desktop && choice && <ChoiceLabels choice={choice} onSelect={(which) => dispatch({ type: 'selectChoice', which })} />}
-            {desktop && alts.map((a) => <AltLabels key={a.seg} alts={a} onChoose={(i) => chooseAlt(i, a.seg)} />)}
+            {desktop && choice && <ChoiceLabels choice={choice} onSelect={(which) => dispatch({ type: 'selectChoice', which })} onHover={(which) => setHoverAlt(which && { kind: 'choice', which })} />}
+            {desktop && alts.map((a) => <AltLabels key={a.seg} alts={a} onChoose={(i) => chooseAlt(i, a.seg)} onHover={(i) => setHoverAlt(i === null ? null : { kind: 'alt', seg: a.seg, i })} />)}
             {desktop && state.deviation && <DeviationLabel deviation={state.deviation} onRestore={restoreDeviation} />}
             {routeNote && <RouteNoteMarker note={routeNote} />}
             {desktop && <DesktopPointPopover ctl={ctl} />}

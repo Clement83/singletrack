@@ -129,7 +129,7 @@ function useAltText(alts: AltSet) {
  * Chips of the routes not kept, on the map (desktop, #1386): a click = choose this route for the
  * segment. The choice is also possible from the keyboard (key A cycles): nothing is hover-only.
  */
-export function AltLabels({ alts, onChoose }: { alts: AltSet; onChoose: (i: number) => void }) {
+export function AltLabels({ alts, onChoose, onHover }: { alts: AltSet; onChoose: (i: number) => void; onHover?: (i: number | null) => void }) {
   const text = useAltText(alts);
   return alts.routes.map((r, i) => {
     if (i === alts.active) return null;
@@ -143,7 +143,11 @@ export function AltLabels({ alts, onChoose }: { alts: AltSet; onChoose: (i: numb
             onChoose(i);
           }}
           onMouseDown={(e) => e.stopPropagation()}
-          className="min-h-11 rounded-full border border-border bg-popover px-3 text-small font-medium whitespace-nowrap text-popover-foreground tabular-nums shadow-md hover:bg-accent"
+          onMouseEnter={() => onHover?.(i)}
+          onMouseLeave={() => onHover?.(null)}
+          onFocus={() => onHover?.(i)}
+          onBlur={() => onHover?.(null)}
+          className="min-h-11 rounded-full border-2 border-map-alt bg-popover px-3 text-small font-medium whitespace-nowrap text-popover-foreground tabular-nums shadow-md hover:bg-accent"
         >
           {text(i)}
         </button>
@@ -214,7 +218,7 @@ export function DeviationCard({ onRestore }: { onRestore: () => void }) {
  * Label of each path of a choice pair (desktop, #1642): km and gain difference from the other
  * option, placed on the line. A click = select this path; the selected one is marked by `aria-pressed`.
  */
-export function ChoiceLabels({ choice, onSelect }: { choice: ChoicePair; onSelect: (w: ChoiceWhich) => void }) {
+export function ChoiceLabels({ choice, onSelect, onHover }: { choice: ChoicePair; onSelect: (w: ChoiceWhich) => void; onHover?: (w: ChoiceWhich | null) => void }) {
   const t = useTranslations('editor');
   const format = useFormatter();
   const d = choiceDeltas(choice);
@@ -238,6 +242,10 @@ export function ChoiceLabels({ choice, onSelect }: { choice: ChoicePair; onSelec
             onSelect(w);
           }}
           onMouseDown={(e) => e.stopPropagation()}
+          onMouseEnter={() => onHover?.(w)}
+          onMouseLeave={() => onHover?.(null)}
+          onFocus={() => onHover?.(w)}
+          onBlur={() => onHover?.(null)}
           className={cn(
             'min-h-11 rounded-full border-2 px-3 text-small font-medium whitespace-nowrap tabular-nums shadow-md',
             on ? 'border-primary bg-popover text-popover-foreground' : 'border-border bg-popover text-popover-foreground hover:bg-accent',

@@ -128,6 +128,34 @@ test('éditeur : deux chemins après un glisser, clic sur l’autre, « Garder c
   expect(await halos()).toHaveLength(0);
 });
 
+// #1811: hovering an alternative's label previews its profile/stats and highlights it, leaving the document untouched.
+test('#1811 : survoler l’étiquette d’une alternative affiche son profil, la sortie restaure, le tracé ne change pas', async ({ page }) => {
+  await openEditor(page);
+  const { b } = await twoPoints(page);
+  await clickAt(page, { x: b.x + 120, y: b.y - 40 });
+  await clickAt(page, { x: b.x + 240, y: b.y });
+  await waitRouted(page, 3);
+  await dragMouse(page, b, { x: b.x + 40, y: b.y - 110 });
+  const keep = page.getByRole('button', { name: /Garder ce chemin|Keep this path/ });
+  const shown = await keep.waitFor({ timeout: 15_000 }).then(() => true, () => false);
+  test.skip(!shown, 'BRouter ne propose pas deux chemins pour ce glisser');
+  const profile = page.getByRole('region', { name: /profil|profile/i }).first();
+  const stats = () => profile.locator('dl').innerText();
+  const hl = () =>
+    page.evaluate(() => (window as unknown as { __editorMap: { getSource(id: string): { serialize(): { data: { features: unknown[] } } } } }).__editorMap.getSource('alt-hl').serialize().data.features.length);
+  const selected = () =>
+    page.evaluate(() => (window as unknown as { __editorMap: { getSource(id: string): { serialize(): { data: { features: { properties: { which: string; sel: boolean } }[] } } } } }).__editorMap.getSource('choice').serialize().data.features.find((f) => f.properties.sel)?.properties.which);
+  const before = await stats();
+  const sel0 = await selected();
+  await page.getByRole('button', { name: /^(Ancien chemin|Old path)/ }).hover();
+  await expect.poll(hl).toBe(1);
+  await expect.poll(stats).not.toBe(before);
+  await page.mouse.move(5, 300);
+  await expect.poll(hl).toBe(0);
+  await expect.poll(stats).toBe(before);
+  expect(await selected()).toBe(sel0);
+});
+
 // #1686: a track opened from an existing geometry (frozen segments, > 400 m): moving a point never leaves a straight
 // line, BRouter recomputes the touched segments and the others keep their original route.
 test('#1686 : déplacer un point d’une trace à longs tronçons ne laisse aucune ligne droite', async ({ page, request }) => {
